@@ -22,8 +22,11 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
   const pathname = usePathname();
 
   return (
-    <div className="border-b border-border">
-      <nav aria-label="Navigasi course" className="-mb-px flex gap-1 overflow-x-auto pb-px md:flex-wrap">
+    <div className="border-b border-transparent pb-4">
+      <nav
+        aria-label="Navigasi course"
+        className="flex gap-1 overflow-x-auto rounded-full bg-muted/50 p-1 md:flex-wrap md:overflow-visible"
+      >
         {segments.map((seg) => {
           const href = seg.href(courseId);
           const active = seg.match(pathname, courseId);
@@ -32,10 +35,10 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
               key={seg.label}
               href={href}
               className={cn(
-                "shrink-0 rounded-t-lg px-3 py-2.5 text-body-sm font-medium transition-colors",
+                "shrink-0 rounded-full px-3.5 py-2 text-body-sm font-medium transition-[color,box-shadow,background-color]",
                 active
-                  ? "bg-card text-foreground shadow-[inset_0_-2px_0_0_var(--color-primary)]"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-card text-foreground shadow-sm ring-1 ring-border"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               {seg.label}

@@ -9,31 +9,25 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetHeader,
   SheetTitle,
   SheetDescription,
   SheetClose,
 } from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Logo } from "@/components/logo";
-import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { NavProfileOrSignIn } from "@/components/nav-profile-or-sign-in";
+import { useCommandMenu } from "@/components/command-menu";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { name: "Plans", href: "/plans" },
-  { name: "About Us", href: "/about" },
-  { name: "Testimonial", href: "/testimonial" },
+  { name: "Paket", href: "/plans" },
+  { name: "Tentang kami", href: "/about" },
+  { name: "Testimoni", href: "/testimonial" },
 ];
 
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const { setOpen: setSearchOpen } = useCommandMenu();
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -52,88 +46,69 @@ export function Navbar() {
         )}
         aria-label="Primary"
       >
-        <div
-          className="mx-auto grid w-full max-w-6xl grid-cols-2 items-center gap-2 px-4 py-2.5 sm:px-6 md:grid-cols-[1fr_auto_1fr] md:gap-4 md:px-6 md:py-3"
-        >
+        {/* Below lg: search + compact profile + drawer. lg+: centered links + Lihat paket + full profile. */}
+        <div className="relative mx-auto flex min-h-13 min-w-0 w-full max-w-7xl items-center gap-2 px-3 py-3 sm:px-4 md:min-h-14 md:gap-3 md:py-3.5 lg:px-5">
           <Link
             href="/"
-            className="max-w-[68px] shrink-0 justify-self-start md:max-w-[76px]"
+            className="relative z-10 -m-px flex shrink-0 items-center p-px [&_img]:block [&_img]:align-middle [&_svg]:block"
           >
-            <Logo className="max-w-[68px] md:max-w-[76px]" />
+            <Logo className="max-h-8 max-w-[68px] md:max-h-9 md:max-w-[76px]" />
           </Link>
 
-          <ul
-            className={cn(
-              "hidden items-center justify-center gap-5 text-body-sm font-medium md:flex md:justify-self-center"
-            )}
+          {/* Never use unconditional `hidden` + `md:flex` — if `hidden` wins in CSS order, desktop links disappear. Prefer max-lg:hidden. */}
+          <nav
+            className="max-lg:hidden lg:pointer-events-none lg:absolute lg:inset-x-0 lg:top-0 lg:bottom-0 lg:flex lg:items-center lg:justify-center"
+            aria-label="Main menu"
           >
-            {navLinks.map((link) => (
-              <li key={link.name}>
-                <Link
-                  href={link.href}
-                  className={cn(
-                    "transition-colors",
-                    "hover:text-brand-primary"
-                  )}
-                >
-                  {link.name}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            <ul className="flex items-center gap-5 text-body-sm font-medium leading-none tracking-tight lg:pointer-events-auto lg:leading-normal">
+              {navLinks.map((link) => (
+                <li key={link.href} className="flex shrink-0 items-center">
+                  <Link
+                    href={link.href}
+                    className="text-foreground/90 hover:text-brand-primary inline-flex items-center justify-center px-px py-0 transition-colors lg:min-h-10"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
 
-          <div className="flex items-center justify-end gap-2 justify-self-end md:gap-3">
-            <Dialog open={searchOpen} onOpenChange={setSearchOpen}>
-              <DialogTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "rounded-full"
-                  )}
-                  type="button"
-                >
-                  <Search className="size-5" />
-                  <span className="sr-only">Search</span>
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Search</DialogTitle>
-                  <DialogDescription>
-                    Search is not available yet. Use the top links for Plans, About, and Testimonials, or open
-                    Courses from the landing page.
-                  </DialogDescription>
-                </DialogHeader>
-              </DialogContent>
-            </Dialog>
-
+          <div className="relative z-10 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-1.5 md:gap-2.5">
             <Button
-              asChild
-              className={cn(
-                "hidden h-9 px-4 text-body-sm font-semibold md:inline-flex",
-                "rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
+              variant="ghost"
+              className="size-10 shrink-0 rounded-full"
+              type="button"
+              onClick={() => setSearchOpen(true)}
             >
-              <Link href="/plans">Lihat paket</Link>
+              <Search className="size-[1.125rem]" aria-hidden />
+              <span className="sr-only">Cari (pintasan papan ketik: Ctrl+K atau ⌘K)</span>
             </Button>
 
-            <GoogleSignInButton
-              label="Sign In"
-              callbackURL="/dashboard"
-              containerClassName="hidden w-auto md:flex"
-              className={cn(
-                "h-9 px-4 text-body-sm font-semibold",
-                "rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-              )}
-            />
+            <div className="hidden shrink-0 items-center gap-2 lg:flex lg:gap-2.5">
+              <Link
+                href="/sign-in"
+                className="interactive text-body-sm font-medium text-foreground underline decoration-[var(--zx-accent)] decoration-2 underline-offset-4 hover:text-foreground lg:mr-1"
+              >
+                Masuk
+              </Link>
+              <Button
+                asChild
+                className={cn(
+                  "inline-flex h-10 shrink-0 items-center px-5 text-body-sm font-medium leading-none rounded-md bg-[#1a2744] text-white hover:bg-[#1a2744]/90",
+                )}
+              >
+                <Link href="/plans">Lihat paket</Link>
+              </Button>
+            </div>
+
+            <NavProfileOrSignIn variant="toolbar" callbackURL="/dashboard" />
 
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="rounded-full md:hidden"
+                  className="inline-flex size-10 shrink-0 rounded-full lg:hidden"
                   aria-expanded={mobileOpen}
                   aria-controls="mobile-navigation"
                   type="button"
@@ -143,39 +118,95 @@ export function Navbar() {
                   ) : (
                     <Menu className="size-6" strokeWidth={2} />
                   )}
-                  <span className="sr-only">{mobileOpen ? "Close menu" : "Open menu"}</span>
+                  <span className="sr-only">{mobileOpen ? "Tutup menu" : "Buka menu"}</span>
                 </Button>
               </SheetTrigger>
               <SheetContent
                 id="mobile-navigation"
-                side="top"
+                side="right"
                 showCloseButton={false}
-                className="flex h-screen w-full flex-col pt-20"
+                className={cn(
+                  "gap-0 p-0",
+                  "flex h-full max-h-dvh w-[min(17.5rem,calc(100vw-1.5rem))] flex-col border-l border-border/80 bg-background shadow-xl",
+                  "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
+                )}
               >
-                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                <SheetDescription className="sr-only">
-                  Open the main navigation links and sign in action.
-                </SheetDescription>
-                <div className="flex flex-col items-center gap-8 text-center font-heading text-h5">
-                  {navLinks.map((link) => (
-                    <SheetClose asChild key={link.name}>
-                      <Link href={link.href} className="hover:text-brand-primary">
-                        {link.name}
-                      </Link>
-                    </SheetClose>
-                  ))}
-                  <SheetClose asChild>
-                    <Button asChild variant="outline" className="w-[200px] rounded-md">
-                      <Link href="/plans">Lihat paket</Link>
-                    </Button>
-                  </SheetClose>
-                  <GoogleSignInButton
-                    label="Sign In"
-                    callbackURL="/dashboard"
-                    onBeforeOAuth={() => setMobileOpen(false)}
-                    containerClassName="w-[200px]"
-                    className="h-11 w-full rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-                  />
+                <SheetHeader className="border-border space-y-1 border-b px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top,0px))] text-left">
+                  <SheetTitle className="font-heading text-xl font-semibold tracking-tight text-foreground">
+                    Menu
+                  </SheetTitle>
+                  <SheetDescription className="text-body-sm text-muted-foreground">
+                    Plans, tentang kami, testimoni, paket, dan akun.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="flex min-h-0 flex-1 flex-col">
+                  <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Mobile menu">
+                    <ul className="flex flex-col gap-1">
+                      <li>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMobileOpen(false);
+                            setSearchOpen(true);
+                          }}
+                          className={cn(
+                            "font-heading text-lg font-medium text-foreground",
+                            "flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left transition-colors",
+                            "hover:bg-muted/80 active:bg-muted",
+                            "focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                          )}
+                        >
+                          <Search className="size-5 shrink-0 opacity-70" aria-hidden />
+                          Cari di situs…
+                        </button>
+                      </li>
+                      {navLinks.map((link) => (
+                        <li key={link.href}>
+                          <SheetClose asChild>
+                            <Link
+                              href={link.href}
+                              className={cn(
+                                "font-heading text-lg font-medium text-foreground",
+                                "block rounded-xl px-4 py-3.5 transition-colors",
+                                "hover:bg-muted/80 active:bg-muted",
+                                "focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+                              )}
+                            >
+                              {link.name}
+                            </Link>
+                          </SheetClose>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-4 flex flex-col gap-2 px-1">
+                      <SheetClose asChild>
+                        <Link
+                          href="/sign-in"
+                          className="interactive rounded-xl px-4 py-3 text-center text-body-sm font-medium text-foreground underline decoration-[var(--zx-accent)] underline-offset-4"
+                        >
+                          Masuk
+                        </Link>
+                      </SheetClose>
+                      <SheetClose asChild>
+                        <Button
+                          asChild
+                          className={cn(
+                            "h-11 w-full rounded-md text-body-sm font-medium shadow-none",
+                            "bg-[#1a2744] text-white hover:bg-[#1a2744]/90",
+                          )}
+                        >
+                          <Link href="/plans">Lihat paket</Link>
+                        </Button>
+                      </SheetClose>
+                    </div>
+                  </nav>
+                  <div className="border-border flex w-full flex-col border-t px-5 py-4">
+                    <NavProfileOrSignIn
+                      variant="sheet"
+                      callbackURL="/dashboard"
+                      onNavigate={() => setMobileOpen(false)}
+                    />
+                  </div>
                 </div>
               </SheetContent>
             </Sheet>

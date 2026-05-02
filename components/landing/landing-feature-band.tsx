@@ -67,7 +67,7 @@ export function FeatureBandSearchMock({ query, cursorLabel }: { query: string; c
           </span>
           <span className="text-body-base font-medium text-background">
             {query}
-            <span className="ml-0.5 inline-block h-4 w-px animate-pulse bg-primary" aria-hidden />
+            <span className="ml-0.5 inline-block h-4 w-px motion-safe:animate-pulse bg-primary" aria-hidden />
           </span>
         </div>
       </div>

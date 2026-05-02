@@ -25,7 +25,7 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+      <div className="rounded-2xl border border-border/80 bg-card/85 p-6 shadow-sm backdrop-blur-sm">
         {material.kind === "article" && material.body ? (
           <div>
             {material.body.split(/\n\n+/).map((para, i) => (

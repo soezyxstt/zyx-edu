@@ -11,7 +11,8 @@ type SiteMainProps = {
  */
 export function SiteMain({ children }: SiteMainProps) {
   const { floatBlend } = useNavScroll();
-  const padRem = 3.5 + floatBlend * 1.5;
+  /* Offset ≈ tinggi nav; dijaga ramping agar fold hero tidak “melorot” terlalu jauh di bawah navbar. */
+  const padRem = 4.125 + floatBlend * 1.25;
 
   return (
     <main

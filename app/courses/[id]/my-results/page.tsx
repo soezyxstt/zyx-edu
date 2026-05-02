@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShellPage } from "@/components/shell-page";
+import { ChevronRight } from "lucide-react";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { courseListRowClass } from "@/components/course/course-surfaces";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { getCourseById, getSubmissionsForCourse } from "@/lib/student-course-fixtures";
@@ -34,19 +36,19 @@ export default async function CourseMyResultsPage({ params }: Props) {
   const submissions = getSubmissionsForCourse(id);
 
   return (
-    <ShellPage
+    <CoursePageShell
+      eyebrow="Riwayat"
       title="Hasil saya"
       description="Skor otomatis untuk kuis; esai tryout menampilkan Pending sampai pengajar memberi nilai."
     >
       <ul className="space-y-3">
         {submissions.map((s) => (
           <li key={s.id}>
-            <Link
-              href={`/courses/${id}/my-results/${s.id}`}
-              className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div>
-                <h2 className="font-heading text-h6 font-semibold text-foreground">{s.examTitle}</h2>
+            <Link href={`/courses/${id}/my-results/${s.id}`} className={courseListRowClass("items-center")}>
+              <div className="min-w-0 flex-1 text-left">
+                <h2 className="font-heading text-h6 font-semibold text-foreground group-hover:text-primary">
+                  {s.examTitle}
+                </h2>
                 <p className="mt-1 text-body-sm text-muted-foreground">
                   {s.examType === "quiz" ? "Kuis" : "Tryout"} ·{" "}
                   {new Date(s.submittedAt).toLocaleString("id-ID", {
@@ -57,22 +59,26 @@ export default async function CourseMyResultsPage({ params }: Props) {
                 <p className="mt-2 text-body-sm">
                   <span
                     className={cn(
-                      "rounded-full px-2 py-0.5 font-medium",
+                      "rounded-full px-2.5 py-0.5 text-body-sm font-medium ring-1 ring-border/60",
                       s.status === "pending_review"
-                        ? "bg-status-warning/15 text-status-warning"
-                        : "bg-muted text-muted-foreground",
+                        ? "bg-status-warning/12 text-status-warning"
+                        : "bg-muted/80 text-muted-foreground",
                     )}
                   >
                     {statusBadge(s.status)}
                   </span>
                 </p>
               </div>
-              <div className="text-right">
-                <p className="font-heading text-h5 font-bold text-foreground">
+              <div className="shrink-0 text-right">
+                <p className="font-heading text-h5 font-bold tabular-nums text-foreground">
                   {s.score != null ? `${s.score}%` : "Pending"}
                 </p>
                 <p className="text-body-sm text-muted-foreground">Tinjau jawaban</p>
               </div>
+              <ChevronRight
+                className="size-5 shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover:opacity-100"
+                aria-hidden
+              />
             </Link>
           </li>
         ))}
@@ -80,6 +86,6 @@ export default async function CourseMyResultsPage({ params }: Props) {
       {submissions.length === 0 ? (
         <p className="text-body-md text-muted-foreground">Belum ada pengumpulan untuk course ini.</p>
       ) : null}
-    </ShellPage>
+    </CoursePageShell>
   );
 }

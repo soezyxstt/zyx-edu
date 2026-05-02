@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MarketingPageHero } from "@/components/marketing-page-hero";
-import { MarketingBottomCta } from "@/components/marketing-bottom-cta";
 import { SectionContainer } from "@/components/layout/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
@@ -72,7 +71,7 @@ export default function AboutPage() {
               <p className="mt-4 text-body-md text-muted-foreground">
                 Kami tidak menggantikan perkuliahan — kami membantu kamu menavigasinya dengan lebih percaya diri.
               </p>
-              <Button asChild className="mt-8 h-11 w-full rounded-xl bg-primary text-primary-foreground sm:w-auto">
+              <Button asChild variant="marketingPrimary" size="marketing" className="mt-8 w-full sm:w-auto">
                 <Link href="/plans">
                   Lihat layanan &amp; paket
                   <ChevronRight className="size-4" data-icon="inline-end" />
@@ -80,17 +79,6 @@ export default function AboutPage() {
               </Button>
             </section>
           </div>
-      </SectionContainer>
-
-      <SectionContainer className="border-b border-border bg-background" tight>
-        <MarketingBottomCta
-          heading="Lanjut ke paket atau masuk akun"
-          description="Bandingkan tier layanan, atau sign in jika tim kami sudah mengaktifkan aksesmu."
-          primaryLabel="Lihat paket"
-          primaryHref="/plans"
-          secondaryLabel="Sign in"
-          secondaryHref="/sign-in"
-        />
       </SectionContainer>
     </div>
   );

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CheckCircle2, Circle } from "lucide-react";
-import { ShellPage } from "@/components/shell-page";
+import { CheckCircle2, ChevronRight, Circle } from "lucide-react";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { courseListRowClass } from "@/components/course/course-surfaces";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { getCourseById, getMaterialsForCourse } from "@/lib/student-course-fixtures";
@@ -33,17 +34,15 @@ export default async function CourseMaterialListPage({ params }: Props) {
   const materials = getMaterialsForCourse(id);
 
   return (
-    <ShellPage
+    <CoursePageShell
+      eyebrow="Belajar"
       title="Materi"
       description="Baca, tonton, atau unduh materi. Tandai selesai untuk melacak progres (preview lokal)."
     >
       <ul className="space-y-3">
         {materials.map((m) => (
           <li key={m.id}>
-            <Link
-              href={`/courses/${id}/material/${m.id}`}
-              className="flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30 hover:bg-muted/20"
-            >
+            <Link href={`/courses/${id}/material/${m.id}`} className={courseListRowClass("items-center")}>
               <span className="mt-0.5 text-primary" aria-hidden>
                 {m.completed ? (
                   <CheckCircle2 className="size-6" />
@@ -52,12 +51,14 @@ export default async function CourseMaterialListPage({ params }: Props) {
                 )}
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="font-heading text-h6 font-semibold text-foreground">{m.title}</h2>
+                <h2 className="font-heading text-h6 font-semibold text-foreground group-hover:text-primary">
+                  {m.title}
+                </h2>
                 <p className="mt-1 text-body-sm text-muted-foreground">
                   <span
                     className={cn(
                       "inline-flex rounded-full px-2 py-0.5 text-body-sm font-medium",
-                      "bg-muted text-muted-foreground",
+                      "bg-muted/80 text-muted-foreground ring-1 ring-border/60",
                     )}
                   >
                     {kindLabel[m.kind] ?? m.kind}
@@ -69,6 +70,10 @@ export default async function CourseMaterialListPage({ params }: Props) {
                   )}
                 </p>
               </div>
+              <ChevronRight
+                className="size-5 shrink-0 text-muted-foreground opacity-60 transition-opacity group-hover:opacity-100"
+                aria-hidden
+              />
             </Link>
           </li>
         ))}
@@ -76,6 +81,6 @@ export default async function CourseMaterialListPage({ params }: Props) {
       {materials.length === 0 ? (
         <p className="text-body-md text-muted-foreground">Belum ada materi untuk course ini.</p>
       ) : null}
-    </ShellPage>
+    </CoursePageShell>
   );
 }

@@ -15,6 +15,8 @@ export const roleEnum = pgEnum("role", ["admin", "teacher", "student"]);
 export const examTypeEnum = pgEnum("exam_type", ["quiz", "tryout"]);
 export const examStatusEnum = pgEnum("exam_status", ["draft", "published", "ended"]);
 export const submissionStatusEnum = pgEnum("submission_status", ["completed", "pending_review", "graded", "late"]);
+/** Admin drive — folder tree + file pointers to UploadThing. */
+export const driveKindEnum = pgEnum("drive_kind", ["folder", "file"]);
 
 /** Better Auth core model — export name must be `user` for the Drizzle adapter. */
 export const user = pgTable("user", {
@@ -110,6 +112,47 @@ export const accountRelations = relations(account, ({ one }) => ({
     fields: [account.userId],
     references: [user.id],
   }),
+}));
+
+export const driveItem = pgTable(
+  "drive_item",
+  {
+    id: text("id").primaryKey(),
+    /** `null` = My Drive root. FK ke `drive_item.id` ada di migration SQL (referensi Drizzle menghindari inference sirkuler). */
+    parentId: text("parent_id"),
+    kind: driveKindEnum("kind").notNull(),
+    name: text("name").notNull(),
+    /** UploadThing `key` — set only when `kind === "file"`. */
+    uploadthingKey: text("uploadthing_key"),
+    ufsUrl: text("ufs_url"),
+    mimeType: text("mime_type"),
+    sizeBytes: integer("size_bytes"),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("drive_item_parent_idx").on(table.parentId),
+    index("drive_item_created_by_idx").on(table.createdByUserId),
+  ],
+);
+
+export const driveItemRelations = relations(driveItem, ({ one, many }) => ({
+  creator: one(user, {
+    fields: [driveItem.createdByUserId],
+    references: [user.id],
+  }),
+  parent: one(driveItem, {
+    fields: [driveItem.parentId],
+    references: [driveItem.id],
+    relationName: "drive_item_tree",
+  }),
+  children: many(driveItem, { relationName: "drive_item_tree" }),
 }));
 
 // Courses Table

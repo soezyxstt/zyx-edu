@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShellPage } from "@/components/shell-page";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { courseCardClass } from "@/components/course/course-surfaces";
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
 import { listCourses } from "@/lib/student-course-fixtures";
@@ -14,36 +15,47 @@ export default function CoursesPage() {
   const courses = listCourses();
 
   return (
-    <ShellPage
-      title="Courses"
-      description="Preview katalog dengan data contoh. Setelah enrollment aktif, course yang kamu miliki akan disaring dari server."
+    <CoursePageShell
+      eyebrow="Katalog"
+      headingTier="primary"
+      title={
+        <>
+          Pilah course yang <span className="font-bold italic text-primary">cocok</span> untuk ritmemu
+        </>
+      }
+      description="Preview dengan data contoh. Setelah enrollment aktif, daftar akan disaring dari server sesuai paketmu."
     >
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {courses.map((c) => (
-          <div
+          <article
             key={c.id}
-            className="rounded-2xl border border-border bg-card p-6 text-left shadow-sm"
+            className={`${courseCardClass()} flex flex-col motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-0.5`}
           >
-            <p className="text-body-sm font-medium text-muted-foreground">{c.category}</p>
-            <h2 className="mt-1 font-heading text-h5 font-semibold text-foreground">{c.title}</h2>
-            <p className="mt-2 line-clamp-3 text-body-sm text-muted-foreground">{c.description}</p>
-            <Button asChild variant="outline" className="mt-4 rounded-full">
+            <span className="inline-flex w-fit rounded-full bg-primary/10 px-3 py-0.5 text-body-sm font-medium text-primary">
+              {c.category}
+            </span>
+            <h2 className="mt-3 font-heading text-h5 font-semibold text-foreground">{c.title}</h2>
+            <p className="mt-2 line-clamp-3 flex-1 text-body-sm text-muted-foreground">{c.description}</p>
+            <Button
+              asChild
+              className="interactive mt-5 w-full rounded-full motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] sm:w-auto"
+            >
               <Link href={`/courses/${c.id}`}>Buka course</Link>
             </Button>
-          </div>
+          </article>
         ))}
       </div>
-      <p className="mt-8 text-body-sm text-muted-foreground">
-        Need access?{" "}
-        <Link href="/plans" className="font-medium text-brand-primary underline-offset-4 hover:underline">
-          View plans
+      <p className="mt-10 text-body-sm text-muted-foreground">
+        Perlu akses?{" "}
+        <Link href="/plans" className="font-medium text-primary underline-offset-4 hover:underline">
+          Lihat paket
         </Link>{" "}
-        or{" "}
-        <Link href="/feedback" className="font-medium text-brand-primary underline-offset-4 hover:underline">
-          contact us
+        atau{" "}
+        <Link href="/feedback" className="font-medium text-primary underline-offset-4 hover:underline">
+          hubungi kami
         </Link>
         .
       </p>
-    </ShellPage>
+    </CoursePageShell>
   );
 }

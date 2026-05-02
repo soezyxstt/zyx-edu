@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Check, HelpCircle, X } from "lucide-react";
-import { ShellPage } from "@/components/shell-page";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { courseCardClass } from "@/components/course/course-surfaces";
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -19,9 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const course = getCourseById(id);
   const sub = getSubmissionListItem(id, submissionId);
   return {
-    title: pageTitle(
-      course && sub ? `${course.title} — Review: ${sub.examTitle}` : "Review",
-    ),
+    title: pageTitle(course && sub ? `${course.title} — Review: ${sub.examTitle}` : "Review"),
     description: "Tinjau jawaban dan catatan pengajar",
   };
 }
@@ -35,35 +34,37 @@ export default async function SubmissionReviewPage({ params }: Props) {
   if (!course || !listItem || !review) notFound();
 
   return (
-    <ShellPage
+    <CoursePageShell
+      eyebrow="Review"
       title="Mode tinjau"
       description={`${review.examTitle} — ${listItem.score != null ? `Skor: ${listItem.score}%` : "Pending penilaian esai"}`}
     >
       <div className="mb-8">
-        <Button asChild variant="outline" className="rounded-full">
+        <Button
+          asChild
+          variant="outline"
+          className="interactive rounded-full motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
+        >
           <Link href={`/courses/${id}/my-results`}>← Kembali ke hasil</Link>
         </Button>
       </div>
-      <ol className="space-y-6">
+      <ol className="space-y-5">
         {review.items.map((item, idx) => (
-          <li
-            key={item.questionId}
-            className="rounded-2xl border border-border bg-card p-6 shadow-sm"
-          >
+          <li key={item.questionId} className={courseCardClass()}>
             <div className="flex flex-wrap items-start justify-between gap-2">
               <h2 className="font-heading text-h6 font-semibold text-foreground">
                 <span className="text-muted-foreground">{idx + 1}.</span> {item.prompt}
               </h2>
               {item.correct === true ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-status-success/15 px-2 py-0.5 text-body-sm font-medium text-status-success">
+                <span className="inline-flex items-center gap-1 rounded-full bg-status-success/12 px-2.5 py-0.5 text-body-sm font-medium text-status-success ring-1 ring-status-success/20">
                   <Check className="size-4" aria-hidden /> Benar
                 </span>
               ) : item.correct === false ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-status-error/15 px-2 py-0.5 text-body-sm font-medium text-status-error">
+                <span className="inline-flex items-center gap-1 rounded-full bg-status-error/12 px-2.5 py-0.5 text-body-sm font-medium text-status-error ring-1 ring-status-error/20">
                   <X className="size-4" aria-hidden /> Salah
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-body-sm font-medium text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-body-sm font-medium text-muted-foreground ring-1 ring-border/60">
                   <HelpCircle className="size-4" aria-hidden /> Menunggu dinilai
                 </span>
               )}
@@ -82,7 +83,7 @@ export default async function SubmissionReviewPage({ params }: Props) {
               {item.teacherNote ? (
                 <p
                   className={cn(
-                    "rounded-xl border border-border bg-muted/40 p-4 text-body-sm",
+                    "rounded-xl border border-border/80 bg-muted/35 p-4 text-body-sm backdrop-blur-sm",
                   )}
                 >
                   <span className="font-semibold text-foreground">Catatan pengajar: </span>
@@ -97,6 +98,6 @@ export default async function SubmissionReviewPage({ params }: Props) {
           </li>
         ))}
       </ol>
-    </ShellPage>
+    </CoursePageShell>
   );
 }

@@ -1,22 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useState } from "react";
 import { CheckCircle2, CircleHelp, Code2, Languages, SlidersHorizontal, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SectionContainer } from "@/components/layout/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DesmosGraphingEmbed } from "@/components/landing/desmos-graphing-embed";
+import { VolumeOfRevolutionFallback } from "@/components/landing/volume-of-revolution-canvas";
 
-type FunctionType = "quadratic" | "sine" | "absolute";
+const VolumeOfRevolutionCanvas = dynamic(
+  () =>
+    import("@/components/landing/volume-of-revolution-canvas").then((mod) => ({
+      default: mod.VolumeOfRevolutionCanvas,
+    })),
+  { ssr: false, loading: VolumeOfRevolutionFallback }
+);
+
+type FunctionType = "revolution" | "quadratic" | "sine";
 type Domain = "math" | "coding" | "language";
-
-const graphWidth = 560;
-const graphHeight = 280;
-const xMin = -10;
-const xMax = 10;
-const yMin = -8;
-const yMax = 8;
 
 const quickQuestions: Record<Domain, Array<{ prompt: string; options: string[]; answer: string }>> = {
   math: [
@@ -38,34 +42,34 @@ const quickQuestions: Record<Domain, Array<{ prompt: string; options: string[]; 
   ],
   coding: [
     {
-      prompt: "Manakah struktur data terbaik untuk lookup cepat?",
+      prompt: "Manakah struktur data yang paling cocok untuk lookup cepat (rata-rata)?",
       options: ["Array", "Hash Map", "Linked List", "Queue"],
       answer: "Hash Map",
     },
     {
-      prompt: "Output JavaScript: typeof null adalah ...",
+      prompt: "Pada JavaScript, hasil dari typeof null adalah …",
       options: ["null", "undefined", "object", "boolean"],
       answer: "object",
     },
     {
-      prompt: "Big-O untuk binary search pada data terurut adalah ...",
+      prompt: "Kompleksitas waktu worst-case untuk pencarian biner pada array terurut adalah …",
       options: ["O(n)", "O(log n)", "O(n log n)", "O(1)"],
       answer: "O(log n)",
     },
   ],
   language: [
     {
-      prompt: "Pilih kalimat paling natural:",
+      prompt: "(Bahasa Inggris) Pilih kalimat yang paling natural:",
       options: ["She go to campus daily", "She goes to campus daily", "She going campus daily", "She gone campus daily"],
       answer: "She goes to campus daily",
     },
     {
-      prompt: "Sinonim terdekat dari 'brief' adalah ...",
+      prompt: "(Bahasa Inggris) Sinonim terdekat dari kata \"brief\" adalah …",
       options: ["long", "short", "late", "empty"],
       answer: "short",
     },
     {
-      prompt: "Kalimat aktif dari 'The report was written by Ana' adalah ...",
+      prompt: "(Bahasa Inggris) Bentuk aktif yang paling tepat untuk \"The report was written by Ana\" adalah …",
       options: ["Ana written the report", "Ana writes report", "Ana wrote the report", "The report wrote Ana"],
       answer: "Ana wrote the report",
     },
@@ -74,19 +78,19 @@ const quickQuestions: Record<Domain, Array<{ prompt: string; options: string[]; 
 
 const codingScenarios = [
   {
-    title: "Array mapping",
+    title: "Pemetaan array",
     snippet: "const nums = [1, 2, 3];\nconsole.log(nums.map((n) => n * 2));",
     choices: ["[2, 4, 6]", "[1, 2, 3, 2, 4, 6]", "undefined"],
     answer: "[2, 4, 6]",
   },
   {
-    title: "Object reference",
+    title: "Referensi objek",
     snippet: "const a = { x: 1 };\nconst b = a;\nb.x = 4;\nconsole.log(a.x);",
     choices: ["1", "4", "undefined"],
     answer: "4",
   },
   {
-    title: "Async order",
+    title: "Urutan async",
     snippet: "console.log('A');\nsetTimeout(() => console.log('B'), 0);\nconsole.log('C');",
     choices: ["A B C", "A C B", "B A C"],
     answer: "A C B",
@@ -95,7 +99,7 @@ const codingScenarios = [
 
 const languageScenarios = [
   {
-    prompt: "Fix the sentence:",
+    prompt: "Betulkan kalimat:",
     sentence: "He don't has enough time for finish the task.",
     choices: [
       "He doesn't have enough time to finish the task.",
@@ -105,8 +109,8 @@ const languageScenarios = [
     answer: "He doesn't have enough time to finish the task.",
   },
   {
-    prompt: "Choose the clearest email line:",
-    sentence: "Context: asking lecturer for an extension.",
+    prompt: "Pilih kalimat email paling sopan dan jelas:",
+    sentence: "Konteks: meminta tambahan waktu tugas kepada dosen.",
     choices: [
       "Can you maybe move deadline if possible?",
       "Could I request a two-day extension for the assignment due tomorrow?",
@@ -115,8 +119,8 @@ const languageScenarios = [
     answer: "Could I request a two-day extension for the assignment due tomorrow?",
   },
   {
-    prompt: "Pick the best paraphrase:",
-    sentence: "Original: The app frequently crashes when users upload large files.",
+    prompt: "Pilih parafrasa terbaik:",
+    sentence: "Asli (EN): The app frequently crashes when users upload large files.",
     choices: [
       "The application often fails during large-file uploads.",
       "Users like uploading large files in the app.",
@@ -126,43 +130,9 @@ const languageScenarios = [
   },
 ] as const;
 
-function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function mapX(x: number) {
-  return ((x - xMin) / (xMax - xMin)) * graphWidth;
-}
-
-function mapY(y: number) {
-  return ((yMax - y) / (yMax - yMin)) * graphHeight;
-}
-
-function buildPath(type: FunctionType, a: number, b: number, c: number) {
-  const steps = 220;
-  let path = "";
-
-  for (let i = 0; i <= steps; i += 1) {
-    const x = xMin + (i / steps) * (xMax - xMin);
-    let y = 0;
-
-    if (type === "quadratic") y = a * x * x + b * x + c;
-    if (type === "sine") y = a * Math.sin(b * x) + c;
-    if (type === "absolute") y = a * Math.abs(x - b) + c;
-
-    y = clamp(y, yMin - 2, yMax + 2);
-
-    const px = mapX(x);
-    const py = mapY(y);
-    path += i === 0 ? `M ${px} ${py}` : ` L ${px} ${py}`;
-  }
-
-  return path;
-}
-
 export function LandingInteractiveLab() {
   const [domain, setDomain] = useState<Domain>("math");
-  const [functionType, setFunctionType] = useState<FunctionType>("sine");
+  const [functionType, setFunctionType] = useState<FunctionType>("revolution");
   const [a, setA] = useState(1);
   const [b, setB] = useState(1);
   const [c, setC] = useState(0);
@@ -174,7 +144,6 @@ export function LandingInteractiveLab() {
   const [activeQuestion, setActiveQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
 
-  const graphPath = useMemo(() => buildPath(functionType, a, b, c), [functionType, a, b, c]);
   const domainQuestions = quickQuestions[domain];
   const currentQuestion = domainQuestions[activeQuestion];
   const isCorrect = selectedAnswer === currentQuestion.answer;
@@ -184,9 +153,17 @@ export function LandingInteractiveLab() {
   const languageCorrect = languageAnswer === languageScenario.answer;
 
   return (
-    <SectionContainer className="bg-muted border-y border-border/80" aria-labelledby="interactive-lab-heading">
+    <SectionContainer
+      density="compact"
+      className="border-y border-border/80 bg-[var(--color-surface)]"
+      contentClassName="min-w-0 max-w-full overflow-x-clip"
+      aria-labelledby="interactive-lab-heading"
+    >
         <div className="mx-auto mb-10 max-w-2xl text-center md:mb-14">
-          <Badge variant="secondary" className="border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium tracking-widest uppercase text-primary">
+          <Badge
+            variant="secondary"
+            className="border border-[var(--zx-accent)]/35 bg-[var(--zx-accent)]/10 px-3 py-1 text-xs font-medium tracking-widest uppercase text-[var(--zx-accent)]"
+          >
             Interactive Playground
           </Badge>
           <SectionHeading id="interactive-lab-heading" tier="secondary" className="mt-2 text-foreground">
@@ -208,60 +185,84 @@ export function LandingInteractiveLab() {
             setCodingAnswer(null);
             setLanguageAnswer(null);
           }}
-          className="mb-6"
+          className="relative z-10 mb-8"
         >
-          <TabsList className="grid w-full grid-cols-1 gap-3 bg-transparent p-0 md:grid-cols-3">
-            <TabsTrigger value="math" className="border border-border bg-card data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-              <SlidersHorizontal className="size-4" />
-              Math & Science
+          <TabsList className="grid h-auto min-h-0 w-full grid-cols-1 gap-3 bg-transparent p-0 md:grid-cols-3">
+            <TabsTrigger
+              value="math"
+              className="h-auto min-h-10 w-full min-w-0 flex-wrap gap-2 whitespace-normal border border-border bg-card py-2.5 outline-none ring-offset-background data-[state=active]:border-[var(--zx-accent)] data-[state=active]:bg-[var(--zx-accent)]/10 data-[state=active]:text-foreground data-[state=active]:ring-2 data-[state=active]:ring-[var(--zx-accent)]"
+            >
+              <SlidersHorizontal className="size-4 shrink-0" />
+              Matematika &amp; sains
             </TabsTrigger>
-            <TabsTrigger value="coding" className="border border-border bg-card data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-              <Code2 className="size-4" />
-              Coding Logic
+            <TabsTrigger
+              value="coding"
+              className="h-auto min-h-10 w-full min-w-0 flex-wrap gap-2 whitespace-normal border border-border bg-card py-2.5 outline-none ring-offset-background data-[state=active]:border-[var(--zx-accent)] data-[state=active]:bg-[var(--zx-accent)]/10 data-[state=active]:text-foreground data-[state=active]:ring-2 data-[state=active]:ring-[var(--zx-accent)]"
+            >
+              <Code2 className="size-4 shrink-0" />
+              Logika pemrograman
             </TabsTrigger>
-            <TabsTrigger value="language" className="border border-border bg-card data-[state=active]:bg-primary/15 data-[state=active]:text-primary">
-              <Languages className="size-4" />
-              Language Skills
+            <TabsTrigger
+              value="language"
+              className="h-auto min-h-10 w-full min-w-0 flex-wrap gap-2 whitespace-normal border border-border bg-card py-2.5 outline-none ring-offset-background data-[state=active]:border-[var(--zx-accent)] data-[state=active]:bg-[var(--zx-accent)]/10 data-[state=active]:text-foreground data-[state=active]:ring-2 data-[state=active]:ring-[var(--zx-accent)]"
+            >
+              <Languages className="size-4 shrink-0" />
+              Bahasa Inggris
             </TabsTrigger>
           </TabsList>
-          <TabsContent value={domain} className="mt-6" />
         </Tabs>
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <article className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
-            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-body-sm font-semibold text-primary">
-                <SlidersHorizontal className="size-4" />
-                {domain === "math" ? "Function Explorer" : domain === "coding" ? "Logic Playground" : "Sentence Builder"}
+        <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+          <article className="min-w-0 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+            <div className="mb-5 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+              <div className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-body-sm font-semibold text-primary">
+                {domain === "math" ? (
+                  <SlidersHorizontal className="size-4 shrink-0" />
+                ) : domain === "coding" ? (
+                  <Code2 className="size-4 shrink-0" />
+                ) : (
+                  <Languages className="size-4 shrink-0" />
+                )}
+                <span className="min-w-0 wrap-break-word">
+                  {domain === "math"
+                    ? "Eksplor fungsi"
+                    : domain === "coding"
+                      ? "Cuplikan kode interaktif"
+                      : "Latihan struktur kalimat"}
+                </span>
               </div>
-              <div className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-body-sm text-muted-foreground">
-                <Sparkles className="size-3.5" />
-                Live update
+              <div className="inline-flex w-fit max-w-full shrink-0 items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-body-sm text-muted-foreground">
+                <Sparkles className="size-3.5 shrink-0" aria-hidden />
+                Pembaruan langsung
               </div>
             </div>
 
             {domain === "math" ? (
               <>
-                <div className="mb-5 grid gap-3 sm:grid-cols-3">
-                  {(["quadratic", "sine", "absolute"] as const).map((type) => (
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  {(["revolution", "quadratic", "sine"] as const).map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => setFunctionType(type)}
                       className={cn(
-                        "rounded-xl border px-3 py-2 text-body-sm font-semibold transition-colors",
+                        "min-w-0 rounded-xl border px-3 py-2 text-center text-body-sm font-semibold whitespace-normal transition-colors sm:text-left",
                         functionType === type
-                          ? "border-primary bg-primary text-primary-foreground"
+                          ? "border-[var(--zx-accent)] bg-[var(--zx-accent)]/15 text-foreground ring-2 ring-[var(--zx-accent)] ring-offset-2 ring-offset-background"
                           : "border-border bg-background text-foreground hover:bg-muted"
                       )}
                     >
-                      {type === "quadratic" ? "Quadratic" : type === "sine" ? "Sine Wave" : "Absolute"}
+                      {type === "revolution"
+                        ? "Volume putar"
+                        : type === "quadratic"
+                          ? "Kuadratik"
+                          : "Gelombang sinus"}
                     </button>
                   ))}
                 </div>
 
-                <div className="mb-6 space-y-3">
-                  <label className="block text-body-sm font-medium text-foreground">
+                <div className="mb-6 min-w-0 space-y-3">
+                  <label className="block min-w-0 max-w-full text-body-sm font-medium text-foreground">
                     a ({a.toFixed(1)})
                     <input
                       type="range"
@@ -270,10 +271,10 @@ export function LandingInteractiveLab() {
                       step={0.1}
                       value={a}
                       onChange={(e) => setA(Number(e.target.value))}
-                      className="mt-1.5 w-full accent-primary"
+                      className="mt-1.5 block w-full max-w-full min-w-0 accent-[var(--zx-accent)]"
                     />
                   </label>
-                  <label className="block text-body-sm font-medium text-foreground">
+                  <label className="block min-w-0 max-w-full text-body-sm font-medium text-foreground">
                     b ({b.toFixed(1)})
                     <input
                       type="range"
@@ -282,10 +283,10 @@ export function LandingInteractiveLab() {
                       step={0.1}
                       value={b}
                       onChange={(e) => setB(Number(e.target.value))}
-                      className="mt-1.5 w-full accent-primary"
+                      className="mt-1.5 block w-full max-w-full min-w-0 accent-[var(--zx-accent)]"
                     />
                   </label>
-                  <label className="block text-body-sm font-medium text-foreground">
+                  <label className="block min-w-0 max-w-full text-body-sm font-medium text-foreground">
                     c ({c.toFixed(1)})
                     <input
                       type="range"
@@ -294,28 +295,17 @@ export function LandingInteractiveLab() {
                       step={0.1}
                       value={c}
                       onChange={(e) => setC(Number(e.target.value))}
-                      className="mt-1.5 w-full accent-primary"
+                      className="mt-1.5 block w-full max-w-full min-w-0 accent-[var(--zx-accent)]"
                     />
                   </label>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border border-border bg-background">
-                  <svg
-                    viewBox={`0 0 ${graphWidth} ${graphHeight}`}
-                    className="h-[240px] w-full md:h-[280px]"
-                    role="img"
-                    aria-label="Function graph preview"
-                  >
-                    <defs>
-                      <pattern id="interactive-grid" width="28" height="28" patternUnits="userSpaceOnUse">
-                        <path d="M 28 0 L 0 0 0 28" fill="none" className="stroke-border/70" strokeWidth="1" />
-                      </pattern>
-                    </defs>
-                    <rect x="0" y="0" width={graphWidth} height={graphHeight} fill="url(#interactive-grid)" />
-                    <line x1={0} y1={mapY(0)} x2={graphWidth} y2={mapY(0)} className="stroke-muted-foreground/50" strokeWidth="1.2" />
-                    <line x1={mapX(0)} y1={0} x2={mapX(0)} y2={graphHeight} className="stroke-muted-foreground/50" strokeWidth="1.2" />
-                    <path d={graphPath} className="fill-none stroke-primary" strokeWidth="3.2" strokeLinecap="round" />
-                  </svg>
+                <div className="max-w-full min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                  {functionType === "revolution" ? (
+                    <VolumeOfRevolutionCanvas a={a} b={b} c={c} />
+                  ) : (
+                    <DesmosGraphingEmbed mode={functionType} a={a} b={b} c={c} />
+                  )}
                 </div>
               </>
             ) : (
@@ -334,7 +324,7 @@ export function LandingInteractiveLab() {
                           className={cn(
                             "rounded-lg border px-3 py-1.5 text-body-sm transition-colors",
                             idx === codingScenarioIndex
-                              ? "border-primary bg-primary text-primary-foreground"
+                              ? "border-[var(--zx-accent)] bg-[var(--zx-accent)]/12 text-foreground ring-2 ring-[var(--zx-accent)]/35"
                               : "border-border bg-background text-muted-foreground hover:bg-muted"
                           )}
                         >
@@ -347,7 +337,7 @@ export function LandingInteractiveLab() {
                       <pre className="mt-2 overflow-x-auto rounded-lg bg-black-2 p-3 text-body-sm text-white">
                         {codingScenario.snippet}
                       </pre>
-                      <p className="mt-3 text-body-sm text-muted-foreground">What is the output?</p>
+                      <p className="mt-3 text-body-sm text-muted-foreground">Apa keluaran program tersebut?</p>
                       <div className="mt-2 space-y-2">
                         {codingScenario.choices.map((choice) => (
                           <button
@@ -370,7 +360,7 @@ export function LandingInteractiveLab() {
                       <p className={cn("mt-3 text-body-sm font-medium", codingAnswer ? (codingCorrect ? "text-status-success" : "text-status-error") : "text-muted-foreground")}>
                         {codingAnswer
                           ? codingCorrect
-                            ? "Exactly. Kamu baca logic-nya dengan benar."
+                            ? "Benar — alur pembacaan kamu tepat."
                             : `Belum tepat. Output yang benar: ${codingScenario.answer}.`
                           : "Pilih jawaban untuk cek hasil."}
                       </p>
@@ -390,7 +380,7 @@ export function LandingInteractiveLab() {
                           className={cn(
                             "rounded-lg border px-3 py-1.5 text-body-sm transition-colors",
                             idx === languageScenarioIndex
-                              ? "border-primary bg-primary text-primary-foreground"
+                              ? "border-[var(--zx-accent)] bg-[var(--zx-accent)]/12 text-foreground ring-2 ring-[var(--zx-accent)]/35"
                               : "border-border bg-background text-muted-foreground hover:bg-muted"
                           )}
                         >
@@ -423,9 +413,9 @@ export function LandingInteractiveLab() {
                       <p className={cn("mt-3 text-body-sm font-medium", languageAnswer ? (languageCorrect ? "text-status-success" : "text-status-error") : "text-muted-foreground")}>
                         {languageAnswer
                           ? languageCorrect
-                            ? "Great choice. Kalimatnya paling jelas dan natural."
-                            : "Coba lagi. Fokus ke grammar yang tepat dan wording yang lebih natural."
-                          : "Pilih opsi untuk lihat feedback."}
+                            ? "Pilihan tepat — kalimat ini paling jelas dan sopan untuk konteksnya."
+                            : "Coba lagi — perhatikan tata bahasa dan pilihan kata yang lebih natural."
+                          : "Pilih opsi untuk melihat umpan balik."}
                       </p>
                     </div>
                   </>
@@ -434,10 +424,14 @@ export function LandingInteractiveLab() {
             )}
           </article>
 
-          <article className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-secondary/15 px-3 py-1 text-body-sm font-semibold text-brand-secondary">
-              <CircleHelp className="size-4" />
-              {domain === "math" ? "Math Challenge" : domain === "coding" ? "Coding Challenge" : "Language Challenge"}
+          <article className="min-w-0 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[var(--zx-accent)]/12 px-3 py-1 text-body-sm font-semibold text-[var(--zx-accent)]">
+              <CircleHelp className="size-4 shrink-0" aria-hidden />
+              {domain === "math"
+                ? "Tantangan cepat matematika"
+                : domain === "coding"
+                  ? "Teka-teki logika kode"
+                  : "Quiz bahasa Inggris"}
             </div>
 
             <div className="mb-5 flex gap-2">
@@ -452,7 +446,7 @@ export function LandingInteractiveLab() {
                   className={cn(
                     "h-8 w-8 rounded-full border text-body-sm font-semibold transition-colors",
                     idx === activeQuestion
-                      ? "border-primary bg-primary text-primary-foreground"
+                      ? "border-[var(--zx-accent)] bg-[var(--zx-accent)] text-white"
                       : "border-border bg-background text-muted-foreground hover:bg-muted"
                   )}
                   aria-label={`Pertanyaan ${idx + 1}`}

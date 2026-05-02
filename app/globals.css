@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "@uploadthing/react/styles.css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
@@ -54,6 +55,10 @@
   /* Brand */
   --color-brand-primary: oklch(0.3653 0.0829 266.28);
   --color-brand-secondary: oklch(0.5956 0.1622 38.5);
+  /** ZX merah-oranye untuk CTA underline, langkah aktif, fokus (terpisah dari `--accent` Shadcn). */
+  --color-zx-accent: var(--zx-accent);
+  /** Latar alternatif landing (abu lembut). */
+  --color-surface: var(--surface);
 
   /* Tertiary */
   --color-tertiary-1: oklch(0.7306 0.1243 176.08);
@@ -123,6 +128,11 @@
 }
 
 :root {
+  /* Marketing / aksen merek ZX (align `--color-brand-secondary`) */
+  --zx-accent: oklch(0.5956 0.1622 38.5);
+  /** Alias section surface — sama dengan muted default */
+  --surface: oklch(0.9067 0 0);
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.3211 0 0);
   --card: oklch(1 0 0);
@@ -170,6 +180,9 @@
 }
 
 .dark {
+  --zx-accent: oklch(0.6956 0.1522 38.5);
+  --surface: oklch(0.4276 0 0);
+
   --background: oklch(0.2308 0 0);
   --foreground: oklch(1 0 0);
   --card: oklch(0.2768 0 0);
@@ -217,6 +230,17 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+
+  [role="tab"]:focus-visible:not([data-slot="button"]),
+  [data-slot="tabs-trigger"]:focus-visible,
+  a:focus-visible:not([data-slot]),
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--zx-accent);
+    outline-offset: 2px;
   }
 
   html {
@@ -413,7 +437,7 @@
   }
 
   .marketing-container {
-    @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
+    @apply container mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
   /* Landing motion (respect reduced motion via Tailwind motion-safe in components) */
@@ -468,6 +492,9 @@
     .landing-drift,
     .landing-stagger > * {
       animation: none !important;
+      /* Keyframe used both — without animation some engines leave opacity/transform from the animation start state. */
+      opacity: 1 !important;
+      transform: none !important;
     }
   }
 }

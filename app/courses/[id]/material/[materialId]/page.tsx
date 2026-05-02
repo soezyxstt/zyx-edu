@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ShellPage } from "@/components/shell-page";
+import { CoursePageShell } from "@/components/course/course-page-shell";
 import { MaterialViewer } from "@/components/course/material-viewer";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getMaterial } from "@/lib/student-course-fixtures";
@@ -12,9 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const course = getCourseById(id);
   const material = getMaterial(id, materialId);
   return {
-    title: pageTitle(
-      course && material ? `${course.title} — ${material.title}` : "Materi",
-    ),
+    title: pageTitle(course && material ? `${course.title} — ${material.title}` : "Materi"),
     description: material?.title ?? "Materi course",
   };
 }
@@ -26,8 +24,8 @@ export default async function CourseMaterialDetailPage({ params }: Props) {
   if (!course || !material) notFound();
 
   return (
-    <ShellPage title={material.title} description={`${course.title} · materi pembelajaran`}>
+    <CoursePageShell title={material.title} description={`${course.title} · materi pembelajaran`}>
       <MaterialViewer material={material} />
-    </ShellPage>
+    </CoursePageShell>
   );
 }

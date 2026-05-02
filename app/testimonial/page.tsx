@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { MarketingPageHero } from "@/components/marketing-page-hero";
-import { MarketingBottomCta } from "@/components/marketing-bottom-cta";
 import { SectionContainer } from "@/components/layout/section-container";
 import { pageTitle } from "@/lib/site";
 
@@ -129,17 +128,6 @@ export default function TestimonialPage() {
             </article>
           ))}
           </div>
-      </SectionContainer>
-
-      <SectionContainer className="border-b border-border bg-background" tight>
-        <MarketingBottomCta
-          heading="Ingin bergabung atau ada pertanyaan tentang layanan?"
-          description="Bandingkan paket yang tersedia atau kembali ke beranda untuk melihat keseluruhan alur belajar."
-          primaryLabel="Lihat paket"
-          primaryHref="/plans"
-          secondaryLabel="Kembali ke beranda"
-          secondaryHref="/"
-        />
       </SectionContainer>
     </div>
   );

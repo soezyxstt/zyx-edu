@@ -18,25 +18,32 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(1),
     GOOGLE_CLIENT_ID: z.string(),
     GOOGLE_CLIENT_SECRET: z.string(),
-    TIGRIS_AWS_ACCESS_KEY_ID: z.string(),
-    TIGRIS_AWS_SECRET_ACCESS_KEY: z.string(),
-    UPSTASH_REDIS_REST_URL: z.string().url(),
-    UPSTASH_REDIS_REST_TOKEN: z.string(),
+    /** From https://uploadthing.com/dashboard — replaces direct S3/Tigris uploads. */
+    UPLOADTHING_TOKEN: z.string().min(1),
+    /** Nomor WhatsApp admin (digits; `+`/spaces allowed). Contoh: `6281234567890`. */
+    WHATSAPP_ADMIN_NUMBER: z.string().optional(),
   },
   client: {
     /** Absolute origin for better-auth client (e.g. https://app.example.com). Falls back for local dev. */
     NEXT_PUBLIC_APP_URL: publicAppUrlSchema,
+    /** Desmos API key from https://www.desmos.com/my-api — embeds the graphing calculator on the landing lab when set. */
+    NEXT_PUBLIC_DESMOS_API_KEY: z.string().optional(),
+    /**
+     * Nomor WhatsApp publik (fallback jika `WHATSAPP_ADMIN_NUMBER` tidak diset di server).
+     * Hanya angka; `+`/spasi diperbolehkan.
+     */
+    NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
   },
   runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_DESMOS_API_KEY: process.env.NEXT_PUBLIC_DESMOS_API_KEY,
+    NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
     DATABASE_URL: process.env.DATABASE_URL,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
-    TIGRIS_AWS_ACCESS_KEY_ID: process.env.TIGRIS_AWS_ACCESS_KEY_ID,
-    TIGRIS_AWS_SECRET_ACCESS_KEY: process.env.TIGRIS_AWS_SECRET_ACCESS_KEY,
-    UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
-    UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+    UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
+    WHATSAPP_ADMIN_NUMBER: process.env.WHATSAPP_ADMIN_NUMBER,
   },
 });

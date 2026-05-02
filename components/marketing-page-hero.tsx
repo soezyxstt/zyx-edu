@@ -24,7 +24,11 @@ export function MarketingPageHero({
   const headingId = `${sectionId}-heading`;
 
   return (
-    <SectionContainer className="relative overflow-hidden border-b border-border bg-background" aria-labelledby={headingId}>
+    <SectionContainer
+      density="hero"
+      className="relative overflow-hidden border-b border-border bg-background"
+      aria-labelledby={headingId}
+    >
       <MarketingHeroLoops id={sectionId} />
       <AnimatedOrnamentCanvas
         className="opacity-45"
@@ -40,7 +44,7 @@ export function MarketingPageHero({
       <div className="relative z-10">
         <div className="max-w-3xl space-y-4">
           {eyebrow ? (
-            <p className="text-body-sm font-semibold uppercase tracking-widest text-muted-foreground">{eyebrow}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">{eyebrow}</p>
           ) : null}
           <SectionHeading as="h1" tier="hero" id={headingId} className="text-foreground">
             {title}

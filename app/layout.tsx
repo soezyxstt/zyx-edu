@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { Inter, Lexend } from "next/font/google";
+import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
+import { extractRouterConfig } from "uploadthing/server";
 import "./globals.css";
-import { Navbar } from "@/components/navbar";
-import { NavScrollProvider } from "@/components/nav-scroll-provider";
-import { SiteMain } from "@/components/site-main";
-import { Footer } from "@/components/footer";
+import { uploadRouter } from "@/app/api/uploadthing/core";
+import { AppChrome } from "@/components/app-chrome";
 import { AppToaster } from "@/components/app-toaster";
+import { DesmosCalculatorScript } from "@/components/desmos-calculator-script";
 import { pageTitle, siteDescription } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -29,20 +30,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${lexend.variable}`}>
+    <html lang="id" suppressHydrationWarning className={`${inter.variable} ${lexend.variable}`}>
       <body className="font-sans min-h-screen flex flex-col">
+        <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
+        <DesmosCalculatorScript />
         <a
           href="#main-content"
           className="bg-background text-foreground focus:ring-ring sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:rounded-md focus:px-4 focus:py-2 focus:ring-2"
         >
-          Skip to content
+          Langsung ke isi utama
         </a>
-        <NavScrollProvider>
-          <Navbar />
-          <SiteMain>{children}</SiteMain>
-          <Footer />
-          <AppToaster />
-        </NavScrollProvider>
+        <AppChrome>{children}</AppChrome>
+        <AppToaster />
       </body>
     </html>
   );

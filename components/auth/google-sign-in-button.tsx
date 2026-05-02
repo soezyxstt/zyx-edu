@@ -19,19 +19,19 @@ type GoogleSignInButtonProps = {
 
 function mapSignInError(err: unknown): string {
   if (err instanceof TypeError) {
-    return "Network error. Check your connection and try again.";
+    return "Gagal jaringan. Periksa koneksi Anda lalu coba lagi.";
   }
   if (err instanceof Error) {
     const m = err.message.toLowerCase();
     if (m.includes("fetch") || m.includes("network") || m.includes("failed to fetch")) {
-      return "Network error. Check your connection and try again.";
+      return "Gagal jaringan. Periksa koneksi Anda lalu coba lagi.";
     }
   }
-  return "Something went wrong starting Google sign-in. Please try again.";
+  return "Terjadi kesalahan saat membuka masuk dengan Google. Coba lagi sebentar lagi.";
 }
 
 export function GoogleSignInButton({
-  label = "Continue with Google",
+  label = "Lanjutkan dengan Google",
   callbackURL = "/dashboard",
   className,
   containerClassName,
@@ -71,7 +71,7 @@ export function GoogleSignInButton({
         {loading ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden />
-            <span>Connecting…</span>
+            <span>Menghubungkan…</span>
           </>
         ) : (
           label

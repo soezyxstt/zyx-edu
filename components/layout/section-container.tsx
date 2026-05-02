@@ -1,28 +1,34 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-type SectionContainerProps<T extends React.ElementType = "section"> = {
-  as?: T;
+type SectionContainerProps = React.ComponentPropsWithoutRef<"section"> & {
   children: React.ReactNode;
-  className?: string;
   contentClassName?: string;
   tight?: boolean;
+  /** Mengurangi padding vertikal atas (alur beranda di bawah nav tetap). */
+  density?: "default" | "hero" | "compact";
   stepLabel?: string;
-} & Omit<React.ComponentPropsWithoutRef<T>, "as" | "children" | "className">;
+};
 
-export function SectionContainer<T extends React.ElementType = "section">({
-  as,
+export function SectionContainer({
   children,
   className,
   contentClassName,
   tight = false,
+  density = "default",
   stepLabel,
   ...props
-}: SectionContainerProps<T>) {
-  const Comp = as ?? "section";
+}: SectionContainerProps) {
+  const verticalPadding = tight
+    ? "py-12 md:py-16"
+    : density === "hero"
+      ? "pb-16 pt-5 md:pb-22 md:pt-8 lg:pb-24"
+      : density === "compact"
+        ? "py-14 md:py-18"
+        : "py-20 md:py-28";
 
   return (
-    <Comp className={cn("relative", tight ? "py-12 md:py-16" : "py-20 md:py-28", className)} {...props}>
+    <section className={cn("relative", verticalPadding, className)} {...props}>
       {stepLabel ? (
         <span
           aria-hidden
@@ -34,6 +40,6 @@ export function SectionContainer<T extends React.ElementType = "section">({
       <div className={cn("container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8", contentClassName)}>
         {children}
       </div>
-    </Comp>
+    </section>
   );
 }

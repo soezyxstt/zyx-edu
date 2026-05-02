@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { cn } from "@/lib/utils";
 
 type ShellPageProps = {
@@ -13,9 +14,9 @@ export function ShellPage({ title, description, children, className }: ShellPage
     <div className={cn("bg-background", className)}>
       <div className="marketing-container py-10 md:py-14">
         <header className="max-w-3xl">
-          <h1 className="font-heading text-h3 font-bold tracking-tight text-foreground md:text-h2">
+          <SectionHeading as="h1" tier="primary" className="text-foreground">
             {title}
-          </h1>
+          </SectionHeading>
           {description ? (
             <p className="mt-3 text-body-md text-muted-foreground">{description}</p>
           ) : null}

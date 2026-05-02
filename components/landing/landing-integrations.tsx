@@ -1,116 +1,118 @@
+import Link from "next/link";
+import { ArrowRight, BookOpen, Layers, LogIn, MessageCircle } from "lucide-react";
 import { SectionContainer } from "@/components/layout/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { getWhatsAppAdminChatHref } from "@/lib/whatsapp-admin";
+import { cn } from "@/lib/utils";
 
-function MockSignInCard() {
+function WhatsAppContactCard({ href }: { href: string }) {
   return (
-    <Card className="bg-card border border-border shadow-sm">
-      <CardHeader className="pb-4">
-        <CardTitle className="text-base">Masuk ke Zyx</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <label htmlFor="nama" className="mb-1.5 block text-sm font-medium text-foreground">
-            Nama
-          </label>
-          <Input id="nama" placeholder="Masukkan nama" />
-          <p className="text-xs text-destructive">&nbsp;</p>
-        </div>
-        <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-foreground">
-            Email
-          </label>
-          <Input id="email" type="email" placeholder="nama@kampus.ac.id" />
-          <p className="text-xs text-destructive">&nbsp;</p>
-        </div>
-        <div>
-          <label htmlFor="kelas" className="mb-1.5 block text-sm font-medium text-foreground">
-            Pilih kelas
-          </label>
-          <Select defaultValue="kalkulus-a">
-            <SelectTrigger id="kelas">
-              <SelectValue placeholder="Pilih kelas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="kalkulus-a">Kalkulus · Grup A (24)</SelectItem>
-              <SelectItem value="fisika-b">Fisika Dasar · Grup B (28)</SelectItem>
-              <SelectItem value="kimia-lab">Kimia Dasar · Lab (20)</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-destructive">&nbsp;</p>
-        </div>
-        <Button className="w-full interactive hover:scale-[1.02] active:scale-[0.98]">Lanjutkan dengan Google</Button>
-      </CardContent>
-    </Card>
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-lg ring-1 ring-black/5 md:p-5">
+      <p className="font-heading text-h6 font-semibold text-card-foreground">Tanya admin</p>
+      <p className="mt-2 text-body-sm leading-relaxed text-muted-foreground">
+        Ada pertanyaan tentang kelas, jadwal, atau cara mulai belajar? Chat admin lewat WhatsApp — kami
+        bantu arahkan ke paket yang pas.
+      </p>
+      <Button asChild variant="marketingPrimary" size="marketing" className="mt-4 w-full">
+        <a href={href} target="_blank" rel="noopener noreferrer">
+          <MessageCircle className="size-4" data-icon="inline-start" aria-hidden />
+          WhatsApp admin
+        </a>
+      </Button>
+    </div>
   );
 }
 
-function MockClassListCard() {
+function SingleFlowIllustration() {
+  const step =
+    "flex min-w-[5.25rem] flex-col items-center gap-2 rounded-xl bg-background/85 px-3 py-3 text-center shadow-sm ring-1 ring-border backdrop-blur-sm";
+
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-lg ring-1 ring-black/5 md:p-5">
-      <p className="font-heading text-h6 font-semibold text-card-foreground">Pilih kelas</p>
-      <ul className="mt-3 flex flex-col gap-2">
-        {[
-          "Kalkulus · Grup A (24)",
-          "Fisika Dasar · Grup B (28)",
-          "Kimia Dasar · Lab (20)",
-        ].map((line) => (
-          <li
-            key={line}
-            className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-body-sm text-foreground"
-          >
-            <span className="size-2 shrink-0 rounded-full bg-brand-primary" aria-hidden />
-            {line}
-          </li>
-        ))}
-      </ul>
+    <div
+      className="relative overflow-hidden rounded-2xl border border-border bg-linear-to-br from-card via-background to-muted/40 p-5 shadow-sm ring-1 ring-black/5 md:p-6"
+      aria-hidden
+    >
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.35]"
+        style={{
+          backgroundImage: `radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--color-primary) 22%, transparent) 1px, transparent 0)`,
+          backgroundSize: "20px 20px",
+        }}
+      />
+      <p className="absolute right-3 top-2 font-heading text-4xl font-black text-primary/6">∑</p>
+      <p className="absolute bottom-2 left-3 font-heading text-3xl font-black text-[var(--zx-accent)]/10">π</p>
+
+      <div className="relative flex flex-col gap-3">
+        <p className="text-center text-xs font-medium uppercase tracking-[0.2em] text-[var(--zx-accent)]">
+          Alur belajar
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+          <div className={step}>
+            <LogIn className="size-7 text-primary" strokeWidth={1.75} />
+            <span className="text-xs font-medium text-foreground">Masuk</span>
+          </div>
+          <ArrowRight className="size-5 shrink-0 max-sm:rotate-90 text-[var(--zx-accent)]" strokeWidth={2} />
+          <div className={step}>
+            <Layers className="size-7 text-primary" strokeWidth={1.75} />
+            <span className="text-xs font-medium text-foreground">Kelas</span>
+          </div>
+          <ArrowRight className="size-5 shrink-0 max-sm:rotate-90 text-[var(--zx-accent)]" strokeWidth={2} />
+          <div className={step}>
+            <BookOpen className="size-7 text-primary" strokeWidth={1.75} />
+            <span className="text-xs font-medium text-foreground">Materi</span>
+          </div>
+        </div>
+        <p className="text-center text-body-sm text-muted-foreground">
+          Satu pintu navigasi — fokus belajar, kurangi tab bertumpuk.{" "}
+          <Link href="/sign-in" className="font-medium underline decoration-[var(--zx-accent)] underline-offset-4">
+            Masuk dengan Google
+          </Link>
+        </p>
+      </div>
     </div>
   );
 }
 
 export function LandingIntegrations() {
-  return (
-    <SectionContainer className="border-b border-border bg-background" aria-labelledby="integrations-heading">
-      <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-[1fr_1.15fr] lg:gap-20">
-          <div className="relative lg:-mt-4">
-            <div className="relative z-10 flex flex-col gap-4 md:max-w-md">
-              <div className="motion-safe:translate-x-1 motion-safe:md:translate-x-2">
-                <MockSignInCard />
-              </div>
-              <div className="motion-safe:-translate-x-1 motion-safe:md:-translate-x-3">
-                <MockClassListCard />
-              </div>
-            </div>
-            <div
-              className="pointer-events-none absolute -left-6 top-1/4 hidden size-40 rounded-full bg-brand-primary/10 blur-3xl md:block"
-              aria-hidden
-            />
-            <div
-              className="pointer-events-none absolute -right-4 bottom-0 hidden size-36 rounded-full bg-brand-secondary/15 blur-3xl md:block"
-              aria-hidden
-            />
-          </div>
+  const whatsappHref = getWhatsAppAdminChatHref();
 
-          <div className="lg:max-w-[480px]">
-            <Badge variant="secondary" className="border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium tracking-widest uppercase text-primary">
-              Interactive Platform
-            </Badge>
-            <SectionHeading id="integrations-heading" tier="primary" className="mt-3 text-foreground">
-              Satu alur masuk, fokus ke materi
+  return (
+    <SectionContainer className="border-b border-border bg-[var(--color-surface)]" aria-labelledby="integrations-heading">
+      <div
+        className={cn(
+          "mx-auto grid max-w-6xl grid-cols-1 items-start gap-8 lg:gap-x-12 lg:gap-y-10",
+          whatsappHref ? "lg:grid-cols-2" : "",
+        )}
+      >
+        <div className="relative flex flex-col gap-5 lg:pt-1">
+          <div className="absolute -left-10 top-0 hidden size-72 rounded-[3rem] bg-linear-to-br from-brand-primary/[0.07] via-transparent to-[var(--zx-accent)]/8 blur-3xl lg:block" />
+          <header className="relative max-w-xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">Setelah masuk</p>
+            <SectionHeading id="integrations-heading" tier="primary" className="mt-2 text-foreground">
+              Satu alur masuk, langsung ke materi
             </SectionHeading>
-            <p className="mt-4 max-w-prose text-body-md text-muted-foreground md:text-body-lg">
-              Tanpa tab berjubel: setelah masuk, kamu langsung melihat kelas dan progres. Kami merapikan
-              langkah awal supaya energi tersisa untuk belajar, bukan mengurus akun.
+            <p className="mt-2 text-body-md text-muted-foreground">
+              Tanpa tab berjubel — setelah login, langsung kerja di kelasmu dari dashboard yang sama rapi untuk TPB dan
+              awal jurusan.
             </p>
-            <p className="mt-4 max-w-prose text-body-base text-muted-foreground">
-              Desain ini meminjam ritme produk yang menghubungkan ekosistem sekolah — disesuaikan untuk
-              alur Zyx dan mahasiswa ITB.
-            </p>
+          </header>
+          <SingleFlowIllustration />
+          <div
+            className="pointer-events-none absolute -right-6 bottom-[10%] hidden size-28 rounded-full bg-brand-secondary/14 blur-3xl md:block"
+            aria-hidden
+          />
+        </div>
+
+        {whatsappHref ? (
+          <div className="relative flex flex-col gap-4 lg:pt-12">
+            <div
+              className="pointer-events-none absolute -right-6 top-[8%] hidden size-32 rounded-full bg-brand-primary/10 blur-3xl md:block"
+              aria-hidden
+            />
+            <WhatsAppContactCard href={whatsappHref} />
           </div>
+        ) : null}
       </div>
     </SectionContainer>
   );

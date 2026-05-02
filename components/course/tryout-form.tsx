@@ -55,7 +55,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
         handleSubmit();
       }}
     >
-      <div className="rounded-2xl border border-border bg-muted/20 px-4 py-3 text-body-sm text-muted-foreground">
+      <div className="rounded-2xl border border-border/70 bg-muted/25 px-4 py-3 text-body-sm text-muted-foreground backdrop-blur-sm">
         Bacalah setiap pertanyaan dengan sempurna. Nomor mengikuti urutan resmi. Lampiran
         bersifat opsional kecuali dinyatakan lain.
       </div>
@@ -68,7 +68,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
               key={q.id}
               className="border-l-4 border-brand-primary/50 pl-6 md:pl-8"
             >
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm md:p-8">
+              <div className="rounded-2xl border border-border/80 bg-card/85 p-6 shadow-sm backdrop-blur-sm md:p-8">
                 <div className="flex gap-3">
                   <span
                     className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-body-sm font-bold text-primary-foreground"
@@ -213,7 +213,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
         })}
       </ol>
 
-      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-8">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/70 pt-8">
         <Button type="button" variant="outline" className="rounded-full" onClick={() => router.back()}>
           Batal
         </Button>

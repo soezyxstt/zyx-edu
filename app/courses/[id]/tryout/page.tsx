@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ShellPage } from "@/components/shell-page";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { courseListRowClass } from "@/components/course/course-surfaces";
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getExamsForCourse } from "@/lib/student-course-fixtures";
@@ -30,41 +31,38 @@ export default async function CourseTryoutListPage({ params }: Props) {
   const tryouts = getExamsForCourse(id, "tryout");
 
   return (
-    <ShellPage
+    <CoursePageShell
+      eyebrow="Simulasi"
       title="Tryout"
       description="Tryout lebih formal — tata letak rapi seperti formulir, mendukung esai dan unggah berkas."
     >
-      <ul className="space-y-4">
+      <ul className="space-y-3">
         {tryouts.map((t) => (
-          <li
-            key={t.id}
-            className="rounded-2xl border border-border bg-card p-6 shadow-sm"
-          >
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
+          <li key={t.id}>
+            <div className={courseListRowClass("flex-col gap-4 sm:flex-row sm:items-center sm:justify-between")}>
+              <div className="min-w-0 flex-1">
                 <h2 className="font-heading text-h6 font-semibold text-foreground">{t.title}</h2>
                 <p className="mt-2 text-body-sm text-muted-foreground">
                   {statusLabel[t.status] ?? t.status}
-                  {t.settings?.timeLimitMinutes != null
-                    ? ` · ${t.settings.timeLimitMinutes} menit`
-                    : ""}
-                  {t.settings?.maxAttempts != null
-                    ? ` · maks ${t.settings.maxAttempts} pengumpulan`
-                    : ""}
+                  {t.settings?.timeLimitMinutes != null ? ` · ${t.settings.timeLimitMinutes} menit` : ""}
+                  {t.settings?.maxAttempts != null ? ` · maks ${t.settings.maxAttempts} pengumpulan` : ""}
                 </p>
-                <p className="mt-1 text-body-sm text-muted-foreground">
-                  {t.questions.length} pertanyaan
-                </p>
+                <p className="mt-1 text-body-sm text-muted-foreground">{t.questions.length} pertanyaan</p>
               </div>
-              {t.status === "published" ? (
-                <Button asChild className="rounded-full md:shrink-0">
-                  <Link href={`/courses/${id}/tryout/${t.id}`}>Buka tryout</Link>
-                </Button>
-              ) : (
-                <Button type="button" className="rounded-full md:shrink-0" disabled>
-                  Tidak tersedia
-                </Button>
-              )}
+              <div className="flex shrink-0 items-center self-stretch sm:self-center">
+                {t.status === "published" ? (
+                  <Button
+                    asChild
+                    className="interactive w-full rounded-full sm:w-auto motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
+                  >
+                    <Link href={`/courses/${id}/tryout/${t.id}`}>Buka tryout</Link>
+                  </Button>
+                ) : (
+                  <Button type="button" className="w-full rounded-full sm:w-auto" disabled>
+                    Tidak tersedia
+                  </Button>
+                )}
+              </div>
             </div>
           </li>
         ))}
@@ -72,6 +70,6 @@ export default async function CourseTryoutListPage({ params }: Props) {
       {tryouts.length === 0 ? (
         <p className="text-body-md text-muted-foreground">Belum ada tryout.</p>
       ) : null}
-    </ShellPage>
+    </CoursePageShell>
   );
 }

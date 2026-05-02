@@ -76,7 +76,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
 
       <div
         className={cn(
-          "rounded-3xl border-2 border-border bg-card p-6 shadow-lg md:p-10",
+          "rounded-3xl border border-border/80 bg-card/90 p-6 shadow-lg backdrop-blur-sm md:p-10",
           "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
         )}
       >
