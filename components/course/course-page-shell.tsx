@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { cn } from "@/lib/utils";
+import { SimulatorWidget } from "./simulator-widget";
 
 export type CoursePageShellProps = {
   title: ReactNode;
@@ -20,7 +21,7 @@ export function CoursePageShell({
   className,
 }: CoursePageShellProps) {
   return (
-    <div className={cn("pb-12", className)}>
+    <div className={cn("pb-12 relative", className)}>
       <div className="marketing-container pt-10 md:pt-14">
         <header className="max-w-3xl landing-stagger [&>*:nth-child(1)]:[animation-delay:0ms] [&>*:nth-child(2)]:[animation-delay:60ms] [&>*:nth-child(3)]:[animation-delay:120ms]">
           {eyebrow ? (
@@ -39,6 +40,7 @@ export function CoursePageShell({
         </header>
         <div className="mt-8">{children}</div>
       </div>
+      <SimulatorWidget />
     </div>
   );
 }

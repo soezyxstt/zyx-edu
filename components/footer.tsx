@@ -21,6 +21,9 @@ export function Footer() {
               Zyx Edu membantu mahasiswa S1 ITB tahun pertama dan kedua (TPB dan awal jurusan) menguasai materi dengan modul selaras kampus,
               latihan terarah, dan bimbingan tutor ITB.
             </p>
+            <p className="mt-2 text-xs font-semibold text-[var(--zx-accent)] tracking-wide">
+              Built by ITB students. Belajar dengan arah yang lebih jelas.
+            </p>
           </div>
 
           <nav className="md:col-span-3" aria-label="Tautan perusahaan">

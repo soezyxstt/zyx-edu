@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const segments = [
   { href: (id: string) => `/courses/${id}`, label: "Ringkasan", match: (path: string, id: string) => path === `/courses/${id}` },
-  { href: (id: string) => `/courses/${id}/material`, label: "Materi", match: (path: string, id: string) => path.startsWith(`/courses/${id}/material`) },
+  { href: (id: string) => `/courses/${id}/material`, label: "Dokumen", match: (path: string, id: string) => path.startsWith(`/courses/${id}/material`) },
   { href: (id: string) => `/courses/${id}/quiz`, label: "Kuis", match: (path: string, id: string) => path.startsWith(`/courses/${id}/quiz`) },
   { href: (id: string) => `/courses/${id}/tryout`, label: "Tryout", match: (path: string, id: string) => path.startsWith(`/courses/${id}/tryout`) },
   { href: (id: string) => `/courses/${id}/leaderboard`, label: "Papan peringkat", match: (path: string, id: string) => path.startsWith(`/courses/${id}/leaderboard`) },

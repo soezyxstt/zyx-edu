@@ -47,7 +47,7 @@ export function Navbar() {
         aria-label="Primary"
       >
         {/* Below lg: search + compact profile + drawer. lg+: centered links + Lihat paket + full profile. */}
-        <div className="relative mx-auto flex min-h-13 min-w-0 w-full max-w-7xl items-center gap-2 px-3 py-3 sm:px-4 md:min-h-14 md:gap-3 md:py-3.5 lg:px-5">
+        <div className="relative mx-auto flex min-h-13 min-w-0 w-full max-w-7xl items-center gap-2 px-4 py-3 sm:px-6 md:min-h-14 md:gap-3 md:py-3.5 lg:px-8">
           <Link
             href="/"
             className="relative z-10 -m-px flex shrink-0 items-center p-px [&_img]:block [&_img]:align-middle [&_svg]:block"
@@ -77,7 +77,7 @@ export function Navbar() {
           <div className="relative z-10 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-1.5 md:gap-2.5">
             <Button
               variant="ghost"
-              className="size-10 shrink-0 rounded-full"
+              className="max-lg:hidden size-10 shrink-0 rounded-full"
               type="button"
               onClick={() => setSearchOpen(true)}
             >
@@ -85,22 +85,6 @@ export function Navbar() {
               <span className="sr-only">Cari (pintasan papan ketik: Ctrl+K atau ⌘K)</span>
             </Button>
 
-            <div className="hidden shrink-0 items-center gap-2 lg:flex lg:gap-2.5">
-              <Link
-                href="/sign-in"
-                className="interactive text-body-sm font-medium text-foreground underline decoration-[var(--zx-accent)] decoration-2 underline-offset-4 hover:text-foreground lg:mr-1"
-              >
-                Masuk
-              </Link>
-              <Button
-                asChild
-                className={cn(
-                  "inline-flex h-10 shrink-0 items-center px-5 text-body-sm font-medium leading-none rounded-md bg-[#1a2744] text-white hover:bg-[#1a2744]/90",
-                )}
-              >
-                <Link href="/plans">Lihat paket</Link>
-              </Button>
-            </div>
 
             <NavProfileOrSignIn variant="toolbar" callbackURL="/dashboard" />
 

@@ -172,14 +172,14 @@ export function NavProfileOrSignIn({
 
   return (
     <GoogleSignInButton
-      label="Masuk dengan Google"
+      label={sheet ? "Masuk dengan Google" : "Login"}
       callbackURL={callbackURL}
       onBeforeOAuth={onNavigate}
-      containerClassName={cn(sheet ? "w-full" : "flex shrink-0 flex-row gap-2")}
+      containerClassName={sheet ? "w-full" : "max-lg:hidden shrink-0"}
       className={cn(
         sheet
           ? "h-11 w-full rounded-xl bg-primary text-body-sm font-semibold text-primary-foreground hover:bg-primary/90"
-          : "h-10 shrink-0 rounded-full bg-primary px-5 text-body-sm font-semibold text-primary-foreground hover:bg-primary/90",
+          : "h-10 shrink-0 rounded-full bg-primary px-4 text-body-sm font-semibold text-primary-foreground hover:bg-primary/90",
       )}
     />
   );

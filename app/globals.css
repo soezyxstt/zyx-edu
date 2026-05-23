@@ -497,4 +497,43 @@
       transform: none !important;
     }
   }
+
+  /* ── Mobile sidebar dialog ─────────────────────────────── */
+
+  /* Remove browser default dialog chrome */
+  dialog.sidebar-dialog {
+    border: none;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    /* Fill the full viewport */
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    position: fixed;
+    inset: 0;
+  }
+
+  /* Dim backdrop */
+  dialog.sidebar-dialog::backdrop {
+    background: oklch(0% 0 0 / 0.5);
+    backdrop-filter: blur(2px);
+  }
+
+  /* Slide-in animation for the inner panel */
+  @keyframes sidebar-slide-in {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(0); }
+  }
+
+  @keyframes sidebar-slide-out {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-100%); }
+  }
+
+  dialog.sidebar-dialog[open] .sidebar-panel {
+    animation: sidebar-slide-in 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
 }

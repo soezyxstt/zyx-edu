@@ -1,6 +1,9 @@
-/** Paket paket ditampilkan di /plans dan pratinjau landing. */
+import { calculatePlanPrice, DEFAULT_PERSONS, DEFAULT_COURSES } from "./pricing-constants";
+
+export type PlanKey = 'free' | 'minimal' | 'essential' | 'premium' | 'custom';
 
 export type PlanTier = {
+  key: PlanKey;
   name: string;
   price: string;
   note: string;
@@ -8,36 +11,63 @@ export type PlanTier = {
   highlighted?: boolean;
 };
 
+const formatPrice = (amount: number): string => {
+  return "Rp " + amount.toLocaleString("id-ID");
+};
+
 export const planTiers: readonly PlanTier[] = [
   {
-    name: "Dasar",
-    price: "Mulai dari IDR —",
-    note: "Contoh ilustratif; harga final di konfirmasi admin.",
+    key: "free",
+    name: "Free",
+    price: "Gratis",
+    note: "Akses materi dasar tanpa biaya.",
     features: [
-      "Akses materi terpilih per semester",
-      "Kuis & tryout dengan penilaian instan (objektif)",
-      "Forum diskusi per course",
-    ],
+      "Bank Materi dan Soal"
+    ]
   },
   {
-    name: "Plus",
-    price: "Paket populer",
-    note: "Untuk kamu yang ingin ritme mingguan tetap terjaga.",
+    key: "minimal",
+    name: "Minimal",
+    price: formatPrice(calculatePlanPrice("minimal", DEFAULT_PERSONS, DEFAULT_COURSES)),
+    note: "Pendampingan platform mandiri lengkap.",
     features: [
-      "Lebih banyak course dalam satu paket",
-      "Sesi konsultasi terjadwal (frekuensi menyesuaikan paket)",
-      "Tracking progres dan ringkasan performa",
-    ],
-    highlighted: true,
+      "Bank Materi dan Soal",
+      "Solusi Soal",
+      "Diktat Lengkap",
+      "Kuis Harian & Mingguan + Pembahasan",
+      "Tryout Sebelum Ujian + Pembahasan"
+    ]
   },
   {
-    name: "Intensif",
-    price: "Fokus ujian",
-    note: "Persiapan ujian tengah/lengkap dengan latihan bertingkat.",
+    key: "essential",
+    name: "Essential",
+    price: formatPrice(calculatePlanPrice("essential", DEFAULT_PERSONS, DEFAULT_COURSES)),
+    note: "Sesi tutorial tatap muka & pembahasan video.",
     features: [
-      "Prioritas jadwal tryout",
-      "Umpan balik esai oleh pengajar",
-      "Rekomendasi perbaikan berbasis hasil latihan",
+      "Semua fitur pada paket Minimal",
+      "Akses pembahasan soal berbasis Video",
+      "Tutorial Tatap Muka 15x untuk Satu Semester"
     ],
+    highlighted: true
   },
+  {
+    key: "premium",
+    name: "Premium",
+    price: formatPrice(calculatePlanPrice("premium", DEFAULT_PERSONS, DEFAULT_COURSES)),
+    note: "Konsultasi on-demand & intensitas penuh.",
+    features: [
+      "Semua fitur pada paket Essential",
+      "Konsultasi Tugas Kuliah (On-Demand)",
+      "Plus Tambahan 15x Tutorial (Total 30x Tatap Muka untuk Satu Semester)"
+    ]
+  },
+  {
+    key: "custom",
+    name: "Custom",
+    price: "Hubungi Kami",
+    note: "Sesuaikan kelompok, tutor, dan kurikulum.",
+    features: [
+      "Ada kebutuhan spesifik di luar paket? (e.g., kelompok > 5 orang, persiapan khusus, atau penyesuaian kurikulum)"
+    ]
+  }
 ];

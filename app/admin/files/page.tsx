@@ -8,6 +8,7 @@ import { pageTitle } from "@/lib/site";
 import { assertAdmin } from "@/lib/uploadthing-admin";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { Reveal } from "@/components/ui/reveal";
 
 export const metadata: Metadata = {
   title: pageTitle("Files"),
@@ -53,7 +54,7 @@ export default async function AdminFilesPage({
   }));
 
   return (
-    <div className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6">
+    <Reveal className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <Button variant="ghost" size="xs" className="text-muted-foreground -ml-2 mb-1 gap-1" asChild>
@@ -71,6 +72,6 @@ export default async function AdminFilesPage({
         breadcrumbs={breadcrumbs}
         currentFolderId={currentFolderId}
       />
-    </div>
+    </Reveal>
   );
 }

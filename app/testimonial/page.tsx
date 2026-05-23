@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { MarketingPageHero } from "@/components/marketing-page-hero";
 import { SectionContainer } from "@/components/layout/section-container";
+import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -75,13 +76,16 @@ const stories = [
 export default function TestimonialPage() {
   return (
     <div className="flex flex-col">
-      <MarketingPageHero
-        sectionId="testimonial"
-        eyebrow="Suara kelas"
-        title="Testimoni"
-        description="Cerita dari pengajar dan mahasiswa — transparansi proses adalah bagian dari kualitas layanan kami."
-      />
+      <Reveal>
+        <MarketingPageHero
+          sectionId="testimonial"
+          eyebrow="Zyx Edu"
+          title="Testimoni"
+          description="Cerita dari pengajar dan mahasiswa — transparansi proses adalah bagian dari kualitas layanan kami."
+        />
+      </Reveal>
 
+      <Reveal>
       <SectionContainer
         className="border-b border-border bg-linear-to-b from-background via-muted/30 to-background"
         aria-labelledby="testimonial-grid-heading"
@@ -129,6 +133,7 @@ export default function TestimonialPage() {
           ))}
           </div>
       </SectionContainer>
+      </Reveal>
     </div>
   );
 }

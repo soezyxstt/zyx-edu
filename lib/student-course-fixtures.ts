@@ -4,22 +4,28 @@
  */
 
 export type MaterialKind = "article" | "pdf" | "image" | "video" | "link";
+export type DocCategory = "materi" | "soal" | "solusi" | "diktat";
 
 export type CourseMaterial = {
   id: string;
   courseId: string;
   title: string;
   kind: MaterialKind;
+  docCategory?: DocCategory;
+  fileSize?: string;
   /** Article: plain text / markdown-ish paragraphs separated by \n\n */
   body?: string;
   /** pdf | image | video | link */
   url?: string;
   /** Mock: completed by demo student */
   completed: boolean;
+  isPastYear?: boolean;
+  isPreview?: boolean;
 };
 
 export type ExamType = "quiz" | "tryout";
 export type ExamStatus = "draft" | "published" | "ended";
+
 
 export type QuestionType =
   | "short_answer"
@@ -67,6 +73,7 @@ export type ExamFixture = {
   title: string;
   type: ExamType;
   status: ExamStatus;
+  isFree?: boolean;
   /** Mirrors jsonb settings on exams */
   settings?: {
     maxAttempts?: number;
@@ -74,6 +81,8 @@ export type ExamFixture = {
     oneTimeOnly?: boolean;
   };
   questions: QuestionSpec[];
+  isPastYear?: boolean;
+  isPreview?: boolean;
 };
 
 export type LeaderboardEntry = {
@@ -104,6 +113,10 @@ export type ReviewItem = {
   correct: boolean | null;
   correctAnswerLabel?: string;
   teacherNote?: string | null;
+  explanationText?: string;
+  explanationImage?: string;
+  explanationVideoUrl?: string;
+  explanationVideoKind?: "youtube" | "r2";
 };
 
 export type SubmissionReviewFixture = {
@@ -149,11 +162,58 @@ const courses: StudentCourse[] = [
 
 const materials: CourseMaterial[] = [
   {
+    id: "m-calc-limit-slide",
+    courseId: "calc-1",
+    title: "Materi Slide: Limit & Kekontinuan Fungsi",
+    kind: "pdf",
+    docCategory: "materi",
+    fileSize: "2.8 MB",
+    completed: true,
+    isPastYear: false,
+    url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+  },
+  {
+    id: "m-calc-uts-2024",
+    courseId: "calc-1",
+    title: "Soal Ujian: UTS Kalkulus I ITB 2024",
+    kind: "pdf",
+    docCategory: "soal",
+    fileSize: "1.2 MB",
+    completed: false,
+    isPastYear: true,
+    url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+  },
+  {
+    id: "m-calc-sol-2024",
+    courseId: "calc-1",
+    title: "Solusi Soal: Solusi UTS Kalkulus I ITB 2024",
+    kind: "pdf",
+    docCategory: "solusi",
+    fileSize: "3.5 MB",
+    completed: false,
+    isPastYear: true,
+    url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+  },
+  {
+    id: "m-calc-diktat",
+    courseId: "calc-1",
+    title: "Diktat: Diktat Kalkulus I ITB Lengkap",
+    kind: "pdf",
+    docCategory: "diktat",
+    fileSize: "12.4 MB",
+    completed: false,
+    isPastYear: false,
+    url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+  },
+  {
     id: "m-calc-intro",
     courseId: "calc-1",
-    title: "Pengantar limit",
+    title: "Pengantar limit (Artikel)",
     kind: "article",
+    docCategory: "materi",
+    fileSize: "12 KB",
     completed: true,
+    isPastYear: true,
     body:
       "Limit menggambarkan perilaku fungsi saat input mendekati suatu nilai.\n\n" +
       "Intuisi: bayangkan mendekati titik di grafik tanpa harus menyentuhnya.\n\n" +
@@ -164,7 +224,10 @@ const materials: CourseMaterial[] = [
     courseId: "calc-1",
     title: "Ringkasan rumus turunan",
     kind: "pdf",
+    docCategory: "materi",
+    fileSize: "1.1 MB",
     completed: false,
+    isPastYear: true,
     url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
   },
   {
@@ -172,6 +235,8 @@ const materials: CourseMaterial[] = [
     courseId: "calc-1",
     title: "Grafik fungsi rasional (contoh)",
     kind: "image",
+    docCategory: "materi",
+    fileSize: "680 KB",
     completed: false,
     url: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=1200&q=80",
   },
@@ -180,6 +245,8 @@ const materials: CourseMaterial[] = [
     courseId: "calc-1",
     title: "Video: limit intuitif",
     kind: "video",
+    docCategory: "materi",
+    fileSize: "45 MB",
     completed: false,
     url: "https://www.youtube.com/watch?v=riXcqc2dfmU",
   },
@@ -188,6 +255,8 @@ const materials: CourseMaterial[] = [
     courseId: "calc-1",
     title: "Latihan tambahan (GeoGebra)",
     kind: "link",
+    docCategory: "materi",
+    fileSize: "Online",
     completed: false,
     url: "https://www.geogebra.org/classic",
   },
@@ -196,7 +265,10 @@ const materials: CourseMaterial[] = [
     courseId: "physics-1",
     title: "Besaran dan satuan",
     kind: "article",
+    docCategory: "materi",
+    fileSize: "8 KB",
     completed: false,
+    isPastYear: true,
     body: "Besaran fisis dinyatakan dengan angka dan satuan. Sistem SI menjadi acuan utama di kuliah ini.",
   },
 ];
@@ -205,45 +277,102 @@ const exams: ExamFixture[] = [
   {
     id: "quiz-calc-w1",
     courseId: "calc-1",
-    title: "Kuis Minggu 1 — Limit",
+    title: "Kuis Mingguan 1 — Limit & Fungsi",
     type: "quiz",
     status: "published",
+    isFree: true,
+    isPreview: true,
     settings: { maxAttempts: 3, timeLimitMinutes: 15 },
     questions: [
       {
         id: "q1",
         order: 1,
-        type: "short_answer",
-        prompt: "Apa definisi informal limit f(x) saat x mendekati c?",
-        acceptableAnswers: ["pendekatan nilai", "nilai yang didekati", "l nilai"],
+        type: "multiple_choice",
+        prompt: "Limit konstanta k saat x mendekati a sama dengan...",
+        options: ["0", "k", "a", "tidak terdefinisi"],
+        correctIndex: 1,
       },
       {
         id: "q2",
         order: 2,
         type: "multiple_choice",
-        prompt: "Limit konstanta k saat x → a sama dengan …",
-        options: ["0", "k", "a", "tidak terdefinisi"],
-        correctIndex: 1,
+        prompt: "Berapa nilai limit x ke 3 dari (x^2 - 9)/(x - 3)?",
+        options: ["0", "3", "6", "9"],
+        correctIndex: 2,
       },
       {
         id: "q3",
         order: 3,
-        type: "multiple_choices",
-        prompt: "Mana yang benar tentang limit? (pilih semua yang benar)",
-        options: [
-          "Limit bisa tidak ada meski f(a) terdefinisi",
-          "Jika limit ada, f(a) harus sama dengan limit",
-          "Limit sepihak bisa berbeda",
-        ],
-        correctIndices: [0, 2],
+        type: "multiple_choice",
+        prompt: "Limit sin(x)/x saat x mendekati 0 bernilai...",
+        options: ["0", "1", "tak hingga", "tidak ada"],
+        correctIndex: 1,
       },
       {
         id: "q4",
         order: 4,
-        type: "short_answer",
-        prompt: "Unggah screenshot langkah (opsional)",
-        acceptsImage: true,
-        acceptableAnswers: [],
+        type: "multiple_choice",
+        prompt: "Fungsi f(x) dikatakan kontinu di c jika...",
+        options: [
+          "f(c) ada dan limit f(x) ada",
+          "limit f(x) = f(c)",
+          "f(c) ada, limit f(x) ada, dan limit f(x) = f(c)",
+          "Turunannya ada",
+        ],
+        correctIndex: 2,
+      },
+      {
+        id: "q5",
+        order: 5,
+        type: "multiple_choice",
+        prompt: "Limit x ke tak hingga dari 1/x adalah...",
+        options: ["0", "1", "tak hingga", "minus tak hingga"],
+        correctIndex: 0,
+      },
+      {
+        id: "q6",
+        order: 6,
+        type: "multiple_choice",
+        prompt: "Turunan pertama f(x) = cos(x) adalah...",
+        options: ["sin(x)", "-sin(x)", "-cos(x)", "tan(x)"],
+        correctIndex: 1,
+      },
+      {
+        id: "q7",
+        order: 7,
+        type: "multiple_choice",
+        prompt: "Jika limit kiri berbeda dengan limit kanan pada suatu titik, maka...",
+        options: [
+          "Limit pada titik tersebut tidak ada",
+          "Limit pada titik tersebut adalah rata-ratanya",
+          "Fungsi tetap kontinu",
+          "Nilai fungsi adalah nol",
+        ],
+        correctIndex: 0,
+      },
+      {
+        id: "q8",
+        order: 8,
+        type: "multiple_choice",
+        prompt: "Nilai limit x ke 0 dari (1 - cos(x))/x adalah...",
+        options: ["0", "1", "1/2", "tidak ada"],
+        correctIndex: 0,
+      },
+      {
+        id: "q9",
+        order: 9,
+        type: "multiple_choice",
+        prompt: "Fungsi f(x) = |x| tidak memiliki turunan di...",
+        options: ["x = 1", "x = -1", "x = 0", "semua titik"],
+        correctIndex: 2,
+      },
+      {
+        id: "q10",
+        order: 10,
+        type: "multiple_choice",
+        prompt: "Limit x ke 2 dari x^3 - 4x adalah...",
+        options: ["0", "2", "4", "8"],
+        correctIndex: 0,
       },
     ],
   },
@@ -253,7 +382,8 @@ const exams: ExamFixture[] = [
     title: "Tryout UTS — Kalkulus 1",
     type: "tryout",
     status: "published",
-    settings: { maxAttempts: 1, timeLimitMinutes: 90 },
+    isFree: false,
+    settings: { maxAttempts: 2, timeLimitMinutes: 90 },
     questions: [
       {
         id: "t1",
@@ -266,8 +396,29 @@ const exams: ExamFixture[] = [
       {
         id: "t2",
         order: 2,
+        type: "short_answer",
+        prompt: "Berapakah nilai limit dari (2x^2 + 5x)/(x^2 - x) saat x mendekati tak hingga?",
+        acceptsImage: false,
+        acceptableAnswers: ["2"],
+      },
+      {
+        id: "t3",
+        order: 3,
+        type: "multiple_choices",
+        prompt: "Manakah dari pernyataan berikut yang BENAR mengenai turunan? (Pilih lebih dari satu jika ada)",
+        options: [
+          "Jika fungsi f diferensial di c, maka f kontinu di c.",
+          "Jika fungsi f kontinu di c, maka f diferensial di c.",
+          "Turunan dari fungsi konstan adalah nol.",
+          "Turunan dari e^(2x) adalah e^(2x).",
+        ],
+        correctIndices: [0, 2],
+      },
+      {
+        id: "t4",
+        order: 4,
         type: "essay",
-        prompt: "Jelaskan hubungan antara turunan dan kemiringan garis singgung (minimal 3 kalimat).",
+        prompt: "Jelaskan hubungan antara turunan dan kemiringan garis singgung (minimal 3 kalimat). Anda diperbolehkan mengunggah file pendukung pengerjaan coret-coretan.",
         acceptsFile: true,
       },
     ],
@@ -278,7 +429,8 @@ const exams: ExamFixture[] = [
     title: "Kuis Vektor",
     type: "quiz",
     status: "published",
-    settings: { timeLimitMinutes: 10 },
+    isFree: false,
+    settings: { timeLimitMinutes: 10, maxAttempts: 1 },
     questions: [
       {
         id: "p1",
@@ -337,7 +489,7 @@ const submissionList: SubmissionListItem[] = [
     id: "sub-calc-quiz-1",
     courseId: "calc-1",
     examId: "quiz-calc-w1",
-    examTitle: "Kuis Minggu 1 — Limit",
+    examTitle: "Kuis Mingguan 1 — Limit & Fungsi",
     examType: "quiz",
     status: "graded",
     score: 85,
@@ -370,40 +522,17 @@ const submissionReviews: SubmissionReviewFixture[] = [
     id: "sub-calc-quiz-1",
     courseId: "calc-1",
     examId: "quiz-calc-w1",
-    examTitle: "Kuis Minggu 1 — Limit",
+    examTitle: "Kuis Mingguan 1 — Limit & Fungsi",
     examType: "quiz",
     items: [
       {
         questionId: "q1",
-        prompt: "Apa definisi informal limit f(x) saat x mendekati c?",
-        questionType: "short_answer",
-        userAnswer: "Nilai yang didekati fungsi saat x mendekati c.",
-        correct: true,
-        correctAnswerLabel: "Pendekatan nilai fungsi saat x → c",
-      },
-      {
-        questionId: "q2",
-        prompt: "Limit konstanta k saat x → a sama dengan …",
+        prompt: "Limit konstanta k saat x mendekati a sama dengan...",
         questionType: "multiple_choice",
         userAnswer: "k",
         correct: true,
         correctAnswerLabel: "k",
-      },
-      {
-        questionId: "q3",
-        prompt: "Mana yang benar tentang limit? (pilih semua yang benar)",
-        questionType: "multiple_choices",
-        userAnswer: "Limit bisa tidak ada meski f(a) terdefinisi; Limit sepihak bisa berbeda",
-        correct: true,
-        correctAnswerLabel: "Pilihan 1 dan 3",
-      },
-      {
-        questionId: "q4",
-        prompt: "Unggah screenshot langkah (opsional)",
-        questionType: "short_answer",
-        userAnswer: "(tidak diunggah)",
-        correct: true,
-        correctAnswerLabel: "Opsional",
+        explanationText: "Berdasarkan teorema limit utama, limit dari sebuah konstanta k ketika x mendekati nilai apapun akan selalu sama dengan konstanta k itu sendiri secara konstan.",
       },
     ],
   },
@@ -421,16 +550,40 @@ const submissionReviews: SubmissionReviewFixture[] = [
         userAnswer: "6",
         correct: true,
         correctAnswerLabel: "6",
+        explanationText: "Menggunakan rumus turunan fungsi pangkat: f(x) = x^n -> f'(x) = n*x^(n-1). Turunan dari x^2 adalah f'(x) = 2x. Untuk nilai x = 3, f'(3) = 2 * 3 = 6.",
+        explanationImage: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&q=80",
+        explanationVideoUrl: "https://www.youtube.com/watch?v=riXcqc2dfmU",
+        explanationVideoKind: "youtube",
       },
       {
         questionId: "t2",
-        prompt:
-          "Jelaskan hubungan antara turunan dan kemiringan garis singgung (minimal 3 kalimat).",
+        prompt: "Berapakah nilai limit dari (2x^2 + 5x)/(x^2 - x) saat x mendekati tak hingga?",
+        questionType: "short_answer",
+        userAnswer: "2",
+        correct: true,
+        correctAnswerLabel: "2",
+        explanationText: "Untuk menentukan limit x mendekati tak hingga dari fungsi rasional, kita bagi pembilang dan penyebut dengan variabel pangkat tertinggi, yaitu x^2. Sehingga menjadi limit (2 + 5/x)/(1 - 1/x) = (2 + 0)/(1 - 0) = 2.",
+        explanationVideoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+        explanationVideoKind: "r2",
+      },
+      {
+        questionId: "t3",
+        prompt: "Manakah dari pernyataan berikut yang BENAR mengenai turunan? (Pilih lebih dari satu jika ada)",
+        questionType: "multiple_choices",
+        userAnswer: "Jika fungsi f diferensial di c, maka f kontinu di c.; Turunan dari fungsi konstan adalah nol.",
+        correct: true,
+        correctAnswerLabel: "Pernyataan 1 & Pernyataan 3",
+        explanationText: "1. Hubungan Diferensial-Kontinu: Teorema menyatakan bahwa jika suatu fungsi mempunyai turunan di titik c, maka ia pasti kontinu di c (kebalikannya belum tentu benar, misal f(x) = |x| kontinu di 0 tapi tak punya turunan di 0). 3. Turunan konstanta: f(x) = C -> f'(x) = 0. 4. Turunan e^(2x) seharusnya 2e^(2x), bukan e^(2x).",
+      },
+      {
+        questionId: "t4",
+        prompt: "Jelaskan hubungan antara turunan dan kemiringan garis singgung (minimal 3 kalimat). Anda diperbolehkan mengunggah file pendukung pengerjaan coret-coretan.",
         questionType: "essay",
-        userAnswer:
-          "Turunan di suatu titik memberikan kemiringan garis singgung kurva di titik tersebut...",
+        userAnswer: "Turunan di suatu titik memberikan kemiringan garis singgung kurva di titik tersebut. Kemiringan garis singgung diperoleh dari limit kemiringan garis potong secan ketika jarak kedua titik mendekati nol. Jadi turunan pertama secara geometris merepresentasikan kemiringan atau gradien garis singgung kurva f(x) di titik (c, f(c)).",
         correct: null,
-        teacherNote: null,
+        teacherNote: "Penjelasan secara geometris sudah tepat dan mencakup limit garis secan. Bagus!",
+        explanationText: "Secara geometris, turunan pertama dari fungsi f di titik c menyatakan gradien (kemiringan) garis singgung kurva f di titik tersebut. Hubungan ini dirumuskan sebagai m = f'(c) = limit (h -> 0) [f(c+h) - f(c)] / h, yang merupakan limit kemiringan garis secan.",
+        explanationImage: "https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=600&q=80",
       },
     ],
   },
@@ -448,6 +601,7 @@ const submissionReviews: SubmissionReviewFixture[] = [
         userAnswer: "besar dan arah",
         correct: true,
         correctAnswerLabel: "besar dan arah",
+        explanationText: "Besaran fisika dikelompokkan menjadi skalar (hanya memiliki nilai/besar saja, misal massa, waktu) dan vektor (memiliki besar dan arah, misal gaya, kecepatan, perpindahan).",
       },
     ],
   },

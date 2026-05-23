@@ -21,14 +21,16 @@ export function LandingPricingPreview() {
       </div>
 
       <div className="mx-auto mt-10 grid max-w-6xl gap-5 md:grid-cols-3 md:gap-6">
-        {planTiers.map((tier) => (
-          <article
-            key={tier.name}
-            className={cn(
-              "flex flex-col rounded-2xl border p-6 shadow-sm md:p-7",
-              tier.highlighted ? "relative border-[var(--zx-accent)] bg-card ring-2 ring-[var(--zx-accent)]/25" : "border-border bg-card",
-            )}
-          >
+        {planTiers
+          .filter((t) => t.key === "minimal" || t.key === "essential" || t.key === "premium")
+          .map((tier) => (
+            <article
+              key={tier.name}
+              className={cn(
+                "flex flex-col rounded-2xl border p-6 shadow-sm md:p-7",
+                tier.highlighted ? "relative border-[var(--zx-accent)] bg-card ring-2 ring-[var(--zx-accent)]/25" : "border-border bg-card",
+              )}
+            >
             {tier.highlighted ? (
               <Badge className="absolute -top-2.5 left-6 bg-[var(--zx-accent)] text-white hover:bg-[var(--zx-accent)]">
                 Rekomendasi

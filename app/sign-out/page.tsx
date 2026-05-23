@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 import Link from "next/link";
 import { signOut } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 
 type SignOutStatus = "pending" | "done" | "error";
 
@@ -48,7 +49,7 @@ export default function SignOutPage() {
         : "Something went wrong. You can try again below or return home.";
 
   return (
-    <div className="marketing-container flex min-h-[50vh] flex-col items-center justify-center py-16">
+    <Reveal className="marketing-container flex min-h-[50vh] flex-col items-center justify-center py-16">
       <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
         <h1 className="font-heading text-h3 font-bold text-foreground">
           Sign out
@@ -80,6 +81,6 @@ export default function SignOutPage() {
           </Link>
         </div>
       </div>
-    </div>
+    </Reveal>
   );
 }

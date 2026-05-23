@@ -211,3 +211,21 @@ export const submissions = pgTable("submissions", {
   teacherNotes: text("teacher_notes"), // Allows teacher to manually input feedback/notes
   submittedAt: timestamp("submitted_at").defaultNow(),
 });
+
+// Enrollment Tokens Table
+export const enrollmentTokens = pgTable("enrollment_tokens", {
+  id: text("id").primaryKey(),
+  token: text("token").notNull().unique(),
+  courseId: text("course_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  usedAt: timestamp("used_at"),
+  usedByUserId: text("used_by_user_id").references(() => user.id),
+  expiresAt: timestamp("expires_at").notNull(),
+});
+
+export const enrollmentTokensRelations = relations(enrollmentTokens, ({ one }) => ({
+  usedByUser: one(user, {
+    fields: [enrollmentTokens.usedByUserId],
+    references: [user.id],
+  }),
+}));
