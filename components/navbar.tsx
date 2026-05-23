@@ -52,7 +52,7 @@ export function Navbar() {
             href="/"
             className="relative z-10 -m-px flex shrink-0 items-center p-px [&_img]:block [&_img]:align-middle [&_svg]:block"
           >
-            <Logo className="max-h-8 max-w-[68px] md:max-h-9 md:max-w-[76px]" />
+            <Logo className="[--logo-height:2rem] md:[--logo-height:2.25rem]" />
           </Link>
 
           {/* Never use unconditional `hidden` + `md:flex` — if `hidden` wins in CSS order, desktop links disappear. Prefer max-lg:hidden. */}

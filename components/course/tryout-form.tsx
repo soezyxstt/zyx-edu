@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Flag, Timer, BookOpen, AlertCircle, FileText, CheckCircle2, Trash2, ArrowLeft, ArrowRight, UploadCloud } from "lucide-react";
+import { MathText } from "@/components/course/math-text";
 import type { ExamFixture, QuestionSpec } from "@/lib/student-course-fixtures";
 
 type AnswerState =
@@ -45,6 +46,14 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadingFile, setUploadingFile] = useState<Record<string, string>>({});
 
+  const handleSubmit = useCallback(() => {
+    const currentAttempts = parseInt(localStorage.getItem(`zyx-tryout-attempts-${exam.id}`) || "0", 10);
+    localStorage.setItem(`zyx-tryout-attempts-${exam.id}`, (currentAttempts + 1).toString());
+
+    toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar untuk soal esai.");
+    router.push(`/courses/${courseId}/my-results`);
+  }, [courseId, exam.id, router]);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -58,7 +67,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [handleSubmit]);
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -134,15 +143,6 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
     toast.info("Lampiran berkas dihapus.");
   }
 
-  function handleSubmit() {
-    // Save attempt count to localStorage
-    const currentAttempts = parseInt(localStorage.getItem(`zyx-tryout-attempts-${exam.id}`) || "0", 10);
-    localStorage.setItem(`zyx-tryout-attempts-${exam.id}`, (currentAttempts + 1).toString());
-
-    toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar untuk soal esai.");
-    router.push(`/courses/${courseId}/my-results`);
-  }
-
   function goPrev() {
     if (index > 0) setIndex((i) => i - 1);
   }
@@ -166,7 +166,6 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
 
   const ans = answers[q.id];
   const currentFlagged = !!flags[q.id];
-  const isAnswered = isQuestionAnswered(q);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start font-sans">
@@ -209,7 +208,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
               {index + 1}
             </span>
             <h2 className="font-heading text-body-lg font-bold text-foreground leading-snug md:text-h5">
-              {q.prompt}
+              <MathText>{q.prompt}</MathText>
             </h2>
           </div>
 
@@ -239,7 +238,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
                     <span className="text-body-sm font-semibold text-foreground mr-1">
                       {String.fromCharCode(65 + i)}.
                     </span>
-                    <span className="text-body-sm text-foreground leading-normal">{opt}</span>
+                    <MathText className="text-body-sm text-foreground leading-normal">{opt}</MathText>
                   </label>
                 );
               })}
@@ -276,7 +275,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
                     <span className="text-body-sm font-semibold text-foreground mr-1">
                       {String.fromCharCode(65 + i)}.
                     </span>
-                    <span className="text-body-sm text-foreground leading-normal">{opt}</span>
+                    <MathText className="text-body-sm text-foreground leading-normal">{opt}</MathText>
                   </label>
                 );
               })}

@@ -15,7 +15,7 @@ export function Footer() {
         <div className="grid gap-10 py-10 md:grid-cols-12 md:gap-8 md:py-12 lg:gap-14">
           <div className="md:col-span-5 lg:col-span-6">
             <Link href="/" aria-label="Beranda ZYX Edu" className="inline-flex">
-              <Logo className="max-h-7 max-w-[72px] md:max-h-8 md:max-w-[80px]" />
+              <Logo className="[--logo-height:1.75rem] md:[--logo-height:2rem]" />
             </Link>
             <p className="mt-4 max-w-md text-body-sm leading-relaxed text-muted-foreground">
               Zyx Edu membantu mahasiswa S1 ITB tahun pertama dan kedua (TPB dan awal jurusan) menguasai materi dengan modul selaras kampus,

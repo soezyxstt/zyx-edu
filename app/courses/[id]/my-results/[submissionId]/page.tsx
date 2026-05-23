@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import {
   getCourseById,
@@ -10,7 +11,6 @@ import {
   getSubmissionReview,
 } from "@/lib/student-course-fixtures";
 import { ReviewClient } from "./review-client";
-import { Reveal } from "@/components/ui/reveal";
 
 type Props = { params: Promise<{ id: string; submissionId: string }> };
 
@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const course = getCourseById(id);
   const sub = getSubmissionListItem(id, submissionId);
   return {
-    title: pageTitle(course && sub ? `${course.title} — Review: ${sub.examTitle}` : "Review"),
+    title: pageTitle(course && sub ? `${course.title} - Review: ${sub.examTitle}` : "Review"),
     description: "Tinjau jawaban dan catatan pengajar",
   };
 }
@@ -33,19 +33,15 @@ export default async function SubmissionReviewPage({ params }: Props) {
   if (!course || !listItem || !review) notFound();
 
   return (
-    <CoursePageShell
-      eyebrow="Review Ujian"
-      title="Mode Tinjau Pembahasan"
-      description={`${review.examTitle} — Tinjau hasil jawaban latihan dan tryout.`}
-    >
+    <CoursePageShell eyebrow="Review" title="Review jawaban" description={review.examTitle} hideHeader>
       <Reveal>
-        <div className="mb-6">
+        <div className="mb-4">
           <Button
             asChild
             variant="outline"
             className="interactive rounded-full border-border/80 text-muted-foreground hover:text-foreground"
           >
-            <Link href={`/courses/${id}/my-results`}>← Kembali ke daftar hasil</Link>
+            <Link href={`/courses/${id}/my-results`}>Kembali ke hasil</Link>
           </Button>
         </div>
 

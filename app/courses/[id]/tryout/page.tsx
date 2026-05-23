@@ -28,12 +28,9 @@ export default async function CourseTryoutListPage({ params }: Props) {
   return (
     <CoursePageShell
       eyebrow="Simulasi"
-      title="Tryout Ujian"
-      description={
-        isEnrolled
-          ? "Simulasi ujian formal dengan tata letak rapi, mendukung esai, penjelasan, dan unggah berkas ke S3."
-          : "Daftar kelas untuk membuka akses tryout ujian kelas semester ini."
-      }
+      title="Tryout"
+      description={!isEnrolled ? "Aktifkan token untuk membuka tryout." : undefined}
+      hideHeader
     >
       <Reveal>
         <TryoutListClient courseId={id} isEnrolled={isEnrolled} tryouts={tryouts} />

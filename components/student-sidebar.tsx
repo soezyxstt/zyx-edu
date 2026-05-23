@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/static-components */
+
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -8,10 +10,9 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  GraduationCap,
   LayoutDashboard,
   LogOut,
-  Menu,
+  PanelLeftOpen,
   Settings,
   User,
   X,
@@ -19,7 +20,9 @@ import {
 } from "lucide-react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getStudentEnrollments } from "@/app/dashboard/actions";
+import { getCourseById } from "@/lib/student-course-fixtures";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 
 /* ─────────────────────────────────────────────────────────────────
    Types
@@ -28,6 +31,8 @@ interface NavOptions {
   collapsed?: boolean;
   onLink?: () => void;
 }
+
+type StudentEnrollment = Awaited<ReturnType<typeof getStudentEnrollments>>[number];
 
 /* ─────────────────────────────────────────────────────────────────
    StudentSidebar — self-contained component
@@ -38,10 +43,14 @@ export function StudentSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const courseIdFromPath = pathname.startsWith("/courses/")
+    ? pathname.split("/")[2]
+    : undefined;
+  const activeCourse = courseIdFromPath ? getCourseById(courseIdFromPath) : undefined;
 
   const [collapsed, setCollapsed] = useState(false);
   const [coursesOpen, setCoursesOpen] = useState(true);
-  const [enrolledCourses, setEnrolledCourses] = useState<any[]>([]);
+  const [enrolledCourses, setEnrolledCourses] = useState<StudentEnrollment[]>([]);
 
   /* dialog ref for mobile drawer */
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -274,18 +283,38 @@ export function StudentSidebar() {
           MOBILE TOP BAR  (visible only below md)
           — stacks above main in the flex-col layout
       ═══════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-4 md:hidden">
-        <Link href="/dashboard" className="flex items-center gap-2 font-heading font-bold text-foreground">
-          <GraduationCap className="size-6 text-brand-primary" />
-          <span className="text-h6">ZYX Edu</span>
+      <div className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 md:hidden">
+        <Link href="/dashboard" aria-label="Dashboard ZYX Edu" className="flex items-center">
+          <Logo className="[--logo-height:2rem]" />
         </Link>
+        {activeCourse ? (
+          <>
+            <span className="h-7 w-px shrink-0 bg-border" aria-hidden />
+            <nav
+              aria-label="Breadcrumb"
+              className="flex min-w-0 flex-1 items-center gap-1.5 text-body-sm"
+            >
+              <Link
+                href="/courses"
+                className="shrink-0 font-semibold text-brand-primary underline-offset-4 hover:underline"
+              >
+                Courses
+              </Link>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+              <span className="min-w-0 truncate font-medium text-foreground">
+                {activeCourse.title}
+              </span>
+            </nav>
+          </>
+        ) : null}
         <button
           type="button"
           onClick={openDrawer}
           aria-label="Buka navigasi"
-          className="flex size-9 items-center justify-center rounded-full hover:bg-muted transition-colors"
+          title="Buka sidebar"
+          className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <Menu className="size-5" />
+          <PanelLeftOpen className="size-5" />
         </button>
       </div>
 
@@ -305,13 +334,8 @@ export function StudentSidebar() {
         {/* Header row: brand + collapse toggle */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
           {!collapsed && (
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <span className="flex size-8 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
-                <GraduationCap className="size-4.5" />
-              </span>
-              <span className="font-heading text-[17px] font-bold text-foreground leading-none">
-                ZYX <span className="text-brand-primary">Edu</span>
-              </span>
+            <Link href="/dashboard" aria-label="Dashboard ZYX Edu" className="flex items-center">
+              <Logo className="[--logo-height:1.75rem]" />
             </Link>
           )}
           <button
@@ -359,10 +383,7 @@ export function StudentSidebar() {
         <div className="sidebar-panel flex h-full w-72 flex-col bg-card">
           {/* Drawer header */}
           <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-            <div className="flex items-center gap-2">
-              <GraduationCap className="size-6 text-brand-primary" />
-              <span className="font-heading text-h6 font-bold text-foreground">ZYX Edu</span>
-            </div>
+            <Logo className="[--logo-height:1.75rem]" />
             <button
               type="button"
               onClick={closeDrawer}

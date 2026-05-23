@@ -28,12 +28,9 @@ export default async function CourseQuizListPage({ params }: Props) {
   return (
     <CoursePageShell
       eyebrow="Latihan cepat"
-      title="Kuis Kelas"
-      description={
-        isEnrolled
-          ? "Kuis mingguan pilihan ganda terstruktur untuk menguji pemahaman materi kuliah Anda."
-          : "Daftar kelas untuk membuka semua kuis kustom. Anda dapat mencoba kuis bertanda Gratis sebagai preview."
-      }
+      title="Kuis"
+      description={!isEnrolled ? "Kuis gratis bisa dicoba; premium dibuka dengan token." : undefined}
+      hideHeader
     >
       <Reveal>
         <QuizListClient courseId={id} isEnrolled={isEnrolled} quizzes={quizzes} />

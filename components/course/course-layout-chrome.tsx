@@ -9,22 +9,22 @@ type CourseLayoutChromeProps = {
 
 export function CourseLayoutChrome({ courseId, courseTitle }: CourseLayoutChromeProps) {
   return (
-    <div className="border-b border-border/80 bg-background/60 backdrop-blur-md">
-      <div className="marketing-container pt-8 md:pt-10">
+    <div className="sticky top-14 z-20 border-b border-border/70 bg-background/72 backdrop-blur-md md:top-0">
+      <div className="marketing-container flex flex-col gap-2 py-2.5 md:flex-row md:items-center md:justify-between">
         <nav
           aria-label="Breadcrumb"
-          className="flex flex-wrap items-center gap-2 text-body-sm text-muted-foreground"
+          className="hidden items-center gap-2 text-body-sm text-muted-foreground md:flex"
         >
           <Link
             href="/courses"
-            className="rounded-full bg-muted/70 px-3 py-1 font-medium text-foreground ring-1 ring-border/60 transition-colors hover:bg-muted hover:text-foreground"
+            className="font-semibold text-brand-primary underline-offset-4 transition-colors hover:underline"
           >
             Courses
           </Link>
           <ChevronRight className="size-4 shrink-0 opacity-50" aria-hidden />
-          <span className="font-medium text-foreground">{courseTitle}</span>
+          <span className="truncate font-medium text-foreground">{courseTitle}</span>
         </nav>
-        <div className="mt-6">
+        <div className="w-full md:w-80">
           <CourseSubNav courseId={courseId} courseTitle={courseTitle} />
         </div>
       </div>

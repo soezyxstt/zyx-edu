@@ -35,17 +35,21 @@ export default async function CourseLeaderboardPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell eyebrow="Komunitas" title="Papan Peringkat Terkunci" description={LEADERBOARD_SCORE_HINT}>
+      <CoursePageShell eyebrow="Komunitas" title="Peringkat terkunci" description={LEADERBOARD_SCORE_HINT} hideHeader>
         <Reveal>
-          <div className="mx-auto max-w-xl rounded-2xl border border-border bg-card p-8 text-center shadow-md">
-            <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-4 ring-1 ring-border">
-              <Lock className="size-6" />
+          <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border">
+                <Lock className="size-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-heading text-body-base font-bold text-foreground">Butuh token kelas</h3>
+                <p className="mt-1 text-body-sm text-muted-foreground">
+                  Aktifkan kelas untuk melihat peringkat dan skor gabungan.
+                </p>
+              </div>
             </div>
-            <h3 className="font-heading text-body-lg font-bold text-foreground">Konten Premium</h3>
-            <p className="mt-2 text-body-sm text-muted-foreground leading-relaxed">
-              Papan peringkat adalah fitur eksklusif siswa terdaftar. Masukkan token pendaftaran Anda di bawah ini untuk bergabung dengan siswa lainnya.
-            </p>
-            <div className="mt-6 rounded-xl border border-border/85 bg-muted/40 p-5 text-left">
+            <div className="mt-4">
               <EnrollmentForm />
             </div>
           </div>
@@ -57,26 +61,26 @@ export default async function CourseLeaderboardPage({ params }: Props) {
   const rows = getLeaderboard(id);
 
   return (
-    <CoursePageShell eyebrow="Komunitas" title="Papan peringkat" description={LEADERBOARD_SCORE_HINT}>
+    <CoursePageShell eyebrow="Komunitas" title="Papan peringkat" description={LEADERBOARD_SCORE_HINT} hideHeader>
       <Reveal>
-        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/85 shadow-sm backdrop-blur-sm">
+        <div className="overflow-hidden rounded-lg border border-border/70 bg-card/75 backdrop-blur-sm">
           <div className="overflow-x-auto">
             <table className="w-full min-w-lg text-left text-body-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th scope="col" className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Peringkat
                   </th>
-                  <th scope="col" className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Nama
                   </th>
-                  <th scope="col" className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Skor gabungan
                   </th>
-                  <th scope="col" className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Rata kuis %
                   </th>
-                  <th scope="col" className="px-5 py-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Rata tryout %
                   </th>
                 </tr>
@@ -84,11 +88,11 @@ export default async function CourseLeaderboardPage({ params }: Props) {
               <tbody>
                 {rows.map((r) => (
                   <tr key={r.userId} className={cn("border-b border-border/70 last:border-0", rankRowClass(r.rank))}>
-                    <td className="px-5 py-4 tabular-nums font-semibold text-foreground">{r.rank}</td>
-                    <td className="px-5 py-4 font-medium text-foreground">{r.displayName}</td>
-                    <td className="px-5 py-4 tabular-nums font-semibold text-primary">{r.score}</td>
-                    <td className="px-5 py-4 tabular-nums text-muted-foreground">{r.quizAvgPercent}</td>
-                    <td className="px-5 py-4 tabular-nums text-muted-foreground">{r.tryoutAvgPercent}</td>
+                    <td className="px-4 py-3 tabular-nums font-semibold text-foreground">{r.rank}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{r.displayName}</td>
+                    <td className="px-4 py-3 tabular-nums font-semibold text-primary">{r.score}</td>
+                    <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.quizAvgPercent}</td>
+                    <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.tryoutAvgPercent}</td>
                   </tr>
                 ))}
               </tbody>

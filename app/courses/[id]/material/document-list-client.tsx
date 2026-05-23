@@ -3,18 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import {
+  Archive,
+  BookOpen,
+  ChevronRight,
+  FileCode,
   FileText,
   LayoutGrid,
   List,
-  Sliders,
-  Search,
-  BookOpen,
-  HelpCircle,
-  FileCode,
-  Download,
-  ExternalLink,
-  ChevronRight,
-  Archive
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { CourseMaterial, DocCategory } from "@/lib/student-course-fixtures";
@@ -25,275 +20,159 @@ type DocumentListClientProps = {
 };
 
 const categoryLabel: Record<string, string> = {
-  materi: "Materi Kuliah",
-  soal: "Soal Ujian ITB",
-  solusi: "Solusi Ujian",
-  diktat: "Diktat & Modul",
+  materi: "Materi",
+  soal: "Soal",
+  solusi: "Solusi",
+  diktat: "Diktat",
 };
 
-export function DocumentListClient({ courseId, materials }: DocumentListClientProps) {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sizeLevel, setSizeLevel] = useState<number>(2); // 1 = S, 2 = M, 3 = L, 4 = XL
-  const [activeTab, setActiveTab] = useState<string>("all");
-  const [search, setSearch] = useState("");
+const categories = ["all", "materi", "soal", "solusi", "diktat"] as const;
 
-  const filteredMaterials = materials.filter((m) => {
-    // Filter by tab
-    if (activeTab !== "all" && m.docCategory !== activeTab) {
+export function DocumentListClient({ courseId, materials }: DocumentListClientProps) {
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+  const [activeTab, setActiveTab] = useState<string>("all");
+
+  const filteredMaterials = materials.filter((material) => {
+    if (activeTab !== "all" && material.docCategory !== activeTab) {
       return false;
     }
-    // Filter by search
-    if (search && !m.title.toLowerCase().includes(search.toLowerCase())) {
-      return false;
-    }
+
     return true;
   });
 
-  // Icon selector based on category
-  const getFileIcon = (cat?: DocCategory, sizeClass?: string) => {
-    const cls = cn("text-rose-500 shrink-0", sizeClass);
-    if (cat === "soal") return <FileText className={cls} />;
-    if (cat === "solusi") return <FileCode className={cls} />;
-    if (cat === "diktat") return <Archive className={cls} />;
-    return <BookOpen className={cls} />;
+  const categoryCounts = materials.reduce<Record<string, number>>(
+    (acc, material) => {
+      const key = material.docCategory || "materi";
+      acc.all += 1;
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    },
+    { all: 0, materi: 0, soal: 0, solusi: 0, diktat: 0 }
+  );
+
+  const getFileIcon = (category?: DocCategory, sizeClass = "size-5") => {
+    const className = cn("shrink-0 text-brand-primary", sizeClass);
+
+    if (category === "soal") return <FileText className={className} />;
+    if (category === "solusi") return <FileCode className={className} />;
+    if (category === "diktat") return <Archive className={className} />;
+    return <BookOpen className={className} />;
   };
 
-  // Grid styling dynamic maps based on Size Level
-  const gridContainerClass = {
-    1: "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3",
-    2: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4",
-    3: "grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5",
-    4: "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6",
-  }[sizeLevel];
-
-  const gridCardClass = {
-    1: "p-3 flex flex-col items-center text-center text-body-xs rounded-xl",
-    2: "p-4 flex flex-col items-start text-left rounded-2xl",
-    3: "p-5 flex flex-col items-start text-left rounded-2xl min-h-[160px]",
-    4: "p-6 flex flex-col items-start text-left rounded-3xl min-h-[200px]",
-  }[sizeLevel];
-
-  const gridIconSize = {
-    1: "size-8 mb-2",
-    2: "size-10 mb-3",
-    3: "size-12 mb-4",
-    4: "size-16 mb-5",
-  }[sizeLevel];
-
-  // List styling dynamic maps based on Size Level
-  const listRowClass = {
-    1: "py-2 px-3 gap-3 rounded-lg text-body-xs",
-    2: "py-3.5 px-4 gap-4 rounded-xl text-body-sm",
-    3: "py-5 px-5 gap-5 rounded-2xl text-body-base",
-    4: "py-7 px-6 gap-6 rounded-2xl text-body-lg",
-  }[sizeLevel];
-
-  const listIconSize = {
-    1: "size-4",
-    2: "size-6",
-    3: "size-8",
-    4: "size-11",
-  }[sizeLevel];
-
   return (
-    <div className="space-y-6 font-sans">
-      
-      {/* File Explorer Controls bar */}
-      <div className="flex flex-col gap-4 p-4 rounded-2xl border border-border bg-card/60 backdrop-blur-xs">
-        
-        {/* Upper Controls: Search & Tabs */}
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          
-          {/* Search */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Cari berkas dokumen..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background pl-9 pr-4 py-2 text-body-sm text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-            />
-          </div>
-
-          {/* Explorer sizing slider and view modes toggles */}
-          <div className="flex items-center gap-4 self-end lg:self-auto">
-            
-            {/* Explorer size slider */}
-            <div className="flex items-center gap-2 border-r border-border pr-4">
-              <Sliders className="size-3.5 text-muted-foreground" />
-              <span className="text-[11px] font-semibold text-muted-foreground uppercase">Ukuran:</span>
-              <input
-                type="range"
-                min="1"
-                max="4"
-                step="1"
-                value={sizeLevel}
-                onChange={(e) => setSizeLevel(parseInt(e.target.value))}
-                className="w-20 accent-brand-primary h-1 bg-muted rounded-lg appearance-none cursor-pointer"
-                title="Sesuaikan Ukuran Ikon"
-              />
-              <span className="font-mono text-[10px] font-bold text-muted-foreground w-6 text-center uppercase">
-                {["S", "M", "L", "XL"][sizeLevel - 1]}
-              </span>
-            </div>
-
-            {/* Layout switchers */}
-            <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/85">
-              <button
-                type="button"
-                onClick={() => setViewMode("grid")}
-                className={cn(
-                  "p-1 rounded-md transition-colors",
-                  viewMode === "grid"
-                    ? "bg-card text-brand-primary shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title="Tampilan Kotak (Grid)"
-              >
-                <LayoutGrid className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("list")}
-                className={cn(
-                  "p-1 rounded-md transition-colors",
-                  viewMode === "list"
-                    ? "bg-card text-brand-primary shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                title="Tampilan Daftar (List)"
-              >
-                <List className="size-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Lower Controls: Tabs Category selector */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 border-t border-border/70 pt-3">
-          <button
-            onClick={() => setActiveTab("all")}
-            className={cn(
-              "rounded-full px-4 py-1.5 text-body-xs font-semibold transition-colors shrink-0",
-              activeTab === "all"
-                ? "bg-brand-primary text-white"
-                : "bg-muted text-muted-foreground hover:bg-border hover:text-foreground"
-            )}
-          >
-            Semua Dokumen
-          </button>
-          {["materi", "soal", "solusi", "diktat"].map((cat) => (
+    <div className="space-y-3 font-sans">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card/70 p-3 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+          {categories.map((category) => (
             <button
-              key={cat}
-              onClick={() => setActiveTab(cat)}
+              key={category}
+              type="button"
+              onClick={() => setActiveTab(category)}
               className={cn(
-                "rounded-full px-4 py-1.5 text-body-xs font-semibold transition-colors shrink-0 uppercase",
-                activeTab === cat
-                  ? "bg-brand-primary text-white"
-                  : "bg-muted text-muted-foreground hover:bg-border"
+                "inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                activeTab === category
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-border hover:text-foreground"
               )}
             >
-              {categoryLabel[cat]}
+              <span>{category === "all" ? "Semua" : categoryLabel[category]}</span>
+              <span
+                className={cn(
+                  "text-[11px]",
+                  activeTab === category ? "text-primary-foreground/80" : "text-muted-foreground"
+                )}
+              >
+                {categoryCounts[category]}
+              </span>
             </button>
           ))}
         </div>
+
+        <div className="flex shrink-0 items-center gap-1 border-l border-border pl-2">
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            className={cn(
+              "flex size-8 items-center justify-center rounded-md transition-colors",
+              viewMode === "grid"
+                ? "bg-primary/10 text-brand-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+            title="Grid"
+            aria-label="Tampilan grid"
+            aria-pressed={viewMode === "grid"}
+          >
+            <LayoutGrid className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            className={cn(
+              "flex size-8 items-center justify-center rounded-md transition-colors",
+              viewMode === "list"
+                ? "bg-primary/10 text-brand-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+            title="List"
+            aria-label="Tampilan daftar"
+            aria-pressed={viewMode === "list"}
+          >
+            <List className="size-4" />
+          </button>
+        </div>
       </div>
 
-      {/* RENDER MODE 1: GRID VIEW EXPLORER */}
       {viewMode === "grid" ? (
-        <div className={gridContainerClass}>
-          {filteredMaterials.map((m) => (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredMaterials.map((material) => (
             <Link
-              key={m.id}
-              href={`/courses/${courseId}/material/${m.id}`}
-              className={cn(
-                "group border border-border/80 bg-card hover:border-brand-primary hover:shadow-md transition-all flex flex-col justify-between overflow-hidden",
-                gridCardClass
-              )}
+              key={material.id}
+              href={`/courses/${courseId}/material/${material.id}`}
+              className="group flex min-h-24 flex-col justify-between rounded-lg border border-border/70 bg-card/75 p-3 transition-colors hover:border-brand-primary hover:bg-muted/25"
             >
-              {/* Card top */}
-              <div className="w-full flex flex-col items-center text-center">
-                {getFileIcon(m.docCategory, gridIconSize)}
-                
-                {/* File Title */}
-                <h3 className={cn(
-                  "font-heading font-bold text-foreground leading-snug group-hover:text-brand-primary transition-colors text-ellipsis overflow-hidden w-full",
-                  sizeLevel === 1 ? "line-clamp-1" : "line-clamp-2"
-                )}>
-                  {m.title}
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/8 ring-1 ring-primary/10">
+                  {getFileIcon(material.docCategory)}
+                </span>
+                <h3 className="line-clamp-2 text-body-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-brand-primary">
+                  {material.title}
                 </h3>
               </div>
-
-              {/* Card bottom details (hidden in Small grid mode for clean aesthetic) */}
-              {sizeLevel > 1 && (
-                <div className="w-full mt-3 pt-3 border-t border-border/50 text-[10px] text-muted-foreground flex justify-between items-center">
-                  <span className="uppercase font-semibold tracking-wider text-brand-primary/80">
-                    {m.docCategory || "Materi"}
-                  </span>
-                  <span>
-                    {m.fileSize || "PDF"}
-                  </span>
-                </div>
-              )}
+              <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                <span className="font-medium">
+                  {material.docCategory ? categoryLabel[material.docCategory] : "Materi"}
+                </span>
+                <span>{material.fileSize || "PDF"}</span>
+              </div>
             </Link>
           ))}
         </div>
       ) : (
-        /* RENDER MODE 2: LIST VIEW EXPLORER */
         <div className="space-y-2">
-          {/* List Headers (only for Medium to XL list) */}
-          {sizeLevel > 1 && (
-            <div className="grid grid-cols-12 gap-4 px-4 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-              <div className="col-span-6">Nama Dokumen</div>
-              <div className="col-span-3 text-center">Kategori</div>
-              <div className="col-span-2">Ukuran Berkas</div>
-              <div className="col-span-1 text-right">Aksi</div>
-            </div>
-          )}
-
-          <ul className="space-y-1.5">
-            {filteredMaterials.map((m) => (
-              <li key={m.id}>
+          <ul className="divide-y divide-border/70 rounded-lg border border-border/70 bg-card/75 backdrop-blur-sm">
+            {filteredMaterials.map((material) => (
+              <li key={material.id}>
                 <Link
-                  href={`/courses/${courseId}/material/${m.id}`}
-                  className={cn(
-                    "flex items-center justify-between border border-border/70 bg-card hover:border-brand-primary hover:shadow-xs transition-all",
-                    listRowClass
-                  )}
+                  href={`/courses/${courseId}/material/${material.id}`}
+                  className="group grid grid-cols-[1fr_auto] items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/35 md:grid-cols-[1fr_120px_84px_auto]"
                 >
-                  <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                    {getFileIcon(m.docCategory, listIconSize)}
-                    <div className="truncate min-w-0">
-                      <span className="font-heading font-bold text-foreground group-hover:text-brand-primary block truncate">
-                        {m.title}
+                  <div className="flex min-w-0 items-center gap-3">
+                    {getFileIcon(material.docCategory, "size-4")}
+                    <div className="min-w-0">
+                      <span className="block truncate text-body-sm font-semibold text-foreground group-hover:text-brand-primary">
+                        {material.title}
                       </span>
-                      {sizeLevel === 1 && (
-                        <span className="text-[9px] text-muted-foreground uppercase mt-0.5 block">
-                          {m.docCategory || "materi"} • {m.fileSize}
-                        </span>
-                      )}
+                      <span className="mt-0.5 block text-xs text-muted-foreground md:hidden">
+                        {material.docCategory ? categoryLabel[material.docCategory] : "Materi"} -{" "}
+                        {material.fileSize || "PDF"}
+                      </span>
                     </div>
                   </div>
-
-                  {/* Columns for larger sizes */}
-                  {sizeLevel > 1 && (
-                    <div className="hidden md:grid md:grid-cols-6 gap-4 flex-1 items-center max-w-xl text-body-xs text-muted-foreground">
-                      <div className="col-span-3 text-center">
-                        <span className="inline-flex rounded-full bg-muted/80 px-2 py-0.5 font-semibold text-foreground ring-1 ring-border/60 uppercase">
-                          {m.docCategory ? categoryLabel[m.docCategory] : "Materi"}
-                        </span>
-                      </div>
-                      <div className="col-span-2 font-medium">
-                        {m.fileSize || "1.2 MB"}
-                      </div>
-                      <div className="col-span-1 text-right text-brand-primary font-bold">
-                        Buka
-                      </div>
-                    </div>
-                  )}
-
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground opacity-60 ml-2" />
+                  <span className="hidden text-xs font-medium text-muted-foreground md:block">
+                    {material.docCategory ? categoryLabel[material.docCategory] : "Materi"}
+                  </span>
+                  <span className="hidden text-xs text-muted-foreground md:block">{material.fileSize || "PDF"}</span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground opacity-70 transition-transform group-hover:translate-x-0.5 group-hover:text-brand-primary" />
                 </Link>
               </li>
             ))}
@@ -302,8 +181,8 @@ export function DocumentListClient({ courseId, materials }: DocumentListClientPr
       )}
 
       {filteredMaterials.length === 0 ? (
-        <div className="text-center py-16 rounded-3xl border border-dashed border-border bg-muted/15">
-          <p className="text-body-md text-muted-foreground">Tidak ditemukan dokumen yang cocok dengan pencarian.</p>
+        <div className="rounded-lg border border-dashed border-border bg-muted/15 py-12 text-center">
+          <p className="text-body-sm text-muted-foreground">Tidak ada materi yang cocok.</p>
         </div>
       ) : null}
     </div>

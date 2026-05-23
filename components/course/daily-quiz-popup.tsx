@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Sparkles, CheckCircle2, XCircle, Award, BrainCircuit } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Sparkles, CheckCircle2, XCircle, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MathText } from "@/components/course/math-text";
 import { cn } from "@/lib/utils";
 
 type TriviaQuestion = {
@@ -33,6 +35,43 @@ const TRIVIA_DATA: Record<string, TriviaQuestion> = {
   },
 };
 
+const DAILY_QUIZ_STORAGE_PREFIX = "zyx-daily-quiz";
+
+function getTodayString() {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const date = String(today.getDate()).padStart(2, "0");
+
+  return `${today.getFullYear()}-${month}-${date}`;
+}
+
+function getLegacyTodayString() {
+  const today = new Date();
+
+  return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+}
+
+function getDailyQuizStorageKey(courseId: string) {
+  return `${DAILY_QUIZ_STORAGE_PREFIX}-${courseId}-${getTodayString()}`;
+}
+
+function getLegacyDailyQuizStorageKey(courseId: string) {
+  return `${DAILY_QUIZ_STORAGE_PREFIX}-${courseId}-${getLegacyTodayString()}`;
+}
+
+function hasCompletedDailyQuizToday(courseId: string) {
+  if (typeof window === "undefined") return true;
+
+  return (
+    window.localStorage.getItem(getDailyQuizStorageKey(courseId)) === "completed" ||
+    window.localStorage.getItem(getLegacyDailyQuizStorageKey(courseId)) === "completed"
+  );
+}
+
+function markDailyQuizCompletedToday(courseId: string) {
+  window.localStorage.setItem(getDailyQuizStorageKey(courseId), "completed");
+}
+
 type DailyQuizPopupProps = {
   courseId: string;
   courseTitle: string;
@@ -53,29 +92,29 @@ export function DailyQuizPopup({
 
   const trivia = TRIVIA_DATA[courseId] || TRIVIA_DATA["calc-1"];
 
-  // Helper to get today's date string
-  const getTodayString = () => {
-    const today = new Date();
-    return `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
-  };
-
   useEffect(() => {
-    const todayStr = getTodayString();
-    const storageKey = `zyx-daily-quiz-${courseId}-${todayStr}`;
-    const quizCompleted = localStorage.getItem(storageKey);
+    const quizCompleted = hasCompletedDailyQuizToday(courseId);
+    const delay = triggerManual ? 0 : 800;
 
     if (triggerManual) {
-      setShow(true);
-      setSubmitted(false);
-      setSelectedIdx(null);
-    } else if (!quizCompleted) {
-      // Auto show with a slight delay
+      if (quizCompleted) {
+        const timer = setTimeout(() => onCloseManual?.(), delay);
+        return () => clearTimeout(timer);
+      }
+
       const timer = setTimeout(() => {
         setShow(true);
-      }, 800);
+        setSubmitted(false);
+        setSelectedIdx(null);
+      }, delay);
+      return () => clearTimeout(timer);
+    } else if (!quizCompleted) {
+      const timer = setTimeout(() => {
+        setShow(true);
+      }, delay);
       return () => clearTimeout(timer);
     }
-  }, [courseId, triggerManual]);
+  }, [courseId, triggerManual, onCloseManual]);
 
   // Listen to simulator reset events
   useEffect(() => {
@@ -97,9 +136,7 @@ export function DailyQuizPopup({
     setIsCorrect(correct);
     setSubmitted(true);
 
-    // Save to local storage
-    const todayStr = getTodayString();
-    localStorage.setItem(`zyx-daily-quiz-${courseId}-${todayStr}`, "completed");
+    markDailyQuizCompletedToday(courseId);
   }
 
   function handleClose() {
@@ -111,9 +148,9 @@ export function DailyQuizPopup({
 
   if (!show) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 font-sans backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl border border-brand-primary/30 bg-card/95 p-6 shadow-2xl backdrop-blur-md md:p-8 animate-in zoom-in-95 duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-50 grid min-h-dvh place-items-center overflow-y-auto bg-black/60 p-4 font-sans backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
+      <div className="relative my-auto w-full max-w-lg rounded-3xl border border-brand-primary/30 bg-card/95 p-6 shadow-2xl backdrop-blur-md md:p-8 animate-in zoom-in-95 duration-200">
         <span className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-border cursor-pointer transition-colors" onClick={handleClose}>
           ✕
         </span>
@@ -131,7 +168,7 @@ export function DailyQuizPopup({
         {!submitted ? (
           <div className="mt-6">
             <p className="text-body-base font-semibold text-foreground leading-relaxed">
-              {trivia.question}
+              <MathText>{trivia.question}</MathText>
             </p>
 
             <ul className="mt-5 space-y-2.5">
@@ -157,7 +194,7 @@ export function DailyQuizPopup({
                       >
                         {String.fromCharCode(65 + idx)}
                       </span>
-                      <span className="text-foreground">{opt}</span>
+                      <MathText className="text-foreground">{opt}</MathText>
                     </button>
                   </li>
                 );
@@ -199,7 +236,12 @@ export function DailyQuizPopup({
                 <p className="text-body-xs mt-1 text-foreground/80">
                   {isCorrect
                     ? "Hebat! Kamu berhasil menjawab trivia hari ini dengan benar."
-                    : `Jawaban yang benar adalah: ${trivia.options[trivia.correctIndex]}`}
+                    : (
+                      <>
+                        Jawaban yang benar adalah:{" "}
+                        <MathText>{trivia.options[trivia.correctIndex]}</MathText>
+                      </>
+                    )}
                 </p>
               </div>
             </div>
@@ -210,7 +252,7 @@ export function DailyQuizPopup({
                 Pembahasan AI:
               </h4>
               <p className="mt-2 text-body-xs text-muted-foreground leading-relaxed">
-                {trivia.explanation}
+                <MathText>{trivia.explanation}</MathText>
               </p>
             </div>
 
@@ -222,6 +264,7 @@ export function DailyQuizPopup({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -11,16 +11,16 @@ export function Logo({ className, presentation = "default" }: LogoProps) {
   const onDark = presentation === "onDark";
 
   return (
-    <div className={cn("relative flex items-center gap-2", className)}>
+    <div className={cn("relative flex items-center [--logo-height:2rem]", className)}>
       {/* Light asset: default on light surfaces; hidden when forcing onDark or site dark mode */}
       <Image
         src="/logo-light.png"
         alt="Zyx Education Logo"
-        width={100}
-        height={33}
+        width={370}
+        height={216}
         priority
         className={cn(
-          "h-auto w-full max-w-[100px]",
+          "h-[var(--logo-height)] w-auto max-w-none",
           onDark ? "hidden" : "block dark:hidden"
         )}
       />
@@ -29,11 +29,11 @@ export function Logo({ className, presentation = "default" }: LogoProps) {
       <Image
         src="/logo-dark.png"
         alt="Zyx Education Logo"
-        width={100}
-        height={33}
+        width={370}
+        height={216}
         priority
         className={cn(
-          "h-auto w-full max-w-[100px]",
+          "h-[var(--logo-height)] w-auto max-w-none",
           onDark ? "block" : "hidden dark:block"
         )}
       />

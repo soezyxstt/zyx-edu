@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Flag, Timer, BookOpen, AlertCircle, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Flag, Timer, BookOpen, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { MathText } from "@/components/course/math-text";
 import type { ExamFixture, QuestionSpec } from "@/lib/student-course-fixtures";
 
 type AnswerState =
@@ -28,6 +29,8 @@ type QuizPlayerProps = {
 
 export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
   const router = useRouter();
+  const durationSeconds = (exam.settings?.timeLimitMinutes ?? 15) * 60;
+  const timerStorageKey = useMemo(() => `zyx-quiz-timer-deadline-${exam.id}`, [exam.id]);
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => {
     const init: Record<string, AnswerState> = {};
@@ -39,24 +42,54 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
   const [flags, setFlags] = useState<Record<string, boolean>>({});
 
   // Timer states
-  const [timeLeft, setTimeLeft] = useState<number>(() => {
-    return (exam.settings?.timeLimitMinutes ?? 15) * 60;
-  });
+  const [timeLeft, setTimeLeft] = useState<number>(durationSeconds);
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const handleSubmit = useCallback(() => {
+    if (isSubmitted) return;
+
+    setIsSubmitted(true);
+    window.localStorage.removeItem(timerStorageKey);
+    toast.success("Kuis berhasil dikumpulkan! Mengarahkan ke halaman hasil...");
+    router.push(`/courses/${courseId}/my-results`);
+  }, [courseId, isSubmitted, router, timerStorageKey]);
 
   useEffect(() => {
+    const rawDeadline = window.localStorage.getItem(timerStorageKey);
+    const storedDeadline = rawDeadline ? Number(rawDeadline) : NaN;
+    const now = Date.now();
+    let nextTimeLeft = durationSeconds;
+
+    if (Number.isFinite(storedDeadline)) {
+      nextTimeLeft = Math.max(0, Math.ceil((storedDeadline - now) / 1000));
+    } else {
+      const deadline = now + durationSeconds * 1000;
+      window.localStorage.setItem(timerStorageKey, String(deadline));
+    }
+
+    const syncTimer = window.setTimeout(() => setTimeLeft(nextTimeLeft), 0);
+    return () => window.clearTimeout(syncTimer);
+  }, [durationSeconds, timerStorageKey]);
+
+  useEffect(() => {
+    if (isSubmitted) return;
+
     const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          toast.warning("Waktu habis! Jawaban Anda otomatis terkirim.");
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
+      const deadline = Number(window.localStorage.getItem(timerStorageKey));
+      const remaining = Number.isFinite(deadline)
+        ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+        : 0;
+
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timer);
+        toast.warning("Waktu habis! Jawaban Anda otomatis terkirim.");
+        handleSubmit();
+      }
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [handleSubmit, isSubmitted, timerStorageKey]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -88,15 +121,6 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
     if (index > 0) setIndex((i) => i - 1);
   }
 
-  function handleSubmit() {
-    // Generate mock submission ID
-    const submissionId = `sub-calc-quiz-generated-${Date.now()}`;
-    
-    // Simulate submission to results history
-    toast.success("Kuis berhasil dikumpulkan! Mengarahkan ke halaman hasil...");
-    router.push(`/courses/${courseId}/my-results`);
-  }
-
   // Determine if a question has been answered
   const isQuestionAnswered = (question: QuestionSpec) => {
     const ans = answers[question.id];
@@ -111,13 +135,13 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
   const currentFlagged = !!flags[q.id];
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start font-sans">
+    <div className="grid grid-cols-1 items-start gap-6 font-sans lg:grid-cols-12">
       
       {/* LEFT COLUMN: Main player and Question details (9 cols on lg) */}
-      <div className="lg:col-span-8 space-y-6">
+      <div className="space-y-5 lg:col-span-8">
         
         {/* Progress Bar & Header */}
-        <div className="bg-card/50 border border-border/70 p-4 rounded-2xl flex items-center justify-between gap-4 backdrop-blur-xs">
+        <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
           <div className="flex-1 space-y-1.5">
             <div className="flex items-center justify-between text-body-xs font-semibold text-muted-foreground">
               <span>PROGRES PENGERJAAN</span>
@@ -131,7 +155,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center gap-1.5 bg-brand-secondary/10 border border-brand-secondary/35 text-brand-secondary px-3.5 py-1.5 rounded-xl font-mono text-body-sm font-bold animate-pulse">
+          <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-brand-secondary/35 bg-brand-secondary/10 px-3 py-1.5 font-mono text-body-sm font-bold text-brand-secondary">
             <Timer className="size-4" />
             <span>{formatTime(timeLeft)}</span>
           </div>
@@ -140,29 +164,26 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
         {/* Question Area Box */}
         <div
           className={cn(
-            "rounded-3xl border border-border/80 bg-card p-6 shadow-lg backdrop-blur-xs md:p-8 relative overflow-hidden",
+            "relative overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-sm backdrop-blur-xs md:p-6",
             "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
             currentFlagged && "ring-1 ring-brand-secondary/35 border-brand-secondary/40"
           )}
         >
-          {/* Accent decoration */}
-          <div className="absolute right-0 top-0 w-32 h-32 bg-brand-primary/5 rounded-full blur-2xl pointer-events-none" />
-
           {/* Heading */}
-          <div className="flex items-start gap-4">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-primary text-body-sm font-bold text-white shadow-xs">
+          <div className="flex items-start gap-3">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-primary text-body-sm font-bold text-white shadow-xs">
               {index + 1}
             </span>
             <div className="space-y-1 flex-1">
-              <h2 className="font-heading text-body-lg font-bold text-foreground leading-snug md:text-h5">
-                {q.prompt}
+              <h2 className="font-heading text-body-lg font-bold leading-snug text-foreground">
+                <MathText>{q.prompt}</MathText>
               </h2>
             </div>
           </div>
 
           {/* Options Display (Multiple choice kuis mingguan) */}
           {q.type === "multiple_choice" && ans.type === "multiple_choice" ? (
-            <ul className="mt-8 space-y-3">
+            <ul className="mt-5 space-y-2">
               {q.options.map((opt, i) => {
                 const selected = ans.index === i;
                 return (
@@ -171,21 +192,21 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
                       type="button"
                       onClick={() => setAnswerFor(q.id, { type: "multiple_choice", index: i })}
                       className={cn(
-                        "flex w-full items-center gap-3.5 rounded-2xl border-2 px-5 py-4 text-left text-body-sm font-medium transition-all duration-200",
+                        "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-body-sm font-medium transition-all duration-200",
                         selected
-                          ? "border-brand-primary bg-brand-primary/10 shadow-sm translate-x-1"
-                          : "border-border/70 bg-muted/10 hover:border-brand-primary/40 hover:bg-muted/30"
+                          ? "border-brand-primary bg-brand-primary/10 shadow-sm"
+                          : "border-border/80 bg-background hover:border-brand-primary/40 hover:bg-muted/30"
                       )}
                     >
                       <span
                         className={cn(
-                          "flex size-8 shrink-0 items-center justify-center rounded-xl text-body-xs font-bold transition-colors",
+                          "flex size-7 shrink-0 items-center justify-center rounded-full text-body-xs font-bold transition-colors",
                           selected ? "bg-brand-primary text-white" : "bg-muted text-foreground",
                         )}
                       >
                         {String.fromCharCode(65 + i)}
                       </span>
-                      <span className="text-foreground leading-normal">{opt}</span>
+                      <MathText className="text-foreground leading-normal">{opt}</MathText>
                     </button>
                   </li>
                 );
@@ -194,7 +215,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
           ) : null}
 
           {/* Flagging Option Widget inside Card */}
-          <div className="mt-8 border-t border-border/80 pt-5 flex items-center justify-between">
+          <div className="mt-5 flex items-center justify-between border-t border-border/80 pt-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -219,7 +240,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
         </div>
 
         {/* Navigation Action Buttons */}
-        <div className="flex items-center justify-between gap-3 bg-muted/20 p-4 rounded-2xl border border-border/60">
+        <div className="flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="outline"
@@ -248,10 +269,10 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
       </div>
 
       {/* RIGHT COLUMN: Sidebar Question Grid & Info (4 cols on lg) */}
-      <div className="lg:col-span-4 space-y-6">
+      <div className="space-y-5 lg:col-span-4 lg:border-l lg:border-border lg:pl-6">
         
         {/* Navigation Grid panel */}
-        <div className="rounded-3xl border border-border bg-card p-5 shadow-md space-y-5">
+        <div className="space-y-5">
           <div>
             <h3 className="font-heading text-body-sm font-bold text-foreground flex items-center gap-2">
               <BookOpen className="size-4 text-brand-primary" />
@@ -263,7 +284,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
           </div>
 
           {/* Grid buttons list */}
-          <div className="grid grid-cols-5 gap-2.5">
+          <div className="grid grid-cols-5 gap-2">
             {sorted.map((question, idx) => {
               const active = index === idx;
               const isAnswered = isQuestionAnswered(question);
@@ -275,7 +296,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
                   type="button"
                   onClick={() => setIndex(idx)}
                   className={cn(
-                    "flex size-10 items-center justify-center rounded-xl font-heading font-bold text-body-xs transition-all border-2",
+                    "flex size-9 items-center justify-center rounded-lg border font-heading text-body-xs font-bold transition-all",
                     active
                       ? "border-brand-primary ring-2 ring-brand-primary/20 scale-105"
                       : "border-transparent",
@@ -294,7 +315,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
           </div>
 
           {/* Legend indicator */}
-          <div className="border-t border-border pt-4 space-y-2 text-body-xs">
+          <div className="space-y-2 border-t border-border pt-4 text-body-xs">
             <span className="font-semibold text-foreground block">Keterangan Warna:</span>
             <div className="grid grid-cols-2 gap-2 text-muted-foreground">
               <div className="flex items-center gap-1.5">
@@ -314,17 +335,6 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
                 <span>Aktif</span>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Information box */}
-        <div className="rounded-2xl border border-brand-primary/20 bg-brand-primary/5 p-4 flex items-start gap-3">
-          <AlertCircle className="size-5 text-brand-primary shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="text-body-xs font-bold text-foreground">Kuis Bersifat Kasual</h4>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Kuis ini dirancang untuk latihan mingguan yang menyenangkan. Tidak perlu tegang, nilaimu akan tercatat langsung di halaman hasil dan dapat ditinjau kapan saja.
-            </p>
           </div>
         </div>
 

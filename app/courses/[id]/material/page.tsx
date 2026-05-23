@@ -10,9 +10,10 @@ type Props = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const course = getCourseById(id);
+
   return {
-    title: pageTitle(course ? `${course.title} — Dokumen` : "Dokumen"),
-    description: "Daftar dokumen materi, berkas ujian, diktat, dan solusi kelas.",
+    title: pageTitle(course ? `${course.title} - Materi` : "Materi"),
+    description: "Materi belajar kelas.",
   };
 }
 
@@ -21,16 +22,10 @@ export default async function CourseMaterialListPage({ params }: Props) {
   const course = getCourseById(id);
   if (!course) return null;
 
-  const materials = getMaterialsForCourse(id);
-
   return (
-    <CoursePageShell
-      eyebrow="Bahan Belajar"
-      title="Dokumen & Materi Kuliah"
-      description="Cari dan pelajari materi presentasi dosen, soal ujian tahun sebelumnya ITB, solusi pembahasan soal, dan diktat kuliah gratis."
-    >
+    <CoursePageShell title="Materi" hideHeader>
       <Reveal>
-        <DocumentListClient courseId={id} materials={materials} />
+        <DocumentListClient courseId={id} materials={getMaterialsForCourse(id)} />
       </Reveal>
     </CoursePageShell>
   );

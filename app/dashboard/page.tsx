@@ -2,13 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { headers } from "next/headers";
 import {
-  BookOpen,
   ClipboardList,
   GraduationCap,
   Play,
   CheckCircle2,
   Bookmark,
-  Sparkles,
   Trophy,
   ArrowUpRight,
 } from "lucide-react";
@@ -61,12 +59,9 @@ export default async function DashboardPage() {
       }
       return null;
     })
-    .filter(Boolean);
+    .filter((document) => document !== null);
 
-  // 2. Completed documents count
-  const completedDocsCount = progressList.filter((p) => p.status === "completed").length;
-
-  // 3. Available exams
+  // 2. Available exams
   const availableExams = enrolledCourseIds.flatMap((courseId) => {
     const course = enrollments.find((e) => e.id === courseId);
     const quizzes = getExamsForCourse(courseId, "quiz");
@@ -95,38 +90,14 @@ export default async function DashboardPage() {
       <div className="relative z-10 marketing-container pt-8 md:pt-12">
         {/* Welcome Header */}
         <Reveal duration="duration-500">
-          <header className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-primary/20 bg-brand-primary/5 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">
-              <Sparkles className="size-3" />
-              Siswa Terdaftar
-            </span>
-            <h1 className="mt-3 font-heading text-h3 font-bold text-foreground md:text-h2">
+          <header className="mx-auto mb-10 max-w-4xl text-center">
+            <h1 className="font-heading text-h3 font-bold text-foreground md:text-h2">
               Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>! 👋
             </h1>
             <p className="mt-1.5 text-body-base text-muted-foreground">
               Mari lanjutkan aktivitas belajarmu hari ini.
             </p>
-          </div>
-
-          {/* Quick stats row */}
-          {isEnrolledInAny && (
-            <div className="flex flex-wrap gap-2.5">
-              <div className="rounded-xl border border-border/70 bg-card/50 px-4 py-2.5">
-                <p className="text-body-xs text-muted-foreground">Kelas Aktif</p>
-                <p className="font-heading text-body-lg font-bold text-foreground">{enrollments.length}</p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-card/50 px-4 py-2.5">
-                <p className="text-body-xs text-muted-foreground">Materi Selesai</p>
-                <p className="font-heading text-body-lg font-bold text-status-success">{completedDocsCount}</p>
-              </div>
-              <div className="rounded-xl border border-border/70 bg-card/50 px-4 py-2.5">
-                <p className="text-body-xs text-muted-foreground">Ujian Tersisa</p>
-                <p className="font-heading text-body-lg font-bold text-brand-secondary">{availableExams.length}</p>
-              </div>
-            </div>
-          )}
-        </header>
+          </header>
         </Reveal>
 
         <Reveal duration="duration-700">
@@ -241,7 +212,7 @@ export default async function DashboardPage() {
                 </h2>
                 {inProgressDocuments.length > 0 ? (
                   <div className="grid gap-3 sm:grid-cols-2">
-                    {inProgressDocuments.map((doc: any) => (
+                    {inProgressDocuments.map((doc) => (
                       <div
                         key={doc.id}
                         className="flex flex-col justify-between rounded-xl border border-border/50 bg-muted/5 p-4 hover:bg-muted/15 transition-colors"

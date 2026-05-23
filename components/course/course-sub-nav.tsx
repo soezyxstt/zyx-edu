@@ -1,16 +1,42 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Check, ChevronDown, ListTree } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const segments = [
-  { href: (id: string) => `/courses/${id}`, label: "Ringkasan", match: (path: string, id: string) => path === `/courses/${id}` },
-  { href: (id: string) => `/courses/${id}/material`, label: "Dokumen", match: (path: string, id: string) => path.startsWith(`/courses/${id}/material`) },
-  { href: (id: string) => `/courses/${id}/quiz`, label: "Kuis", match: (path: string, id: string) => path.startsWith(`/courses/${id}/quiz`) },
-  { href: (id: string) => `/courses/${id}/tryout`, label: "Tryout", match: (path: string, id: string) => path.startsWith(`/courses/${id}/tryout`) },
-  { href: (id: string) => `/courses/${id}/leaderboard`, label: "Papan peringkat", match: (path: string, id: string) => path.startsWith(`/courses/${id}/leaderboard`) },
-  { href: (id: string) => `/courses/${id}/my-results`, label: "Hasil saya", match: (path: string, id: string) => path.startsWith(`/courses/${id}/my-results`) },
+  {
+    href: (id: string) => `/courses/${id}`,
+    label: "Ringkasan",
+    match: (path: string, id: string) => path === `/courses/${id}`,
+  },
+  {
+    href: (id: string) => `/courses/${id}/material`,
+    label: "Dokumen",
+    match: (path: string, id: string) => path.startsWith(`/courses/${id}/material`),
+  },
+  {
+    href: (id: string) => `/courses/${id}/quiz`,
+    label: "Kuis",
+    match: (path: string, id: string) => path.startsWith(`/courses/${id}/quiz`),
+  },
+  {
+    href: (id: string) => `/courses/${id}/tryout`,
+    label: "Tryout",
+    match: (path: string, id: string) => path.startsWith(`/courses/${id}/tryout`),
+  },
+  {
+    href: (id: string) => `/courses/${id}/leaderboard`,
+    label: "Peringkat",
+    match: (path: string, id: string) => path.startsWith(`/courses/${id}/leaderboard`),
+  },
+  {
+    href: (id: string) => `/courses/${id}/my-results`,
+    label: "Hasil",
+    match: (path: string, id: string) => path.startsWith(`/courses/${id}/my-results`),
+  },
 ] as const;
 
 type CourseSubNavProps = {
@@ -20,31 +46,52 @@ type CourseSubNavProps = {
 
 export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
   const pathname = usePathname();
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const activeSegment = segments.find((seg) => seg.match(pathname, courseId)) ?? segments[0];
+
+  useEffect(() => {
+    if (detailsRef.current) {
+      detailsRef.current.open = false;
+    }
+  }, [pathname]);
 
   return (
-    <div className="border-b border-transparent pb-4">
-      <nav
-        aria-label="Navigasi course"
-        className="flex gap-1 overflow-x-auto rounded-full bg-muted/50 p-1 md:flex-wrap md:overflow-visible"
-      >
-        {segments.map((seg) => {
-          const href = seg.href(courseId);
-          const active = seg.match(pathname, courseId);
-          return (
-            <Link
-              key={seg.label}
-              href={href}
-              className={cn(
-                "shrink-0 rounded-full px-3.5 py-2 text-body-sm font-medium transition-[color,box-shadow,background-color]",
-                active
-                  ? "bg-card text-foreground shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {seg.label}
-            </Link>
-          );
-        })}
+    <div className="relative">
+      <nav aria-label="Navigasi course" className="flex">
+        <details ref={detailsRef} className="group relative w-full max-w-80">
+          <summary className="flex h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md border border-border bg-background px-3 text-body-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/45 [&::-webkit-details-marker]:hidden">
+            <span className="flex min-w-0 items-center gap-2">
+              <ListTree className="size-4 shrink-0 text-brand-primary" aria-hidden />
+              <span className="min-w-0 truncate">{activeSegment.label}</span>
+            </span>
+            <ChevronDown
+              className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180"
+              aria-hidden
+            />
+          </summary>
+          <div className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-border bg-popover p-1.5 text-popover-foreground shadow-lg">
+            {segments.map((seg) => {
+              const href = seg.href(courseId);
+              const active = seg.match(pathname, courseId);
+              return (
+                <Link
+                  key={seg.label}
+                  href={href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "flex items-center justify-between gap-3 rounded-sm px-3 py-2.5 text-body-sm font-medium transition-colors",
+                    active
+                      ? "bg-primary/10 text-brand-primary"
+                      : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
+                  )}
+                >
+                  <span>{seg.label}</span>
+                  {active ? <Check className="size-4 shrink-0" aria-hidden /> : null}
+                </Link>
+              );
+            })}
+          </div>
+        </details>
       </nav>
       <p className="sr-only">Course: {courseTitle}</p>
     </div>

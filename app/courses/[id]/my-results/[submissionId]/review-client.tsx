@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Check, HelpCircle, X, Lock, Sparkles, Video, Play, ExternalLink } from "lucide-react";
+import { Check, HelpCircle, X, Lock, Sparkles, Video, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { MathText } from "@/components/course/math-text";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { SubmissionReviewFixture, SubmissionListItem } from "@/lib/student-course-fixtures";
 
@@ -14,7 +14,7 @@ type ReviewClientProps = {
   review: SubmissionReviewFixture;
 };
 
-export function ReviewClient({ courseId, listItem, review }: ReviewClientProps) {
+export function ReviewClient({ listItem, review }: ReviewClientProps) {
   const [userPlan, setUserPlan] = useState<string>("essential");
 
   const loadPlan = () => {
@@ -22,11 +22,14 @@ export function ReviewClient({ courseId, listItem, review }: ReviewClientProps) 
   };
 
   useEffect(() => {
-    loadPlan();
+    const timer = window.setTimeout(loadPlan, 0);
 
     // Listen to simulator plan updates
     window.addEventListener("zyx-plan-changed", loadPlan);
-    return () => window.removeEventListener("zyx-plan-changed", loadPlan);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("zyx-plan-changed", loadPlan);
+    };
   }, []);
 
   const isVideoUnlocked = userPlan === "essential" || userPlan === "premium";
@@ -69,7 +72,8 @@ export function ReviewClient({ courseId, listItem, review }: ReviewClientProps) 
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <h3 className="font-heading text-body-md font-bold text-foreground md:text-h6 max-w-xl leading-snug">
-                  <span className="text-muted-foreground mr-1">{idx + 1}.</span> {item.prompt}
+                  <span className="text-muted-foreground mr-1">{idx + 1}.</span>
+                  <MathText>{item.prompt}</MathText>
                 </h3>
                 
                 {/* Answer Correctness Badges */}
@@ -92,18 +96,18 @@ export function ReviewClient({ courseId, listItem, review }: ReviewClientProps) 
               <div className="mt-5 space-y-2 text-body-sm border-l-2 border-muted pl-4">
                 <p>
                   <span className="font-semibold text-muted-foreground">Jawaban Anda: </span>
-                  <span className="text-foreground font-medium">{item.userAnswer || "—"}</span>
+                  <MathText className="text-foreground font-medium">{item.userAnswer || "—"}</MathText>
                 </p>
                 {item.correctAnswerLabel && (
                   <p>
                     <span className="font-semibold text-muted-foreground">Jawaban Benar: </span>
-                    <span className="text-status-success font-semibold">{item.correctAnswerLabel}</span>
+                    <MathText className="text-status-success font-semibold">{item.correctAnswerLabel}</MathText>
                   </p>
                 )}
                 {item.teacherNote && (
                   <div className="mt-3 rounded-xl bg-muted/40 border border-border p-3 text-body-xs text-foreground leading-relaxed">
                     <span className="font-bold text-brand-secondary">Catatan Pengajar: </span>
-                    {item.teacherNote}
+                    <MathText>{item.teacherNote}</MathText>
                   </div>
                 )}
               </div>
@@ -118,9 +122,9 @@ export function ReviewClient({ courseId, listItem, review }: ReviewClientProps) 
 
                   {/* Text-based explanation */}
                   {item.explanationText && (
-                    <p className="text-body-sm text-muted-foreground leading-relaxed">
+                    <MathText as="p" className="text-body-sm text-muted-foreground leading-relaxed">
                       {item.explanationText}
-                    </p>
+                    </MathText>
                   )}
 
                   {/* Image/Diagram explanation */}

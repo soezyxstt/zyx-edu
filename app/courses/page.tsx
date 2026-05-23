@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
-import { courseCardClass } from "@/components/course/course-surfaces";
-import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { listCourses } from "@/lib/student-course-fixtures";
@@ -21,33 +20,38 @@ export default function CoursesPage() {
       headingTier="primary"
       title={
         <>
-          Pilah course yang <span className="font-bold italic text-primary">cocok</span> untuk ritmemu
+          Course yang <span className="font-bold italic text-primary">cocok</span> untuk ritmemu
         </>
       }
-      description="Preview dengan data contoh. Setelah enrollment aktif, daftar akan disaring dari server sesuai paketmu."
+      description="Pilih kelas, buka dokumen gratis, lalu aktifkan token untuk fitur premium."
     >
       <Reveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="overflow-hidden rounded-lg border border-border/70 bg-card/70 backdrop-blur-sm">
           {courses.map((c) => (
-            <article
+            <Link
               key={c.id}
-              className={`${courseCardClass()} flex flex-col motion-safe:transition-transform motion-safe:duration-200 motion-safe:hover:-translate-y-0.5`}
+              href={`/courses/${c.id}`}
+              className="group grid gap-3 border-b border-border/60 px-4 py-4 transition-colors last:border-0 hover:bg-muted/35 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
             >
-              <span className="inline-flex w-fit rounded-full bg-primary/10 px-3 py-0.5 text-body-sm font-medium text-primary">
-                {c.category}
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="font-heading text-h6 font-semibold text-foreground group-hover:text-primary">
+                    {c.title}
+                  </h2>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                    {c.category}
+                  </span>
+                </div>
+                <p className="mt-1 line-clamp-1 text-body-sm text-muted-foreground">{c.description}</p>
+              </div>
+              <span className="inline-flex items-center gap-1 text-body-sm font-semibold text-brand-primary">
+                Buka
+                <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
               </span>
-              <h2 className="mt-3 font-heading text-h5 font-semibold text-foreground">{c.title}</h2>
-              <p className="mt-2 line-clamp-3 flex-1 text-body-sm text-muted-foreground">{c.description}</p>
-              <Button
-                asChild
-                className="interactive mt-5 w-full rounded-full motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] sm:w-auto"
-              >
-                <Link href={`/courses/${c.id}`}>Buka course</Link>
-              </Button>
-            </article>
+            </Link>
           ))}
         </div>
-        <p className="mt-10 text-body-sm text-muted-foreground">
+        <p className="mt-5 text-body-sm text-muted-foreground">
           Perlu akses?{" "}
           <Link href="/plans" className="font-medium text-primary underline-offset-4 hover:underline">
             Lihat paket

@@ -1,19 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, ClipboardList, Trophy, Lock } from "lucide-react";
+import { BookOpen, ClipboardList, Lock, Trophy } from "lucide-react";
+import { checkEnrollment } from "@/app/dashboard/actions";
+import { DailyQuizSection } from "@/components/course/daily-quiz-section";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { courseCardClass } from "@/components/course/course-surfaces";
+import { EnrollmentForm } from "@/components/enrollment-form";
 import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import {
   getCourseById,
   getExamsForCourse,
   getMaterialsForCourse,
 } from "@/lib/student-course-fixtures";
-import { checkEnrollment } from "@/app/dashboard/actions";
-import { EnrollmentForm } from "@/components/enrollment-form";
-import { DailyQuizSection } from "@/components/course/daily-quiz-section";
-import { Reveal } from "@/components/ui/reveal";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -32,12 +32,9 @@ export default async function CourseOverviewPage({ params }: Props) {
   if (!course) return null;
 
   const isEnrolled = await checkEnrollment(id);
-
   const materials = getMaterialsForCourse(id);
   const quizzes = getExamsForCourse(id, "quiz");
   const tryouts = getExamsForCourse(id, "tryout");
-  
-  // Count only materials completed in user data (not implemented fully in fixtures but keeps parity)
   const doneMaterials = materials.filter((m) => m.completed).length;
 
   const tiles = [
@@ -45,17 +42,11 @@ export default async function CourseOverviewPage({ params }: Props) {
       key: "material",
       icon: BookOpen,
       iconBg: "bg-brand-primary/12 text-brand-primary",
-      title: "Dokumen & Materi",
-      body: isEnrolled 
-        ? `${doneMaterials}/${materials.length} dokumen dipelajari`
-        : `Akses Terbuka: ${materials.length} dokumen (Materi, Soal ITB, Diktat) tersedia secara gratis`,
+      title: "Dokumen",
+      body: isEnrolled ? `${doneMaterials}/${materials.length} dipelajari` : `${materials.length} dokumen gratis`,
       actions: (
-        <Button
-          asChild
-          variant="outline"
-          className="interactive mt-4 w-full rounded-full motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98] sm:w-auto"
-        >
-          <Link href={`/courses/${id}/material`}>Buka dokumen</Link>
+        <Button asChild variant="outline" size="sm" className="interactive rounded-full">
+          <Link href={`/courses/${id}/material`}>Buka</Link>
         </Button>
       ),
     },
@@ -63,18 +54,11 @@ export default async function CourseOverviewPage({ params }: Props) {
       key: "practice",
       icon: ClipboardList,
       iconBg: "bg-tertiary-1/12 text-tertiary-1",
-      title: "Latihan & Tryout",
-      body: isEnrolled 
-        ? `${quizzes.length} kuis · ${tryouts.length} tryout`
-        : `Pratinjau Kuis Gratis tersedia · ${tryouts.length} tryout membutuhkan pendaftaran`,
+      title: "Latihan",
+      body: isEnrolled ? `${quizzes.length} kuis, ${tryouts.length} tryout` : "Kuis gratis, tryout via token",
       actions: (
-        <div className="mt-4 flex flex-wrap gap-2 w-full">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="interactive rounded-full motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
-          >
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm" className="interactive rounded-full">
             <Link href={`/courses/${id}/quiz`}>Kuis</Link>
           </Button>
           <Button
@@ -82,7 +66,7 @@ export default async function CourseOverviewPage({ params }: Props) {
             variant={isEnrolled ? "outline" : "ghost"}
             disabled={!isEnrolled}
             size="sm"
-            className="interactive rounded-full gap-1.5 motion-safe:hover:scale-[1.02] motion-safe:active:scale-[0.98]"
+            className="interactive gap-1.5 rounded-full"
           >
             <Link href={`/courses/${id}/tryout`}>
               {!isEnrolled && <Lock className="size-3 text-muted-foreground" />}
@@ -96,22 +80,20 @@ export default async function CourseOverviewPage({ params }: Props) {
       key: "progress",
       icon: Trophy,
       iconBg: "bg-brand-secondary/12 text-brand-secondary",
-      title: "Papan Nilai",
-      body: isEnrolled
-        ? "Lihat peringkat dan riwayat pengumpulan nilai."
-        : "Akses papan peringkat terkunci. Daftarkan kelas untuk bergabung.",
+      title: "Nilai",
+      body: isEnrolled ? "Peringkat dan riwayat." : "Terkunci sampai aktif.",
       actions: (
-        <div className="mt-4 flex flex-wrap gap-2 w-full">
+        <div className="flex flex-wrap gap-2">
           <Button
             asChild
             variant={isEnrolled ? "outline" : "ghost"}
             disabled={!isEnrolled}
             size="sm"
-            className="interactive rounded-full gap-1.5"
+            className="interactive gap-1.5 rounded-full"
           >
             <Link href={`/courses/${id}/leaderboard`}>
               {!isEnrolled && <Lock className="size-3" />}
-              Papan peringkat
+              Peringkat
             </Link>
           </Button>
           <Button
@@ -119,11 +101,11 @@ export default async function CourseOverviewPage({ params }: Props) {
             variant={isEnrolled ? "outline" : "ghost"}
             disabled={!isEnrolled}
             size="sm"
-            className="interactive rounded-full gap-1.5"
+            className="interactive gap-1.5 rounded-full"
           >
             <Link href={`/courses/${id}/my-results`}>
               {!isEnrolled && <Lock className="size-3" />}
-              Hasil saya
+              Hasil
             </Link>
           </Button>
         </div>
@@ -132,50 +114,37 @@ export default async function CourseOverviewPage({ params }: Props) {
   ] as const;
 
   return (
-    <CoursePageShell
-      eyebrow={course.category}
-      headingTier="primary"
-      title={course.title}
-      description={course.description}
-    >
+    <CoursePageShell eyebrow={course.category} headingTier="primary" title={course.title} description={course.description} hideHeader>
       <Reveal>
         {!isEnrolled && (
-          <div className="mb-8 rounded-2xl border border-brand-secondary/30 bg-brand-secondary/5 p-6 shadow-sm">
-            <div className="flex items-start gap-4 flex-col md:flex-row justify-between md:items-center">
-              <div className="space-y-1">
-                <h3 className="font-heading text-body-base font-bold text-brand-secondary flex items-center gap-2">
-                  Mode Pratinjau Gratis (Belum Terdaftar)
-                </h3>
-                <p className="text-body-sm text-muted-foreground max-w-2xl leading-relaxed">
-                  Anda dapat mengakses seluruh Dokumen Materi secara gratis. Untuk membuka akses Kuis berbayar, Tryout Ujian, dan Papan Peringkat, silakan masukkan token pendaftaran satu kali pakai Anda.
+          <div className="mb-5 rounded-lg border border-brand-secondary/25 bg-brand-secondary/5 p-4">
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] md:items-center">
+              <div>
+                <h3 className="font-heading text-body-base font-bold text-brand-secondary">Pratinjau gratis</h3>
+                <p className="mt-1 max-w-2xl text-body-sm text-muted-foreground">
+                  Dokumen terbuka. Token membuka kuis premium, tryout, peringkat, dan riwayat nilai.
                 </p>
               </div>
-              <div className="w-full md:w-auto shrink-0 md:max-w-md">
-                <EnrollmentForm className="w-full" />
-              </div>
+              <EnrollmentForm className="w-full" />
             </div>
           </div>
         )}
 
-        {/* Daily Quiz Pop-up mount and entry card banner */}
         <DailyQuizSection courseId={id} courseTitle={course.title} />
 
-        <div className="grid gap-5 md:grid-cols-3">
-          {tiles.map((t) => {
-            const Icon = t.icon;
+        <div className="grid gap-3 md:grid-cols-3">
+          {tiles.map((tile) => {
+            const Icon = tile.icon;
             return (
-              <div key={t.key} className={courseCardClass("flex flex-col")}>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`flex size-11 items-center justify-center rounded-2xl ${t.iconBg}`}
-                    aria-hidden
-                  >
-                    <Icon className="size-5" />
+              <div key={tile.key} className={courseCardClass("flex flex-col gap-3")}>
+                <div className="flex items-center gap-2.5">
+                  <span className={`flex size-9 items-center justify-center rounded-lg ${tile.iconBg}`} aria-hidden>
+                    <Icon className="size-4" />
                   </span>
-                  <h2 className="font-heading text-h6 font-semibold text-foreground">{t.title}</h2>
+                  <h2 className="font-heading text-h6 font-semibold text-foreground">{tile.title}</h2>
                 </div>
-                <p className="mt-3 text-body-base text-muted-foreground flex-1">{t.body}</p>
-                {t.actions}
+                <p className="text-body-sm text-muted-foreground">{tile.body}</p>
+                {tile.actions}
               </div>
             );
           })}
