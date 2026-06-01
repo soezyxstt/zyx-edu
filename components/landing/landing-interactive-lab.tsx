@@ -215,7 +215,7 @@ export function LandingInteractiveLab() {
         <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <article className="min-w-0 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
             <div className="mb-5 flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-              <div className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-full bg-primary/10 px-3 py-1.5 text-body-sm font-semibold text-primary">
+              <div className="inline-flex max-w-full min-w-0 flex-wrap items-center gap-2 rounded-md bg-primary/10 px-3 py-1.5 text-body-sm font-semibold text-primary">
                 {domain === "math" ? (
                   <SlidersHorizontal className="size-4 shrink-0" />
                 ) : domain === "coding" ? (
@@ -231,7 +231,7 @@ export function LandingInteractiveLab() {
                       : "Latihan struktur kalimat"}
                 </span>
               </div>
-              <div className="inline-flex w-fit max-w-full shrink-0 items-center gap-1 rounded-full bg-muted px-3 py-1.5 text-body-sm text-muted-foreground">
+              <div className="inline-flex w-fit max-w-full shrink-0 items-center gap-1 rounded-md bg-muted px-3 py-1.5 text-body-sm text-muted-foreground">
                 <Sparkles className="size-3.5 shrink-0" aria-hidden />
                 Pembaruan langsung
               </div>
@@ -360,7 +360,7 @@ export function LandingInteractiveLab() {
                       <p className={cn("mt-3 text-body-sm font-medium", codingAnswer ? (codingCorrect ? "text-status-success" : "text-status-error") : "text-muted-foreground")}>
                         {codingAnswer
                           ? codingCorrect
-                            ? "Benar — alur pembacaan kamu tepat."
+                            ? "Benar - alur pembacaan kamu tepat."
                             : `Belum tepat. Output yang benar: ${codingScenario.answer}.`
                           : "Pilih jawaban untuk cek hasil."}
                       </p>
@@ -413,8 +413,8 @@ export function LandingInteractiveLab() {
                       <p className={cn("mt-3 text-body-sm font-medium", languageAnswer ? (languageCorrect ? "text-status-success" : "text-status-error") : "text-muted-foreground")}>
                         {languageAnswer
                           ? languageCorrect
-                            ? "Pilihan tepat — kalimat ini paling jelas dan sopan untuk konteksnya."
-                            : "Coba lagi — perhatikan tata bahasa dan pilihan kata yang lebih natural."
+                            ? "Pilihan tepat - kalimat ini paling jelas dan sopan untuk konteksnya."
+                            : "Coba lagi - perhatikan tata bahasa dan pilihan kata yang lebih natural."
                           : "Pilih opsi untuk melihat umpan balik."}
                       </p>
                     </div>
@@ -425,7 +425,7 @@ export function LandingInteractiveLab() {
           </article>
 
           <article className="min-w-0 rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-[var(--zx-accent)]/12 px-3 py-1 text-body-sm font-semibold text-[var(--zx-accent)]">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-md bg-[var(--zx-accent)]/12 px-3 py-1 text-body-sm font-semibold text-[var(--zx-accent)]">
               <CircleHelp className="size-4 shrink-0" aria-hidden />
               {domain === "math"
                 ? "Tantangan cepat matematika"

@@ -12,14 +12,14 @@ export default function FeedbackPage() {
   return (
     <ShellPage
       title="Feedback"
-      description="Kami membaca setiap masukan. Form terhubung ke layanan email pada fase berikutnya — gunakan tombol di bawah sebagai placeholder."
+      description="Kami membaca setiap masukan. Form terhubung ke layanan email pada fase berikutnya - gunakan tombol di bawah sebagai placeholder."
     >
       <div className="max-w-xl rounded-2xl border border-border bg-card p-8 shadow-sm">
         <p className="text-body-md text-muted-foreground">
           Form feedback (kualitas layanan &amp; pengajar) akan tersedia di sini. Untuk saat ini, hubungi
           tim Zyx melalui kanal resmi di footer.
         </p>
-        <Button type="button" className="mt-6 rounded-full" disabled>
+        <Button type="button" className="mt-6 rounded-lg" disabled>
           Open form (soon)
         </Button>
       </div>

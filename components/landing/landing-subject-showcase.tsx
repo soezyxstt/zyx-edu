@@ -27,7 +27,7 @@ const subjects = [
     label: "Fisika",
     title: "Fisika dasar",
     tag: "TPB",
-    blurb: "Mekanika, gelombang, termodinamika pengantar — dengan latihan terarah.",
+    blurb: "Mekanika, gelombang, termodinamika pengantar - dengan latihan terarah.",
     courses: ["Kinematika & dinamika", "Energi & momentum", "Fluida & gelombang", "Termodinamika pengantar"],
     accent: "from-status-info/35 to-brand-primary/20",
     bar: "bg-status-info",
@@ -58,7 +58,7 @@ function SubjectVisual({ accent, bar }: { accent: string; bar: string }) {
   return (
     <div className={cn("relative flex min-h-[220px] flex-col justify-between rounded-2xl p-6 md:min-h-[260px]", "bg-linear-to-br", accent)}>
       <div className="flex items-center gap-2">
-        <span className={cn("h-1.5 w-12 rounded-full", bar)} />
+        <span className={cn("h-1.5 w-12 rounded", bar)} />
         <span className="text-body-sm font-medium text-white/90">Pratinjau modul</span>
       </div>
       <div className="grid grid-cols-3 gap-2 rounded-xl bg-black-2/25 p-3 ring-1 ring-white/20 backdrop-blur-sm">

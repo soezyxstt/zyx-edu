@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Lock, Search } from "lucide-react";
+import { ChevronRight, Lock, CheckCircle2, Play, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { ExamFixture } from "@/lib/student-course-fixtures";
+import type { quizTemplates, studentQuizAttempts } from "@/db/schema";
+
+type TemplateType = typeof quizTemplates.$inferSelect;
+type AttemptType = typeof studentQuizAttempts.$inferSelect;
 
 type QuizListClientProps = {
   courseId: string;
   isEnrolled: boolean;
-  quizzes: ExamFixture[];
+  templates: TemplateType[];
+  attempts: AttemptType[];
 };
 
 const filterOptions = [
@@ -19,87 +23,133 @@ const filterOptions = [
   { value: "premium", label: "Premium" },
 ] as const;
 
-export function QuizListClient({ courseId, isEnrolled, quizzes }: QuizListClientProps) {
+export function QuizListClient({ courseId, isEnrolled, templates, attempts }: QuizListClientProps) {
   const [filter, setFilter] = useState<"all" | "free" | "premium">("all");
-  const [search, setSearch] = useState("");
-
-  const filteredQuizzes = quizzes.filter((quiz) => {
-    const isFree = quiz.isFree || quiz.isPreview || quiz.isPastYear;
-    const matchesSearch = quiz.title.toLowerCase().includes(search.toLowerCase());
-
-    if (!matchesSearch) return false;
+  
+  const filteredTemplates = templates.filter((template) => {
+    const isFree = template.visibility === "free";
     if (filter === "free") return isFree;
     if (filter === "premium") return !isFree;
     return true;
   });
 
   const counts = {
-    all: quizzes.length,
-    free: quizzes.filter((quiz) => quiz.isFree || quiz.isPreview || quiz.isPastYear).length,
-    premium: quizzes.filter((quiz) => !(quiz.isFree || quiz.isPreview || quiz.isPastYear)).length,
+    all: templates.length,
+    free: templates.filter((t) => t.visibility === "free").length,
+    premium: templates.filter((t) => t.visibility === "paid").length,
   };
 
   return (
-    <div className="space-y-3 font-sans">
-      <div className="flex flex-col gap-2 rounded-lg border border-border/70 bg-card/70 p-3 backdrop-blur-sm md:flex-row md:items-center md:justify-between">
-        <label className="relative md:w-72">
-          <span className="sr-only">Cari kuis</span>
-          <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            placeholder="Cari kuis"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-3 text-body-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
-        </label>
-
-        <div className="flex gap-1 overflow-x-auto">
+    <div className="space-y-4 font-sans">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-card/70 p-3 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
           {filterOptions.map((option) => (
             <button
               key={option.value}
               type="button"
               onClick={() => setFilter(option.value)}
               className={cn(
-                "shrink-0 rounded-md px-3 py-1.5 text-body-sm font-semibold transition-colors",
+                "inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
                 filter === option.value
                   ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  : "bg-muted text-muted-foreground hover:bg-border hover:text-foreground",
               )}
             >
-              {option.label} ({counts[option.value]})
+              <span>{option.label}</span>
+              <span
+                className={cn(
+                  "text-[11px]",
+                  filter === option.value ? "text-primary-foreground/80" : "text-muted-foreground",
+                )}
+              >
+                {counts[option.value]}
+              </span>
             </button>
           ))}
         </div>
       </div>
 
       <ul className="overflow-hidden rounded-lg border border-border/70 bg-card/75 backdrop-blur-sm">
-        {filteredQuizzes.map((quiz) => {
-          const isFree = quiz.isFree || quiz.isPreview || quiz.isPastYear;
+        {filteredTemplates.map((template) => {
+          const isFree = template.visibility === "free";
           const accessible = isEnrolled || isFree;
 
+          // Parse selection rules to get question count
+          const rules = template.selectionRules as Record<string, any>;
+          const qCount = Number(rules?.count ?? 10);
+
+          // Get attempts for this template
+          const templateAttempts = attempts.filter((a) => a.templateId === template.id);
+          const completedAttempts = templateAttempts.filter((a) => a.status === "completed");
+          const activeAttempt = templateAttempts.find((a) => a.status === "in_progress");
+
+          // Calculate attempts left
+          const attemptsLeft = template.maxAttempts 
+            ? Math.max(0, template.maxAttempts - completedAttempts.length)
+            : null;
+
+          // Find highest score
+          const highestScore = completedAttempts.length > 0
+            ? Math.max(...completedAttempts.map((a) => a.score ?? 0))
+            : null;
+
           return (
-            <li key={quiz.id} className="border-b border-border/60 last:border-0">
+            <li key={template.id} className="border-b border-border/60 last:border-0">
               <div
                 className={cn(
-                  "grid gap-3 px-4 py-3 transition-colors md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-center",
+                  "grid gap-3 px-4 py-3.5 transition-colors md:grid-cols-[minmax(0,1fr)_180px_auto] md:items-center",
                   accessible ? "hover:bg-muted/30" : "bg-card/45 text-muted-foreground",
                 )}
               >
                 <div className="min-w-0">
-                  <h3 className="truncate font-heading text-body-base font-semibold text-foreground">
-                    {quiz.title}
-                  </h3>
-                  <p className="mt-1 text-body-sm text-muted-foreground">
-                    {quiz.questions.length} soal
-                    {quiz.settings?.timeLimitMinutes ? ` · ${quiz.settings.timeLimitMinutes} menit` : ""}
-                    {quiz.settings?.maxAttempts ? ` · ${quiz.settings.maxAttempts}x percobaan` : ""}
-                  </p>
+                  <div className="flex items-center gap-2">
+                    <h3 className="truncate font-heading text-body-base font-semibold text-foreground">
+                      {template.title}
+                    </h3>
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground capitalize">
+                      {template.category}
+                    </span>
+                  </div>
+                  
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm text-muted-foreground">
+                    <span>{qCount} soal</span>
+                    <span>·</span>
+                    <span>{template.timeLimitSeconds ? `${Math.round(template.timeLimitSeconds / 60)} menit` : "Tanpa batas waktu"}</span>
+                    {template.maxAttempts && (
+                      <>
+                        <span>·</span>
+                        <span>Maks {template.maxAttempts}x percobaan</span>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Status indicators */}
+                  {accessible && (
+                    <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                      {activeAttempt ? (
+                        <span className="inline-flex items-center gap-1 text-amber-500 font-medium">
+                          <AlertCircle className="size-3.5" />
+                          Sedang dikerjakan
+                        </span>
+                      ) : highestScore !== null ? (
+                        <span className="inline-flex items-center gap-1 text-emerald-500 font-medium">
+                          <CheckCircle2 className="size-3.5" />
+                          Terjawab (Nilai Terbaik: {highestScore}%)
+                        </span>
+                      ) : null}
+
+                      {template.maxAttempts && completedAttempts.length > 0 && (
+                        <span className="text-muted-foreground">
+                          ({completedAttempts.length}/{template.maxAttempts} percobaan selesai)
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <span
                   className={cn(
-                    "inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1",
+                    "inline-flex w-fit items-center gap-1 rounded-md px-2.5 py-0.5 text-xs font-semibold ring-1",
                     isFree
                       ? "bg-status-success/10 text-status-success ring-status-success/20"
                       : "bg-brand-primary/10 text-brand-primary ring-brand-primary/20",
@@ -114,13 +164,13 @@ export function QuizListClient({ courseId, isEnrolled, quizzes }: QuizListClient
                   variant={accessible ? "default" : "outline"}
                   size="sm"
                   className={cn(
-                    "interactive rounded-full md:justify-self-end",
+                    "interactive rounded-md md:justify-self-end",
                     accessible ? "bg-brand-primary text-white hover:bg-brand-primary/95" : "border-dashed",
                   )}
                 >
-                  <Link href={`/courses/${courseId}/quiz/${quiz.id}`}>
-                    {accessible ? "Mulai" : "Buka"}
-                    {accessible ? <ChevronRight className="ml-1 size-4" /> : <Lock className="ml-1 size-3.5" />}
+                  <Link href={`/courses/${courseId}/quiz/${template.id}`}>
+                    {accessible ? (activeAttempt ? "Lanjutkan" : "Buka") : "Buka"}
+                    <ChevronRight className="ml-1 size-4" />
                   </Link>
                 </Button>
               </div>
@@ -129,7 +179,7 @@ export function QuizListClient({ courseId, isEnrolled, quizzes }: QuizListClient
         })}
       </ul>
 
-      {filteredQuizzes.length === 0 ? (
+      {filteredTemplates.length === 0 ? (
         <div className="rounded-lg border border-dashed border-border bg-muted/15 py-10 text-center">
           <p className="text-body-sm text-muted-foreground">Tidak ada kuis yang cocok.</p>
         </div>

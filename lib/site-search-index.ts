@@ -25,7 +25,7 @@ const STATIC_PAGES: Omit<SiteSearchDocument, "id">[] = [
     subtitle: "Landing",
     href: "/",
     group: "Halaman",
-    keywords: "home utama zyx edu",
+    keywords: "home utama zyx academy",
     content: "Program bimbingan online kalkulus fisika kimia aljabar linear persiapan kuliah",
   },
   {
@@ -146,7 +146,7 @@ const STATIC_PAGES: Omit<SiteSearchDocument, "id">[] = [
 const LANDING_SUBJECTS: Omit<SiteSearchDocument, "id">[] = [
   {
     title: "Kalkulus & metode numerik",
-    subtitle: "Bidang studi — TPB",
+    subtitle: "Bidang studi - TPB",
     href: "/courses",
     group: "Topik & landing",
     keywords: "kalkulus numerik TPB limit turunan integral deret",
@@ -155,7 +155,7 @@ const LANDING_SUBJECTS: Omit<SiteSearchDocument, "id">[] = [
   },
   {
     title: "Fisika dasar",
-    subtitle: "Bidang studi — TPB",
+    subtitle: "Bidang studi - TPB",
     href: "/courses",
     group: "Topik & landing",
     keywords: "mekanika gelombang termodinamika kinematik dinamika fluida",
@@ -164,7 +164,7 @@ const LANDING_SUBJECTS: Omit<SiteSearchDocument, "id">[] = [
   },
   {
     title: "Kimia dasar",
-    subtitle: "Bidang studi — TPB",
+    subtitle: "Bidang studi - TPB",
     href: "/courses",
     group: "Topik & landing",
     keywords: "stoikiometri ikatan larutan elektrokimia atom",
@@ -172,7 +172,7 @@ const LANDING_SUBJECTS: Omit<SiteSearchDocument, "id">[] = [
   },
   {
     title: "Aljabar linear",
-    subtitle: "Bidang studi — Jurusan",
+    subtitle: "Bidang studi - Jurusan",
     href: "/courses",
     group: "Topik & landing",
     keywords: "vektor matriks determinan eigen ruang vektor",

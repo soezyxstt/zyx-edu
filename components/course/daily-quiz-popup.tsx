@@ -151,7 +151,7 @@ export function DailyQuizPopup({
   return createPortal(
     <div className="fixed inset-0 z-50 grid min-h-dvh place-items-center overflow-y-auto bg-black/60 p-4 font-sans backdrop-blur-xs transition-opacity animate-in fade-in duration-200">
       <div className="relative my-auto w-full max-w-lg rounded-3xl border border-brand-primary/30 bg-card/95 p-6 shadow-2xl backdrop-blur-md md:p-8 animate-in zoom-in-95 duration-200">
-        <span className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-border cursor-pointer transition-colors" onClick={handleClose}>
+        <span className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-md bg-muted text-muted-foreground hover:bg-border cursor-pointer transition-colors" onClick={handleClose}>
           ✕
         </span>
 
@@ -202,13 +202,13 @@ export function DailyQuizPopup({
             </ul>
 
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="ghost" onClick={handleClose} className="rounded-full">
+              <Button variant="ghost" onClick={handleClose}>
                 Nanti saja
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={selectedIdx === null}
-                className="rounded-full bg-brand-primary px-6"
+                className="bg-brand-primary px-6"
               >
                 Kirim Jawaban
               </Button>
@@ -257,7 +257,7 @@ export function DailyQuizPopup({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button onClick={handleClose} className="rounded-full bg-foreground text-background hover:bg-foreground/90 px-6">
+              <Button onClick={handleClose} className="bg-foreground text-background hover:bg-foreground/90 px-6">
                 Selesai & Tutup
               </Button>
             </div>

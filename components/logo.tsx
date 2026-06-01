@@ -15,7 +15,7 @@ export function Logo({ className, presentation = "default" }: LogoProps) {
       {/* Light asset: default on light surfaces; hidden when forcing onDark or site dark mode */}
       <Image
         src="/logo-light.png"
-        alt="Zyx Education Logo"
+        alt="Zyx Academy Logo"
         width={370}
         height={216}
         priority
@@ -28,7 +28,7 @@ export function Logo({ className, presentation = "default" }: LogoProps) {
       {/* Dark asset: site dark mode, or forced onDark (e.g. black-2 nav) */}
       <Image
         src="/logo-dark.png"
-        alt="Zyx Education Logo"
+        alt="Zyx Academy Logo"
         width={370}
         height={216}
         priority

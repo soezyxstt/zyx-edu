@@ -40,7 +40,18 @@ export default async function CourseMyResultsPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell eyebrow="Riwayat" title="Hasil terkunci" description="Riwayat pengerjaan kuis dan tryout." hideHeader>
+      <CoursePageShell
+        eyebrow={
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+            <ChevronRight className="size-3" />
+            <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
+          </div>
+        }
+        title="Hasil Saya (Terkunci)"
+        description="Riwayat pengerjaan kuis dan tryout."
+        hideHeader
+      >
         <Reveal>
           <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
             <div className="flex items-start gap-3">
@@ -67,9 +78,15 @@ export default async function CourseMyResultsPage({ params }: Props) {
 
   return (
     <CoursePageShell
-      eyebrow="Riwayat"
-      title="Hasil saya"
-      description="Skor kuis, status tryout, dan review jawaban."
+      eyebrow={
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+          <ChevronRight className="size-3" />
+          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
+        </div>
+      }
+      title="Hasil Saya"
+      description="Skor kuis, status tryout, dan pembahasan jawaban."
       hideHeader
     >
       <Reveal>
@@ -90,7 +107,7 @@ export default async function CourseMyResultsPage({ params }: Props) {
                   </p>
                   <span
                     className={cn(
-                      "mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-border/60",
+                      "mt-2 inline-flex rounded-md px-2.5 py-0.5 text-xs font-semibold ring-1 ring-border/60",
                       submission.status === "pending_review"
                         ? "bg-status-warning/12 text-status-warning"
                         : "bg-muted/80 text-muted-foreground",

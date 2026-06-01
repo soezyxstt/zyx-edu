@@ -2,31 +2,35 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { EmblaCarouselType } from "embla-carousel";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
 const testimonials = [
   {
-    id: "1",
+    id: "yomi",
     quote:
-      "Penjelasan tutor tidak melompat-lompat — cocok buat aku yang butuh fondasi dulu sebelum masuk soal sulit.",
-    name: "Alya",
-    role: "Mahasiswa TPB",
+      "Belajar sama kak Adi beneran se asik dan se seru itu. Materi yang diajarin nya juga mudah buat dipahami :D. Di tambah kak Adi yang super sabar dan super baik buat ngajarin suatu hal pelan-pelan. pokoknya top tier respect besar bintang 5 :>!!!!",
+    name: "Yomi Gita",
+    role: "MS'24",
+    avatarSrc: "/testimoni/yomi.jpeg",
   },
   {
-    id: "2",
+    id: "agatha",
     quote:
-      "Tryout-nya membantu membiasakan format tulis dan waktu. Umpan baliknya jelas untuk bagian objektif.",
-    name: "Raka",
-    role: "Teknik Mesin",
+      "lowkey one of the best decisions belajar sm kak adi pas TPB ^^ vibesnya enak bgt, no judging at all, jadi gak takut salah atau ngerasa ‘kok gue bego yap’ tiap gak ngerti 😭 malah bikin aku lebih berani nanya belajar dan akhirnya paham... he really makes sure you actually learn, bukan cuma ngapalin soal dan catatan :D AND IT WORKS, dapet ip di atas 3 pas TPB ternyata possible aja dengan ilmu daging yang dikasih 🆒🆒 highly recommend buat yang mau survive TPB dngn sehat dan waras",
+    name: "Agatha",
+    role: "GD'25",
+    avatarSrc: "/testimoni/agatha.jpeg",
   },
   {
-    id: "3",
+    id: "florence",
     quote:
-      "Modulnya rapi — aku bisa lihat mana yang harus diprioritaskan minggu ini tanpa membuka lima folder berbeda.",
-    name: "Dina",
-    role: "Teknik Industri",
+      "selama aku les bareng Kak Heidi itu ngebantu banget buat ngerti materi di kelas yang kadang masih bingung krn kak Heidi ngejelasinnya dengan cara yang simpel dan step by step, jd buat aku yg susah utk nyerap materi jadi lebih gampang nangkepnya😆",
+    name: "Florence",
+    role: "TK'25",
+    avatarSrc: "/testimoni/florence.jpeg",
   },
 ];
 
@@ -66,7 +70,7 @@ export function TestimonialCarousel() {
         </p>
 
         <div className="relative z-10 mx-auto max-w-3xl border-b border-white/15 pb-6 text-center">
-          <p className="text-body-sm font-medium text-white/70">Mahasiswa &amp; tutor yang terlibat di Zyx Edu</p>
+          <p className="text-body-sm font-medium text-white/70">Mahasiswa &amp; tutor yang terlibat di Zyx Academy</p>
         </div>
       </div>
 
@@ -82,7 +86,17 @@ export function TestimonialCarousel() {
               >
                 <div className="grid gap-5 md:grid-cols-[0.9fr_1.1fr]">
                   <div className="relative min-h-[240px] overflow-hidden rounded-xl md:min-h-[320px]">
-                    <AvatarPlaceholder name={t.name} />
+                    {t.avatarSrc ? (
+                      <Image
+                        src={t.avatarSrc}
+                        alt={`Foto ${t.name}`}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 400px"
+                      />
+                    ) : (
+                      <AvatarPlaceholder name={t.name} />
+                    )}
                   </div>
                   <div className="flex flex-col justify-center text-foreground">
                     <span aria-hidden className="text-5xl leading-none text-[var(--zx-accent)]/35">
@@ -125,7 +139,7 @@ export function TestimonialCarousel() {
             aria-current={idx === activeIndex ? "true" : undefined}
             className={cn(
               "interactive transition-all duration-200",
-              idx === activeIndex ? "h-2 w-4 rounded-full bg-[var(--zx-accent)]" : "h-2 w-2 rounded-full bg-white/30",
+              idx === activeIndex ? "h-2 w-4 rounded-sm bg-[var(--zx-accent)]" : "h-2 w-2 rounded-sm bg-white/30",
             )}
           />
         ))}

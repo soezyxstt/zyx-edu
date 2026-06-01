@@ -19,7 +19,7 @@ const subjects = [
     id: "phys",
     title: "Fisika dasar",
     tag: "TPB",
-    blurb: "Mekanika, gelombang, termodinamika pengantar — dengan latihan terarah.",
+    blurb: "Mekanika, gelombang, termodinamika pengantar - dengan latihan terarah.",
     accent: "from-status-info/25 to-transparent",
     bar: "bg-status-info",
   },
@@ -93,7 +93,7 @@ export function SubjectCarousel() {
             )}
             aria-hidden
           />
-          <span className={cn("inline-block h-1.5 w-14 rounded-full", active.bar)} />
+          <span className={cn("inline-block h-1.5 w-14 rounded", active.bar)} />
           <p className="text-body-sm font-medium uppercase tracking-wide text-muted-foreground">
             {active.tag}
           </p>
@@ -109,7 +109,7 @@ export function SubjectCarousel() {
             type="button"
             onClick={() => setI(idx)}
             className={cn(
-              "rounded-full px-3 py-1.5 text-body-sm font-medium transition-all duration-200 hover:scale-105",
+              "rounded-md px-3 py-1.5 text-body-sm font-medium transition-all duration-200 hover:scale-105",
               idx === i
                 ? "bg-primary text-primary-foreground shadow-sm"
                 : "bg-muted text-muted-foreground hover:text-foreground"
@@ -127,7 +127,7 @@ export function SubjectCarousel() {
           type="button"
           variant="outline"
           size="icon"
-          className="rounded-full transition-transform hover:scale-110 active:scale-95"
+          className="transition-transform hover:scale-110 active:scale-95"
           onClick={() => go(-1)}
           aria-label="Bidang sebelumnya"
         >
@@ -137,7 +137,7 @@ export function SubjectCarousel() {
           type="button"
           variant="outline"
           size="icon"
-          className="rounded-full transition-transform hover:scale-110 active:scale-95"
+          className="transition-transform hover:scale-110 active:scale-95"
           onClick={() => go(1)}
           aria-label="Bidang berikutnya"
         >

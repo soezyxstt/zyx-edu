@@ -16,7 +16,25 @@ export async function assertAdmin() {
   }
 
   if (user.role !== "admin") {
-    throw new Error("Forbidden — admin role required.");
+    throw new Error("Forbidden - admin role required.");
+  }
+
+  return { session, user };
+}
+
+export async function assertTutorOrAdmin() {
+  const h = await headers();
+  const session = await auth.api.getSession({
+    headers: h,
+  });
+  const user = session?.user as UserWithRole | undefined;
+
+  if (!user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (user.role !== "admin" && user.role !== "teacher") {
+    throw new Error("Forbidden - teacher or admin role required.");
   }
 
   return { session, user };

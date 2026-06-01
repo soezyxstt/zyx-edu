@@ -180,9 +180,9 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
               <span>SIMULASI UTS / UAS</span>
               <span>Soal {index + 1} dari {sorted.length}</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-2 overflow-hidden rounded-md bg-muted">
               <div
-                className="h-full rounded-full bg-linear-to-r from-brand-primary via-tertiary-1 to-brand-secondary transition-[width] duration-300 ease-out"
+                className="h-full rounded-md bg-linear-to-r from-brand-primary via-tertiary-1 to-brand-secondary transition-[width] duration-300 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -344,9 +344,9 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
                         <span className="truncate max-w-[200px]">Mengunggah: {uploadingFile[q.id]}</span>
                         <span>{uploadProgress[q.id]}%</span>
                       </div>
-                      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                      <div className="h-1.5 w-full bg-muted rounded overflow-hidden">
                         <div
-                          className="h-full bg-brand-secondary rounded-full transition-all"
+                          className="h-full bg-brand-secondary rounded transition-all"
                           style={{ width: `${uploadProgress[q.id]}%` }}
                         />
                       </div>
@@ -369,7 +369,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(q.id)}
-                        className="rounded-full p-2 text-muted-foreground hover:bg-status-error/10 hover:text-status-error transition-colors shrink-0"
+                        className="rounded-md p-2 text-muted-foreground hover:bg-status-error/10 hover:text-status-error transition-colors shrink-0"
                         title="Hapus lampiran"
                       >
                         <Trash2 className="size-4" />
@@ -411,7 +411,7 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
           <Button
             type="button"
             variant="outline"
-            className="rounded-full gap-1 border-border/80"
+            className="gap-1 border-border/80"
             onClick={goPrev}
             disabled={index === 0}
           >
@@ -421,12 +421,12 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
 
           <div className="flex gap-2">
             {index < sorted.length - 1 ? (
-              <Button type="button" className="rounded-full gap-1 bg-foreground text-background hover:bg-foreground/90 px-6" onClick={goNext}>
+              <Button type="button" className="gap-1 bg-foreground text-background hover:bg-foreground/90 px-6" onClick={goNext}>
                 Lanjut
                 <ArrowRight className="size-4" />
               </Button>
             ) : (
-              <Button type="button" className="rounded-full bg-brand-primary text-white hover:bg-brand-primary/95 px-8 font-bold" onClick={handleSubmit}>
+              <Button type="button" className="bg-brand-primary text-white hover:bg-brand-primary/95 px-8 font-bold" onClick={handleSubmit}>
                 Kumpulkan Jawaban
               </Button>
             )}

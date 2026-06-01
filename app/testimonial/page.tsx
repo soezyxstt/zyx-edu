@@ -7,10 +7,37 @@ import { pageTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: pageTitle("Testimonials"),
-  description: "Testimoni singkat tutor dan murid Zyx Edu mengenai kualitas layanan dan pengalaman belajar.",
+  description: "Testimoni singkat tutor dan murid Zyx Academy mengenai kualitas layanan dan pengalaman belajar.",
 };
 
 const stories = [
+  {
+    category: "Student Feedback",
+    program: "MS'24",
+    location: "Bandung",
+    quote:
+      "Belajar sama kak Adi beneran se asik dan se seru itu. Materi yang diajarin nya juga mudah buat dipahami :D. Di tambah kak Adi yang super sabar dan super baik buat ngajarin suatu hal pelan-pelan. pokoknya top tier respect besar bintang 5 :>!!!!",
+    name: "Yomi Gita",
+    avatarSrc: "/testimoni/yomi.jpeg",
+  },
+  {
+    category: "Student Feedback",
+    program: "GD'25",
+    location: "Bandung",
+    quote:
+      "lowkey one of the best decisions belajar sm kak adi pas TPB ^^ vibesnya enak bgt, no judging at all, jadi gak takut salah atau ngerasa ‘kok gue bego yap’ tiap gak ngerti 😭 malah bikin aku lebih berani nanya belajar dan akhirnya paham... he really makes sure you actually learn, bukan cuma ngapalin soal dan catatan :D AND IT WORKS, dapet ip di atas 3 pas TPB ternyata possible aja dengan ilmu daging yang dikasih 🆒🆒 highly recommend buat yang mau survive TPB dngn sehat dan waras",
+    name: "Agatha",
+    avatarSrc: "/testimoni/agatha.jpeg",
+  },
+  {
+    category: "Student Feedback",
+    program: "TK'25",
+    location: "Bandung",
+    quote:
+      "selama aku les bareng Kak Heidi itu ngebantu banget buat ngerti materi di kelas yang kadang masih bingung krn kak Heidi ngejelasinnya dengan cara yang simpel dan step by step, jd buat aku yg susah utk nyerap materi jadi lebih gampang nangkepnya😆",
+    name: "Florence",
+    avatarSrc: "/testimoni/florence.jpeg",
+  },
   {
     category: "Student Feedback",
     program: "Mahasiswa TPB",
@@ -79,9 +106,9 @@ export default function TestimonialPage() {
       <Reveal>
         <MarketingPageHero
           sectionId="testimonial"
-          eyebrow="Zyx Edu"
+          eyebrow="Zyx Academy"
           title="Testimoni"
-          description="Cerita dari pengajar dan mahasiswa — transparansi proses adalah bagian dari kualitas layanan kami."
+          description="Cerita dari pengajar dan mahasiswa - transparansi proses adalah bagian dari kualitas layanan kami."
         />
       </Reveal>
 
@@ -91,15 +118,12 @@ export default function TestimonialPage() {
         aria-labelledby="testimonial-grid-heading"
       >
         <div className="mx-auto max-w-3xl text-center">
-          <p className="inline-flex rounded-full border border-border bg-background px-4 py-1 text-body-sm font-medium text-muted-foreground">
-            2000+ sesi belajar terselenggara
-          </p>
-          <h2 id="testimonial-grid-heading" className="mt-4 font-heading text-h5 text-foreground md:text-h4">
+          <h2 id="testimonial-grid-heading" className="font-heading text-h5 text-foreground md:text-h4">
             Cerita nyata dari siswa, orang tua, dan tutor
           </h2>
           <p className="mt-3 text-body-base text-muted-foreground">
             Kami merancang pengalaman belajar yang terukur, nyaman, dan mudah dipantau. Ini beberapa cerita dari
-            pengguna aktif Zyx Edu.
+            pengguna aktif Zyx Academy.
           </p>
         </div>
 

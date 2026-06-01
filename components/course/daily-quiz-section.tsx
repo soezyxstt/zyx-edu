@@ -31,7 +31,7 @@ export function DailyQuizSection({ courseId, courseTitle }: DailyQuizSectionProp
               type="button"
               onClick={() => setManualTrigger(true)}
               size="sm"
-              className="interactive gap-2 rounded-full bg-brand-primary text-white hover:bg-brand-primary/95"
+              className="interactive gap-2 bg-brand-primary text-white hover:bg-brand-primary/95"
             >
               <Play className="size-4 fill-current" />
               Mulai

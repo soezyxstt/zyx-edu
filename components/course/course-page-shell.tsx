@@ -6,7 +6,7 @@ import { SimulatorWidget } from "./simulator-widget";
 export type CoursePageShellProps = {
   title: ReactNode;
   description?: ReactNode;
-  eyebrow?: string;
+  eyebrow?: ReactNode;
   headingTier?: "primary" | "secondary";
   children: ReactNode;
   className?: string;
@@ -28,7 +28,7 @@ export function CoursePageShell({
         {!hideHeader ? (
           <header className="max-w-4xl landing-stagger [&>*:nth-child(1)]:[animation-delay:0ms] [&>*:nth-child(2)]:[animation-delay:60ms] [&>*:nth-child(3)]:[animation-delay:120ms]">
             {eyebrow ? (
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{eyebrow}</p>
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{eyebrow}</div>
             ) : null}
             <SectionHeading
               as="h1"

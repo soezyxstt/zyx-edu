@@ -2,13 +2,15 @@
 
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/navbar";
-import { AdminNavbar } from "@/components/admin-navbar";
+import { AdminSidebar } from "@/components/admin-sidebar";
 import { NavScrollProvider } from "@/components/nav-scroll-provider";
 import { SiteMain } from "@/components/site-main";
 import { Footer } from "@/components/footer";
 import { CommandMenuProvider } from "@/components/command-menu";
 import { StudentSidebar } from "@/components/student-sidebar";
 import { useSession } from "@/lib/auth-client";
+
+import { CoursesAmbient } from "@/components/course/courses-ambient";
 
 function isAdminPath(pathname: string | null) {
   return pathname !== null && /^\/admin(?:\/|$)/.test(pathname);
@@ -29,16 +31,17 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
   return (
     <CommandMenuProvider>
       {isAdminPath(pathname) ? (
-        <>
-          <AdminNavbar />
+        <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-hidden md:flex-row">
+          <CoursesAmbient />
+          <AdminSidebar />
           <main
             id="main-content"
             tabIndex={-1}
-            className="flex-1 scroll-mt-[calc(4.5rem+1px)] pt-[calc(4.5rem+1px)] outline-none"
+            className="relative z-10 min-w-0 flex-1 focus:outline-none"
           >
             {children}
           </main>
-        </>
+        </div>
       ) : isStudentLayout ? (
         /*
          * Student layout — two modes:
@@ -54,12 +57,13 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
          * No overflow:hidden / h-dvh on the wrapper —
          * let the browser handle scrolling naturally.
          */
-        <div className="flex min-h-screen flex-col bg-background md:flex-row">
+        <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-hidden md:flex-row">
+          <CoursesAmbient />
           <StudentSidebar />
           <main
             id="main-content"
             tabIndex={-1}
-            className="min-w-0 flex-1 focus:outline-none"
+            className="relative z-10 min-w-0 flex-1 focus:outline-none"
           >
             {children}
           </main>

@@ -29,6 +29,12 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { setOpen: setSearchOpen } = useCommandMenu();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
+
+  useEffect(() => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 40);
@@ -75,15 +81,18 @@ export function Navbar() {
           </nav>
 
           <div className="relative z-10 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-1.5 md:gap-2.5">
-            <Button
-              variant="ghost"
-              className="max-lg:hidden size-10 shrink-0 rounded-full"
+            <button
               type="button"
               onClick={() => setSearchOpen(true)}
+              title="Search"
+              aria-label="Cari di situs (pintasan Ctrl+K atau ⌘K)"
+              className="max-lg:hidden flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer"
             >
-              <Search className="size-[1.125rem]" aria-hidden />
-              <span className="sr-only">Cari (pintasan papan ketik: Ctrl+K atau ⌘K)</span>
-            </Button>
+              <Search className="size-4 shrink-0" aria-hidden />
+              <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
+                {modKeyHint}
+              </kbd>
+            </button>
 
 
             <NavProfileOrSignIn variant="toolbar" callbackURL="/dashboard" />

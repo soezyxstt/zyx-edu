@@ -14,11 +14,11 @@ export function Footer() {
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-10 py-10 md:grid-cols-12 md:gap-8 md:py-12 lg:gap-14">
           <div className="md:col-span-5 lg:col-span-6">
-            <Link href="/" aria-label="Beranda ZYX Edu" className="inline-flex">
+            <Link href="/" aria-label="Beranda Zyx Academy" className="inline-flex">
               <Logo className="[--logo-height:1.75rem] md:[--logo-height:2rem]" />
             </Link>
             <p className="mt-4 max-w-md text-body-sm leading-relaxed text-muted-foreground">
-              Zyx Edu membantu mahasiswa S1 ITB tahun pertama dan kedua (TPB dan awal jurusan) menguasai materi dengan modul selaras kampus,
+              Zyx Academy membantu mahasiswa S1 ITB tahun pertama dan kedua (TPB dan awal jurusan) menguasai materi dengan modul selaras kampus,
               latihan terarah, dan bimbingan tutor ITB.
             </p>
             <p className="mt-2 text-xs font-semibold text-[var(--zx-accent)] tracking-wide">
@@ -65,16 +65,16 @@ export function Footer() {
               <Link
                 href="https://instagram.com/zyxofficial"
                 className={socialClass}
-                aria-label="ZYX Edu di Instagram"
+                aria-label="Zyx Academy di Instagram"
                 target="_blank"
                 rel="noopener noreferrer"
               >
                 <FaInstagram className="size-4.5" aria-hidden />
               </Link>
-              <Link href="#" className={socialClass} aria-label="ZYX Edu di X">
+              <Link href="#" className={socialClass} aria-label="Zyx Academy di X">
                 <FaXTwitter className="size-4.5" aria-hidden />
               </Link>
-              <Link href="#" className={socialClass} aria-label="ZYX Edu di LinkedIn">
+              <Link href="#" className={socialClass} aria-label="Zyx Academy di LinkedIn">
                 <FaLinkedin className="size-4.5" aria-hidden />
               </Link>
             </div>
@@ -83,7 +83,7 @@ export function Footer() {
 
         <div className="flex flex-col items-center justify-between gap-3 border-t border-border py-6 sm:flex-row sm:py-5">
           <p className="text-center text-body-sm text-muted-foreground sm:text-left">
-            © {new Date().getFullYear()} ZYX Edu. Hak cipta dilindungi undang-undang.
+            © {new Date().getFullYear()} Zyx Academy. Hak cipta dilindungi undang-undang.
           </p>
         </div>
       </div>

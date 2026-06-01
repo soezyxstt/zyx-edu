@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 /** List row / interactive link card */
 export function courseListRowClass(className?: string) {
   return cn(
-    "group flex items-start gap-3 rounded-lg border border-border/70 bg-card/70 px-4 py-3 backdrop-blur-sm",
-    "transition-[border-color,background-color] duration-200",
-    "hover:border-primary/25 hover:bg-card",
+    "group flex items-start gap-3 rounded-xl border border-border/60 bg-card/65 px-4 py-3 backdrop-blur-md",
+    "transition-all duration-200",
+    "hover:border-primary/30 hover:bg-card hover:shadow-xs",
     className,
   );
 }
@@ -13,7 +13,7 @@ export function courseListRowClass(className?: string) {
 /** Static card (quiz grid, overview tiles inner) */
 export function courseCardClass(className?: string) {
   return cn(
-    "rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm",
+    "rounded-2xl border border-border/60 bg-card/65 p-5 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-brand-primary/30 hover:bg-card hover:shadow-md",
     className,
   );
 }

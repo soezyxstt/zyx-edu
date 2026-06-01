@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getExamsForCourse } from "@/lib/student-course-fixtures";
@@ -12,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const course = getCourseById(id);
   return {
-    title: pageTitle(course ? `${course.title} — Tryout` : "Tryout"),
+    title: pageTitle(course ? `${course.title} - Tryout` : "Tryout"),
     description: "Daftar tryout course",
   };
 }
@@ -27,9 +29,15 @@ export default async function CourseTryoutListPage({ params }: Props) {
 
   return (
     <CoursePageShell
-      eyebrow="Simulasi"
-      title="Tryout"
-      description={!isEnrolled ? "Aktifkan token untuk membuka tryout." : undefined}
+      eyebrow={
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+          <ChevronRight className="size-3" />
+          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
+        </div>
+      }
+      title="Simulasi Tryout"
+      description="Ujian simulasi terstruktur untuk melatih kesiapan menghadapi ujian utama."
       hideHeader
     >
       <Reveal>

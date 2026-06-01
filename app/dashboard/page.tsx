@@ -83,11 +83,8 @@ export default async function DashboardPage() {
   });
 
   return (
-    <div className="relative min-h-screen bg-landing-hero-shell overflow-hidden pb-16">
-      {/* Background grid lines & aurora glows */}
-      <CoursesAmbient />
-
-      <div className="relative z-10 marketing-container pt-8 md:pt-12">
+    <div className="pb-16 pt-8 md:pt-12">
+      <div className="marketing-container">
         {/* Welcome Header */}
         <Reveal duration="duration-500">
           <header className="mx-auto mb-10 max-w-4xl text-center">
@@ -103,7 +100,7 @@ export default async function DashboardPage() {
         <Reveal duration="duration-700">
         {!isEnrolledInAny ? (
           /* Empty State: Step-by-step clean portal */
-          <div className="mx-auto max-w-2xl rounded-3xl border border-border/80 bg-card/75 p-8 text-center shadow-lg backdrop-blur-lg md:p-12">
+          <div className="mx-auto max-w-2xl rounded-3xl border border-border/60 bg-card/65 p-8 text-center shadow-md backdrop-blur-md md:p-12">
             <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-brand-primary/10 text-brand-primary ring-4 ring-brand-primary/5">
               <GraduationCap className="size-8" />
             </div>
@@ -133,7 +130,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="mt-8 rounded-2xl border border-border bg-gradient-to-br from-brand-primary/5 via-transparent to-tertiary-3/5 p-6 text-left shadow-xs">
+            <div className="mt-8 rounded-2xl border border-border/60 bg-gradient-to-br from-brand-primary/5 via-transparent to-tertiary-3/5 p-6 text-left shadow-xs">
               <h3 className="font-heading text-body-sm font-bold text-foreground mb-1">
                 Masukkan Kode Aktivasi
               </h3>
@@ -149,7 +146,7 @@ export default async function DashboardPage() {
             {/* Left Column (Main study track) - 7 cols */}
             <div className="space-y-5 lg:col-span-7">
               {/* Classes list Section */}
-              <div className="rounded-2xl border border-border/70 bg-card/60 p-5">
+              <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md">
                 <div className="mb-4 flex items-center justify-between">
                   <h2 className="font-heading text-body-base font-semibold text-foreground flex items-center gap-2">
                     <GraduationCap className="size-4 text-brand-primary" />
@@ -173,10 +170,10 @@ export default async function DashboardPage() {
                     return (
                       <div
                         key={course.id}
-                        className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/5 p-4 transition-colors hover:bg-muted/15 md:flex-row md:items-center justify-between"
+                        className="flex flex-col gap-3 rounded-xl border border-border/40 bg-muted/20 p-4 transition-all duration-200 hover:border-brand-primary/35 hover:bg-muted/40 md:flex-row md:items-center justify-between"
                       >
                         <div className="min-w-0 flex-1">
-                          <span className="inline-flex rounded-full border border-brand-primary/20 bg-brand-primary/5 px-2 py-0.5 text-body-2xs font-semibold text-brand-primary">
+                          <span className="inline-flex rounded-md border border-brand-primary/20 bg-brand-primary/5 px-2 py-0.5 text-body-2xs font-semibold text-brand-primary">
                             {course.category}
                           </span>
                           <h3 className="mt-1.5 font-heading text-body-base font-semibold text-foreground truncate">
@@ -185,7 +182,7 @@ export default async function DashboardPage() {
                           
                           {/* Sleek inline progress */}
                           <div className="mt-2.5 flex items-center gap-3 max-w-xs">
-                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted/60">
+                            <div className="h-1 flex-1 overflow-hidden rounded bg-muted/60">
                               <div
                                 className="h-full bg-brand-primary transition-all duration-300"
                                 style={{ width: `${progressPct}%` }}
@@ -195,7 +192,7 @@ export default async function DashboardPage() {
                           </div>
                         </div>
 
-                        <Button asChild size="sm" variant="outline" className="rounded-full shrink-0">
+                        <Button asChild size="sm" variant="outline" className="rounded-md shrink-0">
                           <Link href={`/courses/${course.id}`}>Buka Kelas</Link>
                         </Button>
                       </div>
@@ -205,7 +202,7 @@ export default async function DashboardPage() {
               </div>
 
               {/* Documents In Progress ("sedang dibaca tetapi belum selesai") */}
-              <div className="rounded-2xl border border-border/70 bg-card/60 p-5">
+              <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md">
                 <h2 className="font-heading text-body-base font-semibold text-foreground flex items-center gap-2 mb-4">
                   <Bookmark className="size-4 text-brand-secondary" />
                   Materi Terbuka (Belum Selesai)
@@ -215,10 +212,10 @@ export default async function DashboardPage() {
                     {inProgressDocuments.map((doc) => (
                       <div
                         key={doc.id}
-                        className="flex flex-col justify-between rounded-xl border border-border/50 bg-muted/5 p-4 hover:bg-muted/15 transition-colors"
+                        className="flex flex-col justify-between rounded-xl border border-border/40 bg-muted/20 p-4 hover:border-brand-primary/35 hover:bg-muted/40 transition-all duration-200"
                       >
                         <div className="min-w-0">
-                          <span className="inline-flex rounded-full border border-border/50 bg-muted/30 px-2 py-0.5 text-body-2xs font-semibold text-muted-foreground">
+                          <span className="inline-flex rounded-md border border-border/50 bg-muted/30 px-2 py-0.5 text-body-2xs font-semibold text-muted-foreground">
                             {doc.courseTitle}
                           </span>
                           <h4 className="font-heading text-body-sm font-semibold text-foreground mt-2 line-clamp-1">
@@ -228,7 +225,7 @@ export default async function DashboardPage() {
                             {doc.kind}
                           </p>
                         </div>
-                        <Button asChild size="xs" variant="outline" className="mt-4 w-fit rounded-full gap-1">
+                        <Button asChild size="xs" variant="outline" className="mt-4 w-fit rounded-md gap-1">
                           <Link href={`/courses/${doc.courseId}/material/${doc.id}`}>
                             <Play className="size-2.5 fill-current" />
                             Lanjutkan
@@ -249,7 +246,7 @@ export default async function DashboardPage() {
             {/* Right Column (Activities & Task list) - 5 cols */}
             <div className="space-y-5 lg:col-span-5">
               {/* Quizzes and Tryouts */}
-              <div className="rounded-2xl border border-border/70 bg-card/60 p-5">
+              <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md">
                 <h2 className="font-heading text-body-base font-semibold text-foreground flex items-center gap-2 mb-4">
                   <ClipboardList className="size-4 text-tertiary-1" />
                   Kuis & Tryout Tersedia
@@ -259,7 +256,7 @@ export default async function DashboardPage() {
                     {availableExams.map((exam) => (
                       <li
                         key={exam.id}
-                        className="flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-muted/5 p-3.5 hover:bg-muted/15 transition-colors"
+                        className="flex items-center justify-between gap-4 rounded-xl border border-border/40 bg-muted/20 p-3.5 hover:border-brand-primary/35 hover:bg-muted/40 transition-all duration-200"
                       >
                         <div className="min-w-0 flex-1">
                           <h4 className="font-heading text-body-sm font-semibold text-foreground truncate">
@@ -271,7 +268,7 @@ export default async function DashboardPage() {
                             <span className="capitalize">{exam.type}</span>
                           </p>
                         </div>
-                        <Button asChild size="sm" className="rounded-full shrink-0">
+                        <Button asChild size="sm" className="rounded-md shrink-0">
                           <Link href={`/courses/${exam.courseId}/${exam.type}/${exam.id}`}>
                             Kerjakan
                           </Link>
@@ -288,7 +285,7 @@ export default async function DashboardPage() {
               </div>
 
               {/* Activation box (Token form) */}
-              <div className="rounded-2xl border border-border/70 bg-card/60 p-5">
+              <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md">
                 <h3 className="font-heading text-body-base font-semibold text-foreground">
                   Aktivasi Kelas Tambahan
                 </h3>

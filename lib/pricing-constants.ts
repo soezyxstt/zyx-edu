@@ -60,18 +60,18 @@ export const calculatePlanPrice = (
     case 'free':
       return 0;
     case 'minimal':
-      return getPlatformCost(150, courses, persons);
+      return getPlatformCost(250, courses, persons);
 
     case 'essential': {
       const tutorialComponent = getTutorialCost(15, 155, persons);
-      const platformComponent = getPlatformCost(150, courses, persons);
+      const platformComponent = getPlatformCost(250, courses, persons);
       return tutorialComponent + platformComponent;
     }
 
     case 'premium': {
       const tutorialComponent = getTutorialCost(30, 155, persons);
-      // Premium platform uses base constant 185 due to On-Demand Assignment Consultation
-      const platformComponent = getPlatformCost(185, courses, persons);
+      // Premium platform uses base constant 285 due to On-Demand Assignment Consultation
+      const platformComponent = getPlatformCost(285, courses, persons);
       return tutorialComponent + platformComponent;
     }
 

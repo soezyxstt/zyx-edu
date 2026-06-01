@@ -11,7 +11,7 @@ function WhatsAppContactCard({ href }: { href: string }) {
     <div className="rounded-2xl border border-border bg-card p-4 shadow-lg ring-1 ring-black/5 md:p-5">
       <p className="font-heading text-h6 font-semibold text-card-foreground">Tanya admin</p>
       <p className="mt-2 text-body-sm leading-relaxed text-muted-foreground">
-        Ada pertanyaan tentang kelas, jadwal, atau cara mulai belajar? Chat admin lewat WhatsApp — kami
+        Ada pertanyaan tentang kelas, jadwal, atau cara mulai belajar? Chat admin lewat WhatsApp - kami
         bantu arahkan ke paket yang pas.
       </p>
       <Button asChild variant="marketingPrimary" size="marketing" className="mt-4 w-full">
@@ -64,7 +64,7 @@ function SingleFlowIllustration() {
           </div>
         </div>
         <p className="text-center text-body-sm text-muted-foreground">
-          Satu pintu navigasi — fokus belajar, kurangi tab bertumpuk.{" "}
+          Satu pintu navigasi - fokus belajar, kurangi tab bertumpuk.{" "}
           <Link href="/sign-in" className="font-medium underline decoration-[var(--zx-accent)] underline-offset-4">
             Masuk dengan Google
           </Link>
@@ -93,7 +93,7 @@ export function LandingIntegrations() {
               Satu alur masuk, langsung ke materi
             </SectionHeading>
             <p className="mt-2 text-body-md text-muted-foreground">
-              Tanpa tab berjubel — setelah login, langsung kerja di kelasmu dari dashboard yang sama rapi untuk TPB dan
+              Tanpa tab berjubel - setelah login, langsung kerja di kelasmu dari dashboard yang sama rapi untuk TPB dan
               awal jurusan.
             </p>
           </header>

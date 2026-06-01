@@ -8,7 +8,7 @@ import { pageTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: pageTitle("Sign up"),
-  description: "Daftar ke Zyx Edu dengan Google.",
+  description: "Daftar ke Zyx Academy dengan Google.",
 };
 
 type SearchParams = {

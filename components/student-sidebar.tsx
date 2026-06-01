@@ -17,16 +17,19 @@ import {
   User,
   X,
   Search,
+  CalendarRange,
+  Trophy,
 } from "lucide-react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getStudentEnrollments } from "@/app/dashboard/actions";
 import { getCourseById } from "@/lib/student-course-fixtures";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
+import { useCommandMenu } from "@/components/command-menu";
 
 /* ─────────────────────────────────────────────────────────────────
    Types
-───────────────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────────────────── */
 interface NavOptions {
   collapsed?: boolean;
   onLink?: () => void;
@@ -38,11 +41,12 @@ type StudentEnrollment = Awaited<ReturnType<typeof getStudentEnrollments>>[numbe
    StudentSidebar — self-contained component
    Desktop : sticky left panel (position: sticky, height: 100svh)
    Mobile  : hamburger topbar + <dialog> slide-over (browser top-layer)
-───────────────────────────────────────────────────────────────── */
+ ───────────────────────────────────────────────────────────────── */
 export function StudentSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const { setOpen: setSearchOpen } = useCommandMenu();
   const courseIdFromPath = pathname.startsWith("/courses/")
     ? pathname.split("/")[2]
     : undefined;
@@ -51,6 +55,12 @@ export function StudentSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [coursesOpen, setCoursesOpen] = useState(true);
   const [enrolledCourses, setEnrolledCourses] = useState<StudentEnrollment[]>([]);
+  const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
+
+  useEffect(() => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
+  }, []);
 
   /* dialog ref for mobile drawer */
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -111,6 +121,40 @@ export function StudentSidebar() {
       >
         <LayoutDashboard className="size-5 shrink-0" />
         {!c && "Dashboard"}
+      </Link>
+
+      {/* Schedule (Jadwal) */}
+      <Link
+        href="/dashboard/schedule"
+        onClick={onLink}
+        title="Jadwal Bimbingan"
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
+          pathname === "/dashboard/schedule"
+            ? "bg-brand-primary/10 text-brand-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          c && "justify-center px-2"
+        )}
+      >
+        <CalendarRange className="size-5 shrink-0" />
+        {!c && "Jadwal"}
+      </Link>
+
+      {/* Leaderboard */}
+      <Link
+        href="/leaderboard"
+        onClick={onLink}
+        title="Papan Peringkat"
+        className={cn(
+          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
+          pathname === "/leaderboard" || pathname.startsWith("/leaderboard")
+            ? "bg-brand-primary/10 text-brand-primary"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          c && "justify-center px-2"
+        )}
+      >
+        <Trophy className="size-5 shrink-0" />
+        {!c && "Peringkat"}
       </Link>
 
       {/* Courses */}
@@ -283,30 +327,8 @@ export function StudentSidebar() {
           MOBILE TOP BAR  (visible only below md)
           — stacks above main in the flex-col layout
       ═══════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 md:hidden">
-        <Link href="/dashboard" aria-label="Dashboard ZYX Edu" className="flex items-center">
-          <Logo className="[--logo-height:2rem]" />
-        </Link>
-        {activeCourse ? (
-          <>
-            <span className="h-7 w-px shrink-0 bg-border" aria-hidden />
-            <nav
-              aria-label="Breadcrumb"
-              className="flex min-w-0 flex-1 items-center gap-1.5 text-body-sm"
-            >
-              <Link
-                href="/courses"
-                className="shrink-0 font-semibold text-brand-primary underline-offset-4 hover:underline"
-              >
-                Courses
-              </Link>
-              <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-              <span className="min-w-0 truncate font-medium text-foreground">
-                {activeCourse.title}
-              </span>
-            </nav>
-          </>
-        ) : null}
+      <div className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 md:hidden">
+        {/* Left Side: Sidebar Toggle Button */}
         <button
           type="button"
           onClick={openDrawer}
@@ -316,6 +338,26 @@ export function StudentSidebar() {
         >
           <PanelLeftOpen className="size-5" />
         </button>
+
+        {/* Right Side: Search Trigger Button + Brand Logo */}
+        <div className="flex items-center gap-3">
+          {/* Search Trigger (only loop icon and modKeyHint, vertically centered) */}
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer"
+          >
+            <Search className="size-4 shrink-0" />
+            <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
+              {modKeyHint}
+            </kbd>
+          </button>
+
+          {/* Logo at the far right */}
+          <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
+            <Logo className="[--logo-height:1.75rem]" />
+          </Link>
+        </div>
       </div>
 
       {/* ═══════════════════════════════════════════════
@@ -334,7 +376,7 @@ export function StudentSidebar() {
         {/* Header row: brand + collapse toggle */}
         <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
           {!collapsed && (
-            <Link href="/dashboard" aria-label="Dashboard ZYX Edu" className="flex items-center">
+            <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
               <Logo className="[--logo-height:1.75rem]" />
             </Link>
           )}
@@ -354,6 +396,27 @@ export function StudentSidebar() {
         </div>
 
         <UserCard c={collapsed} />
+
+        {/* Search trigger button for desktop sidebar */}
+        <div className="px-3 pt-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => setSearchOpen(true)}
+            title="Search"
+            className={cn(
+              "flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer mx-auto",
+              collapsed ? "size-10" : "w-full"
+            )}
+          >
+            <Search className="size-4 shrink-0" />
+            {!collapsed && (
+              <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
+                {modKeyHint}
+              </kbd>
+            )}
+          </button>
+        </div>
+
         <Nav collapsed={collapsed} />
       </aside>
 

@@ -78,15 +78,15 @@ export function ReviewClient({ listItem, review }: ReviewClientProps) {
                 
                 {/* Answer Correctness Badges */}
                 {item.correct === true ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-status-success/12 px-2.5 py-0.5 text-body-xs font-semibold text-status-success ring-1 ring-status-success/20">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-status-success/12 px-2.5 py-0.5 text-body-xs font-semibold text-status-success ring-1 ring-status-success/20">
                     <Check className="size-3.5" aria-hidden /> Benar
                   </span>
                 ) : item.correct === false ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-status-error/12 px-2.5 py-0.5 text-body-xs font-semibold text-status-error ring-1 ring-status-error/20">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-status-error/12 px-2.5 py-0.5 text-body-xs font-semibold text-status-error ring-1 ring-status-error/20">
                     <X className="size-3.5" aria-hidden /> Salah
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-status-warning/12 px-2.5 py-0.5 text-body-xs font-semibold text-status-warning ring-1 ring-status-warning/20">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-status-warning/12 px-2.5 py-0.5 text-body-xs font-semibold text-status-warning ring-1 ring-status-warning/20">
                     <HelpCircle className="size-3.5" aria-hidden /> Menunggu Dinilai
                   </span>
                 )}
@@ -96,7 +96,7 @@ export function ReviewClient({ listItem, review }: ReviewClientProps) {
               <div className="mt-5 space-y-2 text-body-sm border-l-2 border-muted pl-4">
                 <p>
                   <span className="font-semibold text-muted-foreground">Jawaban Anda: </span>
-                  <MathText className="text-foreground font-medium">{item.userAnswer || "—"}</MathText>
+                  <MathText className="text-foreground font-medium">{item.userAnswer || "-"}</MathText>
                 </p>
                 {item.correctAnswerLabel && (
                   <p>
@@ -194,7 +194,7 @@ export function ReviewClient({ listItem, review }: ReviewClientProps) {
                               <Button
                                 asChild
                                 size="sm"
-                                className="mt-4 rounded-full bg-brand-secondary hover:bg-brand-secondary/95 text-white text-body-xs font-semibold h-8"
+                                className="mt-4 bg-brand-secondary hover:bg-brand-secondary/95 text-white text-body-xs font-semibold h-8"
                               >
                                 <Link href="/plans">
                                   Tingkatkan Paket Sekarang

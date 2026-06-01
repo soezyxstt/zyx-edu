@@ -67,7 +67,7 @@ type DriveExplorerProps = {
 };
 
 function formatBytes(bytes: number | null) {
-  if (bytes == null || Number.isNaN(bytes)) return "—";
+  if (bytes == null || Number.isNaN(bytes)) return "-";
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB"];
   let v = bytes;

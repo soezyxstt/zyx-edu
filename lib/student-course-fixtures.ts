@@ -144,7 +144,7 @@ const courses: StudentCourse[] = [
     title: "Kalkulus 1",
     category: "TPB",
     description:
-      "Limit, turunan, dan integral dasar dengan latihan terstruktur — materi, kuis cepat, dan tryout ujian.",
+      "Limit, turunan, dan integral dasar dengan latihan terstruktur - materi, kuis cepat, dan tryout ujian.",
   },
   {
     id: "physics-1",
@@ -277,7 +277,7 @@ const exams: ExamFixture[] = [
   {
     id: "quiz-calc-w1",
     courseId: "calc-1",
-    title: "Kuis Mingguan 1 — Limit & Fungsi",
+    title: "Kuis Mingguan 1 - Limit & Fungsi",
     type: "quiz",
     status: "published",
     isFree: true,
@@ -379,7 +379,7 @@ const exams: ExamFixture[] = [
   {
     id: "tryout-calc-mid",
     courseId: "calc-1",
-    title: "Tryout UTS — Kalkulus 1",
+    title: "Tryout UTS - Kalkulus 1",
     type: "tryout",
     status: "published",
     isFree: false,
@@ -489,7 +489,7 @@ const submissionList: SubmissionListItem[] = [
     id: "sub-calc-quiz-1",
     courseId: "calc-1",
     examId: "quiz-calc-w1",
-    examTitle: "Kuis Mingguan 1 — Limit & Fungsi",
+    examTitle: "Kuis Mingguan 1 - Limit & Fungsi",
     examType: "quiz",
     status: "graded",
     score: 85,
@@ -499,7 +499,7 @@ const submissionList: SubmissionListItem[] = [
     id: "sub-calc-tryout-1",
     courseId: "calc-1",
     examId: "tryout-calc-mid",
-    examTitle: "Tryout UTS — Kalkulus 1",
+    examTitle: "Tryout UTS - Kalkulus 1",
     examType: "tryout",
     status: "pending_review",
     score: null,
@@ -522,7 +522,7 @@ const submissionReviews: SubmissionReviewFixture[] = [
     id: "sub-calc-quiz-1",
     courseId: "calc-1",
     examId: "quiz-calc-w1",
-    examTitle: "Kuis Mingguan 1 — Limit & Fungsi",
+    examTitle: "Kuis Mingguan 1 - Limit & Fungsi",
     examType: "quiz",
     items: [
       {
@@ -540,7 +540,7 @@ const submissionReviews: SubmissionReviewFixture[] = [
     id: "sub-calc-tryout-1",
     courseId: "calc-1",
     examId: "tryout-calc-mid",
-    examTitle: "Tryout UTS — Kalkulus 1",
+    examTitle: "Tryout UTS - Kalkulus 1",
     examType: "tryout",
     items: [
       {

@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db";
-import { enrollmentTokens, courses, user } from "@/db/schema";
+import { enrollmentTokens, courses, user, groups, enrollmentTokenCourses } from "@/db/schema";
 import { assertAdmin } from "@/lib/uploadthing-admin";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { getSemesterEndDate } from "@/lib/utils";
 
 /**
@@ -14,54 +14,111 @@ import { getSemesterEndDate } from "@/lib/utils";
 export async function getEnrollmentTokens() {
   await assertAdmin();
 
-  return db
-    .select({
-      id: enrollmentTokens.id,
-      token: enrollmentTokens.token,
-      courseId: enrollmentTokens.courseId,
-      courseTitle: courses.title,
-      createdAt: enrollmentTokens.createdAt,
-      usedAt: enrollmentTokens.usedAt,
-      usedByUserId: enrollmentTokens.usedByUserId,
-      usedByUserName: user.name,
-      usedByUserEmail: user.email,
-      expiresAt: enrollmentTokens.expiresAt,
-    })
-    .from(enrollmentTokens)
-    .innerJoin(courses, eq(enrollmentTokens.courseId, courses.id))
-    .leftJoin(user, eq(enrollmentTokens.usedByUserId, user.id))
-    .orderBy(desc(enrollmentTokens.createdAt));
+  const tokens = await db.query.enrollmentTokens.findMany({
+    with: {
+      tokenCourses: {
+        with: {
+          course: true,
+        },
+      },
+      group: {
+        with: {
+          members: {
+            with: {
+              user: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [desc(enrollmentTokens.createdAt)],
+  });
+
+  return tokens.map((t) => ({
+    id: t.id,
+    token: t.token,
+    capacity: t.capacity,
+    createdAt: t.createdAt,
+    expiresAt: t.expiresAt,
+    courses: t.tokenCourses.map((tc) => ({
+      id: tc.course.id,
+      title: tc.course.title,
+    })),
+    group: t.group
+      ? {
+          id: t.group.id,
+          name: t.group.name,
+          members: t.group.members.map((m) => ({
+            userId: m.userId,
+            joinedAt: m.joinedAt,
+            user: {
+              name: m.user.name,
+              email: m.user.email,
+            },
+          })),
+        }
+      : null,
+  }));
 }
 
 /**
- * Generate a new one-time enrollment token for a course
+ * Generate a new enrollment token for multiple courses and group size capacity
  */
-export async function generateEnrollmentToken(courseId: string) {
+export async function generateEnrollmentToken(courseIds: string[], capacity: number) {
   await assertAdmin();
 
-  // Verify course exists
-  const courseRecord = await db.query.courses.findFirst({
-    where: eq(courses.id, courseId),
+  if (!courseIds || courseIds.length === 0) {
+    return { success: false, error: "Silakan pilih setidaknya satu course" };
+  }
+
+  if (capacity < 1 || capacity > 5) {
+    return { success: false, error: "Kapasitas kelompok harus di antara 1 dan 5 orang" };
+  }
+
+  // Verify all courses exist
+  const courseRecords = await db.query.courses.findMany({
+    where: inArray(courses.id, courseIds),
   });
 
-  if (!courseRecord) {
-    return { success: false, error: "Course tidak ditemukan" };
+  if (courseRecords.length !== courseIds.length) {
+    return { success: false, error: "Satu atau lebih course tidak ditemukan" };
   }
 
   // Calculate semester end date
   const expiresAt = getSemesterEndDate(new Date());
 
-  // Generate a friendly token string: ZYX-[COURSE]-[8_CHARS_UUID]
-  const coursePrefix = courseId.replace("-", "").toUpperCase().slice(0, 4);
-  const randomSuffix = randomUUID().split("-")[0].toUpperCase();
-  const token = `ZYX-${coursePrefix}-${randomSuffix}`;
+  // Generate unique 8 alphanumeric characters
+  const unique8 = randomUUID().split("-")[0].toUpperCase();
+  
+  // Format: ZYX-{unique_8_letters_and_numbers}-{#people}-{#courses}
+  const token = `ZYX-${unique8}-${capacity}-${courseIds.length}`;
 
   try {
-    await db.insert(enrollmentTokens).values({
-      id: randomUUID(),
-      token,
-      courseId,
-      expiresAt,
+    await db.transaction(async (tx) => {
+      // 1. Create a dedicated group
+      const groupId = randomUUID();
+      await tx.insert(groups).values({
+        id: groupId,
+        name: `Kelompok Token ${token}`,
+      });
+
+      // 2. Create the token
+      const tokenId = randomUUID();
+      await tx.insert(enrollmentTokens).values({
+        id: tokenId,
+        token,
+        groupId,
+        capacity,
+        expiresAt,
+      });
+
+      // 3. Link courses
+      for (const courseId of courseIds) {
+        await tx.insert(enrollmentTokenCourses).values({
+          tokenId,
+          courseId,
+        });
+      }
     });
 
     revalidatePath("/admin/tokens");
@@ -73,13 +130,21 @@ export async function generateEnrollmentToken(courseId: string) {
 }
 
 /**
- * Delete / revoke a token
+ * Delete / revoke a token and its group
  */
 export async function deleteEnrollmentToken(tokenId: string) {
   await assertAdmin();
 
   try {
-    await db.delete(enrollmentTokens).where(eq(enrollmentTokens.id, tokenId));
+    const tokenRecord = await db.query.enrollmentTokens.findFirst({
+      where: eq(enrollmentTokens.id, tokenId),
+    });
+
+    if (tokenRecord) {
+      // Deleting the group will cascade to the token and course links
+      await db.delete(groups).where(eq(groups.id, tokenRecord.groupId));
+    }
+
     revalidatePath("/admin/tokens");
     return { success: true };
   } catch (err: any) {

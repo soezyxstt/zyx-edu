@@ -75,14 +75,11 @@ export function AboutClient() {
       <Reveal>
         <header className="relative z-10 overflow-hidden border-b border-border bg-background/50 backdrop-blur-xs py-20 md:py-28 text-center">
           <div className="marketing-container space-y-4">
-            <span className="inline-flex rounded-full border border-[var(--zx-accent)]/20 bg-[var(--zx-accent)]/5 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--zx-accent)]">
-              Zyx Edu
-            </span>
             <h1 className="font-heading text-h2 md:text-h1 font-extrabold tracking-tight text-foreground max-w-4xl mx-auto">
               Tentang kami
             </h1>
             <p className="mx-auto max-w-2xl text-body-md text-muted-foreground md:text-body-lg leading-relaxed font-normal">
-              Kami membangun pengalaman belajar yang tenang dan terukur — dari TPB hingga awal jurusan.
+              Kami membangun pengalaman belajar yang tenang dan terukur - dari TPB hingga awal jurusan.
             </p>
           </div>
         </header>
@@ -95,7 +92,7 @@ export function AboutClient() {
           <div className="space-y-3">
             <span className="text-xs font-bold text-primary uppercase tracking-widest">Visi Kami</span>
             <SectionHeading as="h2" tier="primary" className="text-foreground leading-tight font-extrabold tracking-tight text-center">
-              Zyx Education: Learn Deep, Fly High
+              Zyx Academy: Learn Deep, Fly High
             </SectionHeading>
           </div>
           <div className="space-y-6 text-body-md md:text-body-lg text-muted-foreground leading-relaxed text-center">

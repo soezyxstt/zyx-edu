@@ -9,7 +9,7 @@ export function getWhatsAppAdminChatHref(): string | null {
   if (digits.length < 8) return null;
   const text =
     encodeURIComponent(
-      "Halo, saya ingin bertanya lebih lanjut tentang pembelajaran di Zyx Edu.",
+      "Halo, saya ingin bertanya lebih lanjut tentang pembelajaran di Zyx Academy.",
     );
   return `https://wa.me/${digits}?text=${text}`;
 }

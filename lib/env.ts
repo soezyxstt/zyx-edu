@@ -22,6 +22,12 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: z.string().min(1),
     /** Nomor WhatsApp admin (digits; `+`/spaces allowed). Contoh: `6281234567890`. */
     WHATSAPP_ADMIN_NUMBER: z.string().optional(),
+    /** Gemini API Key for AI operations */
+    GEMINI_API_KEY: z.string().min(1),
+    /** Pinecone API Key for vector search (required for AI quiz generation) */
+    PINECONE_API_KEY: z.string().transform((v) => v || undefined).optional(),
+    /** Pinecone index name (e.g. "zyx-edu") */
+    PINECONE_INDEX_NAME: z.string().transform((v) => v || undefined).optional(),
   },
   client: {
     /** Absolute origin for better-auth client (e.g. https://app.example.com). Falls back for local dev. */
@@ -45,5 +51,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
     WHATSAPP_ADMIN_NUMBER: process.env.WHATSAPP_ADMIN_NUMBER,
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    PINECONE_API_KEY: process.env.PINECONE_API_KEY,
+    PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME,
   },
 });

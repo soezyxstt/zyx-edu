@@ -25,6 +25,7 @@ import { planTiers, type PlanKey } from "@/lib/plan-tiers";
 export default function PlansClient() {
   const [persons, setPersons] = useState<number>(DEFAULT_PERSONS);
   const [courses, setCourses] = useState<number>(DEFAULT_COURSES);
+  const [showSubjects, setShowSubjects] = useState<boolean>(false);
 
   const formatPrice = (amount: number): string => {
     return "Rp " + amount.toLocaleString("id-ID");
@@ -47,7 +48,7 @@ export default function PlansClient() {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-h-screen">
       <Reveal>
         <MarketingPageHero
           sectionId="plans"
@@ -57,273 +58,241 @@ export default function PlansClient() {
         />
       </Reveal>
 
-      {/* Global Configuration Section */}
-      <Reveal>
-      <SectionContainer className="border-b border-border bg-linear-to-b from-background via-muted/30 to-background" density="compact">
-        <div className="mx-auto max-w-4xl">
-          <div className="rounded-3xl border border-border bg-card p-6 shadow-md md:p-8">
-            <div className="text-center mb-8">
-              <h2 className="font-heading text-h5 text-foreground">
-                Sesuaikan Rencana Belajar Anda
+      {/* Sticky Configurator Bar */}
+      <div className="sticky top-[52px] md:top-[56px] z-30 w-full border-y border-border bg-background/95 backdrop-blur-md py-3 shadow-xs animate-in fade-in duration-200">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            
+            {/* Title / Description */}
+            <div className="text-center md:text-left">
+              <h2 className="font-heading text-body-base font-bold text-foreground">
+                Sesuaikan Rencana Belajar
               </h2>
-              <p className="mt-2 text-body-sm text-muted-foreground">
-                Sesuaikan jumlah anggota kelompok belajar dan jumlah mata kuliah untuk melihat estimasi biaya real-time.
+              <p className="hidden md:block text-xs text-muted-foreground mt-0.5">
+                Sesuaikan anggota kelompok & mata kuliah secara real-time
               </p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              {/* Group Size Config Card */}
-              <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-background p-5 shadow-xs transition-all hover:border-primary/20">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <Users className="size-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-heading text-body-base font-semibold text-foreground">
-                        Jumlah Anggota Kelompok
-                      </h3>
-                      <p className="text-xs text-muted-foreground">Maksimal 5 orang per kelompok</p>
-                    </div>
-                  </div>
-
-                  {/* Visual Avatar Feedback */}
-                  <div className="mt-6 flex justify-center gap-2">
-                    {Array.from({ length: MAX_PERSONS }).map((_, i) => (
-                      <div
-                        key={i}
-                        className={`flex size-9 items-center justify-center rounded-full border transition-all duration-300 ${
-                          i < persons
-                            ? "border-primary bg-primary/10 text-primary scale-110 shadow-xs"
-                            : "border-border bg-muted/20 text-muted-foreground/40"
-                        }`}
-                      >
-                        <Users className="size-4" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="font-heading text-body-md font-bold text-foreground">
-                    {persons} {persons === 1 ? "Orang (Privat)" : "Orang"}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={handleDecrementPersons}
-                      disabled={persons <= MIN_PERSONS}
-                      aria-label="Kurangi jumlah orang"
-                      className="rounded-full"
-                    >
-                      <Minus className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={handleIncrementPersons}
-                      disabled={persons >= MAX_PERSONS}
-                      aria-label="Tambah jumlah orang"
-                      className="rounded-full"
-                    >
-                      <Plus className="size-4" />
-                    </Button>
-                  </div>
-                </div>
+            {/* Stepper Controls & Subject Toggle */}
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-2.5">
+              
+              {/* Stepper 1: Persons */}
+              <div className="flex items-center gap-1.5 bg-muted/40 dark:bg-card border border-border/60 rounded-md px-2.5 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1 select-none">
+                  Grup
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={handleDecrementPersons}
+                  disabled={persons <= MIN_PERSONS}
+                  aria-label="Kurangi jumlah orang"
+                  className="rounded-full size-7 bg-background"
+                >
+                  <Minus className="size-3" />
+                </Button>
+                <span className="font-heading text-body-sm font-bold text-foreground min-w-[3.5rem] text-center">
+                  {persons} Orang
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={handleIncrementPersons}
+                  disabled={persons >= MAX_PERSONS}
+                  aria-label="Tambah jumlah orang"
+                  className="rounded-full size-7 bg-background"
+                >
+                  <Plus className="size-3" />
+                </Button>
               </div>
 
-              {/* Course Count Config Card */}
-              <div className="flex flex-col justify-between rounded-2xl border border-border/80 bg-background p-5 shadow-xs transition-all hover:border-primary/20">
-                <div>
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                      <BookOpen className="size-5" />
-                    </div>
-                    <div>
-                      <h3 className="font-heading text-body-base font-semibold text-foreground">
-                        Jumlah Mata Kuliah
-                      </h3>
-                      <p className="text-xs text-muted-foreground">Range: 1 hingga 10 subjek</p>
-                    </div>
-                  </div>
-
-                  {/* Course Dropdown/Select for Alternative Input */}
-                  <div className="mt-6">
-                    <label htmlFor="course-select" className="sr-only">Pilih Jumlah Mata Kuliah</label>
-                    <select
-                      id="course-select"
-                      value={courses}
-                      onChange={(e) => setCourses(Number(e.target.value))}
-                      className="w-full h-10 px-3 py-2 text-sm rounded-md border border-input bg-background focus:outline-[var(--zx-accent)] focus:outline-offset-2"
-                    >
-                      {Array.from({ length: MAX_COURSES }).map((_, i) => (
-                        <option key={i + 1} value={i + 1}>
-                          {i + 1} Mata Kuliah
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="mt-6 flex items-center justify-between">
-                  <span className="font-heading text-body-md font-bold text-foreground">
-                    {courses} Mata Kuliah
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={handleDecrementCourses}
-                      disabled={courses <= MIN_COURSES}
-                      aria-label="Kurangi mata kuliah"
-                      className="rounded-full"
-                    >
-                      <Minus className="size-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={handleIncrementCourses}
-                      disabled={courses >= MAX_COURSES}
-                      aria-label="Tambah mata kuliah"
-                      className="rounded-full"
-                    >
-                      <Plus className="size-4" />
-                    </Button>
-                  </div>
-                </div>
+              {/* Stepper 2: Courses */}
+              <div className="flex items-center gap-1.5 bg-muted/40 dark:bg-card border border-border/60 rounded-md px-2.5 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1 select-none">
+                  Matkul
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={handleDecrementCourses}
+                  disabled={courses <= MIN_COURSES}
+                  aria-label="Kurangi mata kuliah"
+                  className="rounded-full size-7 bg-background"
+                >
+                  <Minus className="size-3" />
+                </Button>
+                <span className="font-heading text-body-sm font-bold text-foreground min-w-[4rem] text-center">
+                  {courses} Matkul
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon-xs"
+                  onClick={handleIncrementCourses}
+                  disabled={courses >= MAX_COURSES}
+                  aria-label="Tambah mata kuliah"
+                  className="rounded-full size-7 bg-background"
+                >
+                  <Plus className="size-3" />
+                </Button>
               </div>
-            </div>
 
-            {/* Covered Courses Highlights */}
-            <div className="mt-6 pt-6 border-t border-border/60">
-              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Simulasi mata kuliah yang dicover:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {CORE_SUBJECTS.map((subject, idx) => {
-                  const isActive = idx < courses;
-                  return (
-                    <span
-                      key={subject}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-300 ${
-                        isActive
-                          ? "bg-[var(--zx-accent)]/10 text-[var(--zx-accent)] border border-[var(--zx-accent)]/20 shadow-xs"
-                          : "bg-muted/30 text-muted-foreground/40 border border-transparent"
-                      }`}
-                    >
-                      {isActive && <Check className="size-3" />}
-                      {subject}
-                    </span>
-                  );
-                })}
-              </div>
+              {/* Subject Toggle Button */}
+              <button
+                onClick={() => setShowSubjects(!showSubjects)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold border transition-all ${
+                  showSubjects
+                    ? "bg-primary text-primary-foreground border-primary shadow-xs"
+                    : "bg-muted/80 hover:bg-muted text-foreground border-border/80"
+                }`}
+                title="Lihat daftar mata kuliah yang dicover"
+              >
+                <BookOpen className="size-3.5" />
+                <span>Mata Kuliah ({courses})</span>
+              </button>
+
             </div>
           </div>
         </div>
-      </SectionContainer>
-      </Reveal>
+      </div>
+
+      {/* Covered Courses Panel (collapsible, scrolls naturally) */}
+      {showSubjects && (
+        <div className="relative z-20 w-full border-b border-border bg-card p-4 shadow-inner animate-in fade-in slide-in-from-top-3 duration-200">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Mata Kuliah Yang Dicover ({courses}/{MAX_COURSES})
+              </h3>
+              <button 
+                onClick={() => setShowSubjects(false)}
+                className="text-xs text-primary font-semibold hover:underline"
+              >
+                Tutup
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {CORE_SUBJECTS.map((subject, idx) => {
+                const isActive = idx < courses;
+                return (
+                  <span
+                    key={subject}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all duration-300 ${
+                      isActive
+                        ? "bg-[var(--zx-accent)]/10 text-[var(--zx-accent)] border border-[var(--zx-accent)]/20 shadow-xs"
+                        : "bg-muted/30 text-muted-foreground/30 border border-transparent"
+                    }`}
+                  >
+                    {isActive && <Check className="size-3" />}
+                    {subject}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Pricing Cards Grid */}
       <Reveal>
-      <SectionContainer className="border-b border-border bg-muted">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
-          {planTiers.map((tier) => {
-            const calculatedPrice = calculatePlanPrice(tier.key, persons, courses);
-            const isCustom = tier.key === "custom";
-            const isFree = tier.key === "free";
-            
-            // Format total price display
-            const priceDisplay = isFree 
-              ? "Gratis" 
-              : isCustom 
-                ? "Hubungi Kami" 
-                : formatPrice(calculatedPrice);
-            
-            // Calculate price per person
-            const pricePerPerson = (!isFree && !isCustom) 
-              ? formatPrice(Math.round(calculatedPrice / persons)) 
-              : null;
+        <SectionContainer className="border-b border-border bg-muted pt-8 pb-16 md:pt-12 md:pb-24">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
+            {planTiers.map((tier) => {
+              const calculatedPrice = calculatePlanPrice(tier.key, persons, courses);
+              const isCustom = tier.key === "custom";
+              const isFree = tier.key === "free";
+              
+              // Format total price display
+              const priceDisplay = isFree 
+                ? "Gratis" 
+                : isCustom 
+                  ? "Hubungi Kami" 
+                  : formatPrice(calculatedPrice);
+              
+              // Calculate price per person
+              const pricePerPerson = (!isFree && !isCustom) 
+                ? formatPrice(Math.round(calculatedPrice / persons)) 
+                : null;
 
-            // Generate WhatsApp link dynamically
-            const whatsAppUrl = getWhatsAppPlanUrl(tier.key, tier.name, persons, courses);
+              // Generate WhatsApp link dynamically
+              const whatsAppUrl = getWhatsAppPlanUrl(tier.key, tier.name, persons, courses);
 
-            return (
-              <article
-                key={tier.key}
-                className={
-                  tier.highlighted
-                    ? "relative flex flex-col rounded-3xl border-2 border-[var(--zx-accent)] bg-card p-6 shadow-md ring-4 ring-[var(--zx-accent)]/10 md:p-7 transition-all duration-300 hover:scale-[1.02]"
-                    : "flex flex-col rounded-3xl border border-border bg-card p-6 shadow-sm md:p-7 transition-all duration-300 hover:scale-[1.01] hover:border-border-strong hover:shadow-md"
-                }
-              >
-                {tier.highlighted ? (
-                  <Badge className="absolute -top-3 left-6 bg-[var(--zx-accent)] text-white hover:bg-[var(--zx-accent)] font-semibold shadow-xs">
-                    Rekomendasi
-                  </Badge>
-                ) : null}
+              return (
+                <article
+                  key={tier.key}
+                  className={
+                    tier.highlighted
+                      ? "relative flex flex-col rounded-3xl border-2 border-[var(--zx-accent)] bg-card p-6 shadow-md ring-4 ring-[var(--zx-accent)]/10 md:p-7 transition-all duration-300 hover:scale-[1.02]"
+                      : "flex flex-col rounded-3xl border border-border bg-card p-6 shadow-sm md:p-7 transition-all duration-300 hover:scale-[1.01] hover:border-border-strong hover:shadow-md"
+                  }
+                >
+                  {tier.highlighted ? (
+                    <Badge className="absolute -top-3 left-6 bg-[var(--zx-accent)] text-white hover:bg-[var(--zx-accent)] font-semibold shadow-xs">
+                      Rekomendasi
+                    </Badge>
+                  ) : null}
 
-                <div className="flex-1">
-                  <SectionHeading as="h3" tier="secondary" className="text-card-foreground text-xl font-bold font-heading">
-                    {tier.name}
-                  </SectionHeading>
-                  
-                  <p className="mt-2 text-xs text-muted-foreground min-h-[32px]">
-                    {tier.note}
-                  </p>
-
-                  <div className="mt-4 pt-4 border-t border-border/60">
-                    <p className="font-heading text-h5 font-extrabold text-foreground tracking-tight transition-all duration-300">
-                      {priceDisplay}
-                    </p>
+                  <div className="flex-1">
+                    <SectionHeading as="h3" tier="secondary" className="text-card-foreground text-xl font-bold font-heading">
+                      {tier.name}
+                    </SectionHeading>
                     
-                    {pricePerPerson && (
-                      <p className="mt-1 text-xs text-[var(--zx-accent)] font-semibold">
-                        ({pricePerPerson} / orang)
-                      </p>
-                    )}
+                    <p className="mt-2 text-xs text-muted-foreground min-h-[32px]">
+                      {tier.note}
+                    </p>
 
-                    {!isFree && !isCustom && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Total per semester
-                      </p>
-                    )}
+                    <div className="mt-4 pt-4 border-t border-border/60">
+                      {(!isFree && !isCustom) ? (
+                        <>
+                          <div className="flex items-baseline gap-1">
+                            <span className="font-heading text-h5 font-extrabold text-foreground tracking-tight transition-all duration-300">
+                              {pricePerPerson}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground font-medium">/ orang</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            Total: <span className="font-semibold text-foreground">{priceDisplay}</span> / semester
+                          </p>
+                        </>
+                      ) : (
+                        <p className="font-heading text-h5 font-extrabold text-foreground tracking-tight transition-all duration-300">
+                          {priceDisplay}
+                        </p>
+                      )}
+                    </div>
+
+                    <ul className="mt-6 flex flex-col gap-3">
+                      {tier.features.map((f) => (
+                        <li key={f} className="flex gap-2 text-body-sm text-muted-foreground items-start">
+                          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <Check className="size-3" strokeWidth={2.5} aria-hidden />
+                          </span>
+                          <span className="leading-tight">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  <ul className="mt-6 flex flex-col gap-3">
-                    {tier.features.map((f) => (
-                      <li key={f} className="flex gap-2 text-body-sm text-muted-foreground items-start">
-                        <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                          <Check className="size-3" strokeWidth={2.5} aria-hidden />
-                        </span>
-                        <span className="leading-tight">{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="mt-8">
-                  <Button
-                    asChild
-                    variant={tier.highlighted ? "default" : "outline"}
-                    size="marketing"
-                    className={`w-full group/btn transition-all duration-300 ${
-                      tier.highlighted 
-                        ? "bg-[var(--zx-accent)] text-white hover:bg-[var(--zx-accent)]/90 hover:shadow-lg hover:shadow-[var(--zx-accent)]/20" 
-                        : ""
-                    }`}
-                  >
-                    <Link href={whatsAppUrl} target="_blank" rel="noopener noreferrer">
-                      {isFree ? "Daftar Sekarang" : isCustom ? "Hubungi Admin" : "Pilih Paket"}
-                    </Link>
-                  </Button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      </SectionContainer>
+                  <div className="mt-8">
+                    <Button
+                      asChild
+                      variant={tier.highlighted ? "default" : "outline"}
+                      size="marketing"
+                      className={`w-full group/btn transition-all duration-300 ${
+                        tier.highlighted 
+                          ? "bg-[var(--zx-accent)] text-white hover:bg-[var(--zx-accent)]/90 hover:shadow-lg hover:shadow-[var(--zx-accent)]/20" 
+                          : ""
+                      }`}
+                    >
+                      <Link href={whatsAppUrl} target="_blank" rel="noopener noreferrer">
+                        {isFree ? "Daftar Sekarang" : isCustom ? "Hubungi Admin" : "Pilih Paket"}
+                      </Link>
+                    </Button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </SectionContainer>
       </Reveal>
     </div>
   );

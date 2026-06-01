@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import { Lock } from "lucide-react";
+import Link from "next/link";
+import { Lock, ChevronRight } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
-import { getCourseById, getLeaderboard, LEADERBOARD_SCORE_HINT } from "@/lib/student-course-fixtures";
+import { getCourseById, LEADERBOARD_SCORE_HINT } from "@/lib/student-course-fixtures";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
+import { db } from "@/db";
+import { studentQuizAttempts, quizTemplates, enrollments, user } from "@/db/schema";
+import { and, eq, avg, sql } from "drizzle-orm";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -14,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const course = getCourseById(id);
   return {
-    title: pageTitle(course ? `${course.title} — Papan peringkat` : "Papan peringkat"),
+    title: pageTitle(course ? `${course.title} - Papan peringkat` : "Papan peringkat"),
     description: "Peringkat course berdasarkan kuis and tryout",
   };
 }
@@ -35,7 +39,18 @@ export default async function CourseLeaderboardPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell eyebrow="Komunitas" title="Peringkat terkunci" description={LEADERBOARD_SCORE_HINT} hideHeader>
+      <CoursePageShell
+        eyebrow={
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+            <ChevronRight className="size-3" />
+            <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
+          </div>
+        }
+        title="Papan Peringkat (Terkunci)"
+        description={LEADERBOARD_SCORE_HINT}
+        hideHeader
+      >
         <Reveal>
           <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
             <div className="flex items-start gap-3">
@@ -58,10 +73,41 @@ export default async function CourseLeaderboardPage({ params }: Props) {
     );
   }
 
-  const rows = getLeaderboard(id);
+  // Phase J: dynamic AI quiz leaderboard — direct query on completed attempts
+  const aiRows = await db
+    .select({
+      studentId: studentQuizAttempts.studentId,
+      studentName: user.name,
+      attemptCount: sql<number>`count(*)::int`,
+      avgScore: sql<number>`avg(${studentQuizAttempts.score})::numeric(5,1)`,
+    })
+    .from(studentQuizAttempts)
+    .innerJoin(quizTemplates, eq(studentQuizAttempts.templateId, quizTemplates.id))
+    .innerJoin(user, eq(studentQuizAttempts.studentId, user.id))
+    .where(
+      and(
+        eq(quizTemplates.courseId, id),
+        eq(studentQuizAttempts.status, "completed"),
+      ),
+    )
+    .groupBy(studentQuizAttempts.studentId, user.name)
+    .orderBy(sql`avg(${studentQuizAttempts.score}) DESC`);
+
+  const rankedRows = aiRows.map((r, i) => ({ ...r, rank: i + 1 }));
 
   return (
-    <CoursePageShell eyebrow="Komunitas" title="Papan peringkat" description={LEADERBOARD_SCORE_HINT} hideHeader>
+    <CoursePageShell
+      eyebrow={
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+          <ChevronRight className="size-3" />
+          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
+        </div>
+      }
+      title="Papan Peringkat"
+      description={LEADERBOARD_SCORE_HINT}
+      hideHeader
+    >
       <Reveal>
         <div className="overflow-hidden rounded-lg border border-border/70 bg-card/75 backdrop-blur-sm">
           <div className="overflow-x-auto">
@@ -75,32 +121,30 @@ export default async function CourseLeaderboardPage({ params }: Props) {
                     Nama
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Skor gabungan
+                    Rata-rata skor kuis
                   </th>
                   <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Rata kuis %
-                  </th>
-                  <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Rata tryout %
+                    Jumlah kuis
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => (
-                  <tr key={r.userId} className={cn("border-b border-border/70 last:border-0", rankRowClass(r.rank))}>
+                {rankedRows.map((r) => (
+                  <tr key={r.studentId} className={cn("border-b border-border/70 last:border-0", rankRowClass(r.rank))}>
                     <td className="px-4 py-3 tabular-nums font-semibold text-foreground">{r.rank}</td>
-                    <td className="px-4 py-3 font-medium text-foreground">{r.displayName}</td>
-                    <td className="px-4 py-3 tabular-nums font-semibold text-primary">{r.score}</td>
-                    <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.quizAvgPercent}</td>
-                    <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.tryoutAvgPercent}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{r.studentName}</td>
+                    <td className="px-4 py-3 tabular-nums font-semibold text-primary">{r.avgScore}%</td>
+                    <td className="px-4 py-3 tabular-nums text-muted-foreground">{r.attemptCount}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </div>
-        {rows.length === 0 ? (
-          <p className="mt-6 text-body-md text-muted-foreground">Belum ada data peringkat untuk course ini.</p>
+        {rankedRows.length === 0 ? (
+          <p className="mt-6 text-body-md text-muted-foreground">
+            Belum ada skor kuis AI untuk course ini. Selesaikan kuis untuk muncul di papan peringkat.
+          </p>
         ) : null}
       </Reveal>
     </CoursePageShell>

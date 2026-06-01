@@ -41,7 +41,7 @@ export function EnrollmentForm({ className }: { className?: string }) {
   return (
     <form onSubmit={handleEnroll} className={className}>
       <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="flex flex-1 items-center h-11 rounded-full border border-border bg-background px-3.5 gap-2 focus-within:border-brand-primary focus-within:ring-1 focus-within:ring-brand-primary transition-shadow">
+        <div className="flex flex-1 items-center h-11 rounded-lg border border-border bg-background px-3.5 gap-2 focus-within:border-brand-primary focus-within:ring-1 focus-within:ring-brand-primary transition-shadow">
           <KeyRound className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           <input
             type="text"
@@ -55,7 +55,7 @@ export function EnrollmentForm({ className }: { className?: string }) {
         <Button
           type="submit"
           disabled={loading}
-          className="h-11 shrink-0 rounded-full px-6 bg-brand-primary text-white hover:bg-brand-primary/95 transition-all"
+          className="h-11 shrink-0 rounded-lg px-6 bg-brand-primary text-white hover:bg-brand-primary/95 transition-all"
         >
           {loading ? "Mendaftarkan..." : "Aktivasi Kelas"}
         </Button>

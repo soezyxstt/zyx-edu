@@ -10,7 +10,7 @@ async function main() {
       id: "calc-1",
       title: "Kalkulus 1",
       category: "TPB",
-      description: "Limit, turunan, dan integral dasar dengan latihan terstruktur — materi, kuis cepat, dan tryout ujian.",
+      description: "Limit, turunan, dan integral dasar dengan latihan terstruktur - materi, kuis cepat, dan tryout ujian.",
     },
     {
       id: "physics-1",

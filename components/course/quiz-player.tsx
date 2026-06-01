@@ -5,54 +5,118 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Flag, Timer, BookOpen, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
-import { MathText } from "@/components/course/math-text";
-import type { ExamFixture, QuestionSpec } from "@/lib/student-course-fixtures";
-
-type AnswerState =
-  | { type: "short_answer"; text: string; fileName: string | null }
-  | { type: "multiple_choice"; index: number | null }
-  | { type: "multiple_choices"; indices: number[] }
-  | { type: "essay"; text: string; fileName: string | null };
-
-function emptyAnswer(q: QuestionSpec): AnswerState {
-  if (q.type === "short_answer") return { type: "short_answer", text: "", fileName: null };
-  if (q.type === "multiple_choice") return { type: "multiple_choice", index: null };
-  if (q.type === "multiple_choices") return { type: "multiple_choices", indices: [] };
-  return { type: "essay", text: "", fileName: null };
-}
+import { Flag, Timer, BookOpen, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { MarkdownRenderer } from "@/components/course/markdown-renderer";
 
 type QuizPlayerProps = {
   courseId: string;
-  exam: ExamFixture;
+  exam: {
+    id: string;
+    title: string;
+    questions: Array<{
+      id: string;
+      order: number;
+      type: "multiple_choice";
+      prompt: string;
+      options: string[];
+      correctIndex: number;
+    }>;
+    settings?: {
+      timeLimitMinutes?: number;
+    };
+  };
+  attemptId: string;
 };
 
-export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
+export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
   const router = useRouter();
   const durationSeconds = (exam.settings?.timeLimitMinutes ?? 15) * 60;
-  const timerStorageKey = useMemo(() => `zyx-quiz-timer-deadline-${exam.id}`, [exam.id]);
+  const timerStorageKey = useMemo(() => `zyx-quiz-timer-deadline-${attemptId}`, [attemptId]);
+  
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, AnswerState>>(() => {
-    const init: Record<string, AnswerState> = {};
-    for (const q of exam.questions) init[q.id] = emptyAnswer(q);
-    return init;
+  const [answers, setAnswers] = useState<Record<string, number>>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(`zyx-quiz-answers-${attemptId}`);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    return {};
   });
   
   // Flag state for "Ragu-ragu"
-  const [flags, setFlags] = useState<Record<string, boolean>>({});
+  const [flags, setFlags] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(`zyx-quiz-flags-${attemptId}`);
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          // ignore
+        }
+      }
+    }
+    return {};
+  });
 
   // Timer states
   const [timeLeft, setTimeLeft] = useState<number>(durationSeconds);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = useCallback(() => {
-    if (isSubmitted) return;
+  const handleSubmit = useCallback(async () => {
+    if (isSubmitted || submitting) return;
 
-    setIsSubmitted(true);
-    window.localStorage.removeItem(timerStorageKey);
-    toast.success("Kuis berhasil dikumpulkan! Mengarahkan ke halaman hasil...");
-    router.push(`/courses/${courseId}/my-results`);
-  }, [courseId, isSubmitted, router, timerStorageKey]);
+    try {
+      setSubmitting(true);
+      window.localStorage.removeItem(timerStorageKey);
+      window.localStorage.removeItem(`zyx-quiz-answers-${attemptId}`);
+      window.localStorage.removeItem(`zyx-quiz-flags-${attemptId}`);
+
+      // Transform answers to standard Record<string, number[]> format
+      const formattedAnswers: Record<string, number[]> = {};
+      for (const [qId, selectedIdx] of Object.entries(answers)) {
+        formattedAnswers[qId] = [selectedIdx];
+      }
+
+      // Mark all unanswered questions as empty arrays
+      for (const question of exam.questions) {
+        if (formattedAnswers[question.id] === undefined) {
+          formattedAnswers[question.id] = [];
+        }
+      }
+
+      const res = await fetch(`/api/quiz/attempts/${attemptId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          answers: formattedAnswers,
+          durationSeconds: Math.max(0, durationSeconds - timeLeft),
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Gagal mengumpulkan kuis");
+      }
+
+      setIsSubmitted(true);
+      toast.success("Kuis berhasil dikumpulkan! Mengarahkan ke pembahasan...");
+      
+      // Navigate to the review screen for this attempt
+      router.replace(`/courses/${courseId}/quiz/${exam.id}?attemptId=${attemptId}`);
+      router.refresh();
+    } catch (err: any) {
+      toast.error(err.message || "Gagal mengumpulkan kuis. Silakan coba kembali.");
+      setSubmitting(false);
+    }
+  }, [courseId, isSubmitted, submitting, router, timerStorageKey, attemptId, answers, durationSeconds, timeLeft, exam.id, exam.questions]);
 
   useEffect(() => {
     const rawDeadline = window.localStorage.getItem(timerStorageKey);
@@ -72,7 +136,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
   }, [durationSeconds, timerStorageKey]);
 
   useEffect(() => {
-    if (isSubmitted) return;
+    if (isSubmitted || submitting) return;
 
     const timer = setInterval(() => {
       const deadline = Number(window.localStorage.getItem(timerStorageKey));
@@ -89,7 +153,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
       }
     }, 1000);
     return () => clearInterval(timer);
-  }, [handleSubmit, isSubmitted, timerStorageKey]);
+  }, [handleSubmit, isSubmitted, submitting, timerStorageKey]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -103,14 +167,20 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
   );
 
   const q = sorted[index];
-  const progress = ((index + 1) / sorted.length) * 100;
+  const progress = sorted.length > 0 ? ((index + 1) / sorted.length) * 100 : 0;
 
-  function setAnswerFor(id: string, next: AnswerState) {
-    setAnswers((prev) => ({ ...prev, [id]: next }));
+  function selectOption(qId: string, optionIndex: number) {
+    if (isSubmitted || submitting) return;
+    const next = { ...answers, [qId]: optionIndex };
+    setAnswers(next);
+    window.localStorage.setItem(`zyx-quiz-answers-${attemptId}`, JSON.stringify(next));
   }
 
-  function toggleFlag(id: string) {
-    setFlags((prev) => ({ ...prev, [id]: !prev[id] }));
+  function toggleFlag(qId: string) {
+    if (isSubmitted || submitting) return;
+    const next = { ...flags, [qId]: !flags[qId] };
+    setFlags(next);
+    window.localStorage.setItem(`zyx-quiz-flags-${attemptId}`, JSON.stringify(next));
   }
 
   function goNext() {
@@ -121,15 +191,17 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
     if (index > 0) setIndex((i) => i - 1);
   }
 
-  // Determine if a question has been answered
-  const isQuestionAnswered = (question: QuestionSpec) => {
-    const ans = answers[question.id];
-    if (!ans) return false;
-    if (ans.type === "multiple_choice") return ans.index !== null;
-    if (ans.type === "multiple_choices") return ans.indices.length > 0;
-    if (ans.type === "short_answer" || ans.type === "essay") return ans.text.trim() !== "";
-    return false;
+  const isQuestionAnswered = (questionId: string) => {
+    return answers[questionId] !== undefined && answers[questionId] !== null;
   };
+
+  if (!q) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-muted/15 py-10 text-center">
+        <p className="text-body-sm text-muted-foreground">Tidak ada pertanyaan untuk kuis ini.</p>
+      </div>
+    );
+  }
 
   const ans = answers[q.id];
   const currentFlagged = !!flags[q.id];
@@ -137,26 +209,26 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
   return (
     <div className="grid grid-cols-1 items-start gap-6 font-sans lg:grid-cols-12">
       
-      {/* LEFT COLUMN: Main player and Question details (9 cols on lg) */}
+      {/* LEFT COLUMN: Main player and Question details (8 cols on lg) */}
       <div className="space-y-5 lg:col-span-8">
         
         {/* Progress Bar & Header */}
         <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
           <div className="flex-1 space-y-1.5">
-            <div className="flex items-center justify-between text-body-xs font-semibold text-muted-foreground">
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               <span>PROGRES PENGERJAAN</span>
               <span>{Math.round(progress)}% ({index + 1} / {sorted.length} Soal)</span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <div className="h-2 overflow-hidden rounded-md bg-muted">
               <div
-                className="h-full rounded-full bg-linear-to-r from-brand-primary via-tertiary-1 to-brand-secondary transition-[width] duration-300 ease-out"
+                className="h-full rounded-md bg-linear-to-r from-brand-primary via-tertiary-1 to-brand-secondary transition-[width] duration-300 ease-out"
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-brand-secondary/35 bg-brand-secondary/10 px-3 py-1.5 font-mono text-body-sm font-bold text-brand-secondary">
-            <Timer className="size-4" />
+            <Timer className="size-4 animate-pulse" />
             <span>{formatTime(timeLeft)}</span>
           </div>
         </div>
@@ -164,7 +236,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
         {/* Question Area Box */}
         <div
           className={cn(
-            "relative overflow-hidden rounded-2xl border border-border/80 bg-card p-5 shadow-sm backdrop-blur-xs md:p-6",
+            "relative overflow-hidden rounded-2xl border border-border/85 bg-card p-5 shadow-xs backdrop-blur-xs md:p-6",
             "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
             currentFlagged && "ring-1 ring-brand-secondary/35 border-brand-secondary/40"
           )}
@@ -174,54 +246,56 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-primary text-body-sm font-bold text-white shadow-xs">
               {index + 1}
             </span>
-            <div className="space-y-1 flex-1">
-              <h2 className="font-heading text-body-lg font-bold leading-snug text-foreground">
-                <MathText>{q.prompt}</MathText>
-              </h2>
+            <div className="space-y-1 flex-1 leading-relaxed text-foreground">
+              <div className="font-heading text-body-lg font-bold leading-normal">
+                <MarkdownRenderer content={q.prompt} />
+              </div>
             </div>
           </div>
 
-          {/* Options Display (Multiple choice kuis mingguan) */}
-          {q.type === "multiple_choice" && ans.type === "multiple_choice" ? (
-            <ul className="mt-5 space-y-2">
-              {q.options.map((opt, i) => {
-                const selected = ans.index === i;
-                return (
-                  <li key={i}>
-                    <button
-                      type="button"
-                      onClick={() => setAnswerFor(q.id, { type: "multiple_choice", index: i })}
+          {/* Options Display */}
+          <ul className="mt-5 space-y-2.5">
+            {q.options.map((opt, i) => {
+              const selected = ans === i;
+              return (
+                <li key={i}>
+                  <button
+                    type="button"
+                    disabled={submitting || isSubmitted}
+                    onClick={() => selectOption(q.id, i)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-body-sm font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
+                      selected
+                        ? "border-brand-primary bg-brand-primary/10 shadow-sm"
+                        : "border-border/80 bg-background hover:border-brand-primary/45 hover:bg-muted/30"
+                    )}
+                  >
+                    <span
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-body-sm font-medium transition-all duration-200",
-                        selected
-                          ? "border-brand-primary bg-brand-primary/10 shadow-sm"
-                          : "border-border/80 bg-background hover:border-brand-primary/40 hover:bg-muted/30"
+                        "flex size-7 shrink-0 items-center justify-center rounded-full text-body-xs font-bold transition-colors",
+                        selected ? "bg-brand-primary text-white" : "bg-muted text-foreground",
                       )}
                     >
-                      <span
-                        className={cn(
-                          "flex size-7 shrink-0 items-center justify-center rounded-full text-body-xs font-bold transition-colors",
-                          selected ? "bg-brand-primary text-white" : "bg-muted text-foreground",
-                        )}
-                      >
-                        {String.fromCharCode(65 + i)}
-                      </span>
-                      <MathText className="text-foreground leading-normal">{opt}</MathText>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
+                      {String.fromCharCode(65 + i)}
+                    </span>
+                    <div className="text-foreground leading-normal flex-1">
+                      <MarkdownRenderer content={opt} />
+                    </div>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
 
           {/* Flagging Option Widget inside Card */}
           <div className="mt-5 flex items-center justify-between border-t border-border/80 pt-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
+                disabled={submitting || isSubmitted}
                 checked={currentFlagged}
                 onChange={() => toggleFlag(q.id)}
-                className="size-4 rounded-sm border-border text-brand-secondary accent-brand-secondary focus:ring-brand-secondary"
+                className="size-4 rounded-sm border-border text-brand-secondary accent-brand-secondary focus:ring-brand-secondary cursor-pointer"
               />
               <span className={cn(
                 "text-body-xs font-semibold flex items-center gap-1 transition-colors",
@@ -244,7 +318,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
           <Button
             type="button"
             variant="outline"
-            className="rounded-full gap-1 border-border/80"
+            className="gap-1 border-border/80 rounded-md"
             onClick={goPrev}
             disabled={index === 0}
           >
@@ -254,13 +328,25 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
 
           <div className="flex gap-2">
             {index < sorted.length - 1 ? (
-              <Button type="button" className="rounded-full gap-1 bg-foreground text-background hover:bg-foreground/90 px-6" onClick={goNext}>
+              <Button type="button" className="gap-1 bg-foreground text-background hover:bg-foreground/90 px-6 rounded-md" onClick={goNext}>
                 Lanjut
                 <ChevronRight className="size-4" />
               </Button>
             ) : (
-              <Button type="button" className="rounded-full bg-brand-primary text-white hover:bg-brand-primary/95 px-8 font-bold" onClick={handleSubmit}>
-                Kirim Jawaban
+              <Button
+                type="button"
+                disabled={submitting || isSubmitted}
+                className="bg-brand-primary text-white hover:bg-brand-primary/95 px-8 font-bold rounded-md"
+                onClick={handleSubmit}
+              >
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-1.5 size-4 animate-spin" />
+                    Mengirim...
+                  </>
+                ) : (
+                  "Kirim Jawaban"
+                )}
               </Button>
             )}
           </div>
@@ -287,7 +373,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
           <div className="grid grid-cols-5 gap-2">
             {sorted.map((question, idx) => {
               const active = index === idx;
-              const isAnswered = isQuestionAnswered(question);
+              const isAnswered = isQuestionAnswered(question.id);
               const isFlagged = !!flags[question.id];
 
               return (
@@ -296,7 +382,7 @@ export function QuizPlayer({ courseId, exam }: QuizPlayerProps) {
                   type="button"
                   onClick={() => setIndex(idx)}
                   className={cn(
-                    "flex size-9 items-center justify-center rounded-lg border font-heading text-body-xs font-bold transition-all",
+                    "flex size-9 items-center justify-center rounded-lg border font-heading text-body-xs font-bold transition-all cursor-pointer",
                     active
                       ? "border-brand-primary ring-2 ring-brand-primary/20 scale-105"
                       : "border-transparent",

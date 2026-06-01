@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db";
-import { enrollments, enrollmentTokens, progress, courses, submissions } from "@/db/schema";
+import { enrollments, enrollmentTokens, progress, courses, submissions, groups, groupMembers, enrollmentTokenCourses } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq, and, gt, lt } from "drizzle-orm";
 import { getSemesterEndDate } from "@/lib/utils";
@@ -60,57 +60,83 @@ export async function enrollWithToken(tokenStr: string) {
   // 1. Find token in DB
   const tokenRecord = await db.query.enrollmentTokens.findFirst({
     where: eq(enrollmentTokens.token, cleanToken),
+    with: {
+      tokenCourses: true,
+      group: {
+        with: {
+          members: true,
+        },
+      },
+    },
   });
 
   if (!tokenRecord) {
     return { success: false, error: "Token tidak valid" };
   }
 
-  // 2. Check if already used
-  if (tokenRecord.usedAt || tokenRecord.usedByUserId) {
-    return { success: false, error: "Token sudah pernah digunakan" };
+  // 2. Check if user is already a member of the group
+  const isAlreadyMember = tokenRecord.group?.members.some(
+    (m) => m.userId === user.id
+  );
+  if (isAlreadyMember) {
+    return { success: false, error: "Anda sudah terdaftar menggunakan token ini" };
   }
 
-  // 3. Check if token itself is expired
+  // 3. Check if group capacity is reached
+  const currentMemberCount = tokenRecord.group?.members.length || 0;
+  if (currentMemberCount >= tokenRecord.capacity) {
+    return { success: false, error: "Token ini sudah mencapai batas kuota kelompok" };
+  }
+
+  // 4. Check if token itself is expired
   if (tokenRecord.expiresAt < now) {
     return { success: false, error: "Token sudah kedaluwarsa untuk semester ini" };
   }
 
-  // 4. Check if student is already enrolled in this course active
-  const existingEnrollment = await db.query.enrollments.findFirst({
+  // 5. Get course IDs associated with this token
+  const courseIds = tokenRecord.tokenCourses.map((tc) => tc.courseId);
+  if (courseIds.length === 0) {
+    return { success: false, error: "Token tidak memiliki course yang terasosiasi" };
+  }
+
+  // 6. Check if student is already enrolled in any of these courses active
+  const activeEnrollments = await db.query.enrollments.findMany({
     where: and(
       eq(enrollments.userId, user.id),
-      eq(enrollments.courseId, tokenRecord.courseId),
       gt(enrollments.expiresAt, now)
     ),
   });
 
-  if (existingEnrollment) {
-    return { success: false, error: "Anda sudah terdaftar di course ini" };
+  const enrolledCourseIds = new Set(activeEnrollments.map((e) => e.courseId));
+  const coursesToEnroll = courseIds.filter((cid) => !enrolledCourseIds.has(cid));
+
+  if (coursesToEnroll.length === 0) {
+    return { success: false, error: "Anda sudah terdaftar di semua course yang diaktifkan oleh token ini" };
   }
 
-  // 5. Calculate enrollment semester closing date
+  // 7. Calculate enrollment semester closing date
   const expiresAt = getSemesterEndDate(now);
 
   try {
     await db.transaction(async (tx) => {
-      // Mark token as used
-      await tx
-        .update(enrollmentTokens)
-        .set({
-          usedAt: now,
-          usedByUserId: user.id,
-        })
-        .where(eq(enrollmentTokens.id, tokenRecord.id));
-
-      // Create enrollment record
-      await tx.insert(enrollments).values({
+      // Add user to the group members
+      await tx.insert(groupMembers).values({
         id: randomUUID(),
+        groupId: tokenRecord.groupId,
         userId: user.id,
-        courseId: tokenRecord.courseId,
-        enrolledAt: now,
-        expiresAt: expiresAt,
+        joinedAt: now,
       });
+
+      // Enroll in each course the user is not yet enrolled in
+      for (const courseId of coursesToEnroll) {
+        await tx.insert(enrollments).values({
+          id: randomUUID(),
+          userId: user.id,
+          courseId,
+          enrolledAt: now,
+          expiresAt: expiresAt,
+        });
+      }
     });
 
     return { success: true };

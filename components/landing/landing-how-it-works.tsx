@@ -16,7 +16,7 @@ const steps = [
     activeSidebar: 1,
     cards: [
       { code: "MA1101", title: "Limit & kontinuitas", highlight: false },
-      { code: "MA1101", title: "Turunan — aplikasi grafik", highlight: true },
+      { code: "MA1101", title: "Turunan - aplikasi grafik", highlight: true },
       { code: "MA1101", title: "Integral tak tentu", highlight: false },
     ],
     laneEyebrow: "Aktivitas mendatang",
@@ -61,8 +61,8 @@ const steps = [
     sidebar: ["Minggu ini", "Bulan ini", "Semester"],
     activeSidebar: 0,
     cards: [
-      { code: "Kuis 3", title: "Integral substitusi — 82%", highlight: false },
-      { code: "Tryout", title: "Campuran TPB — 74%", highlight: true },
+      { code: "Kuis 3", title: "Integral substitusi - 82%", highlight: false },
+      { code: "Tryout", title: "Campuran TPB - 74%", highlight: true },
       { code: "Esai", title: "Umpan balik tutor", highlight: false },
     ],
     laneEyebrow: "Ikhtisar minggu ini",
@@ -140,7 +140,7 @@ export function LandingHowItWorks() {
           Tiga langkah belajar
         </SectionHeading>
         <p className="mt-3 max-w-prose text-body-md text-muted-foreground">
-          Penugasan, bimbingan, lalu gambaran progres — dalam satu alur dashboard.
+          Penugasan, bimbingan, lalu gambaran progres - dalam satu alur dashboard.
         </p>
       </div>
 
@@ -259,7 +259,7 @@ export function LandingHowItWorks() {
                     <span
                       key={d}
                       className={cn(
-                        "rounded-full px-3 py-1 text-body-sm font-medium",
+                        "rounded-md px-3 py-1 text-body-sm font-medium",
                         i === 1 ? "bg-status-success text-white" : "bg-muted text-muted-foreground",
                       )}
                     >

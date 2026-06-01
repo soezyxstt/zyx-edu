@@ -4,6 +4,11 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
+# Codebase Preview Reminder
+
+> [!IMPORTANT]
+> **READ BEFORE WRITING CODE**: Before working on any task or editing code, you must read the [PROJECT_RECAP.md](file:///d:/ZYX/web/zyx-edu/PROJECT_RECAP.md) file in the root directory. It contains the authoritative map of the project layout, technical system architecture, visual design rules (such as the absolute prohibition of pill shapes/`rounded-full` buttons/badges, and minimization of cards/boxes), and detailed student/tutor/admin workflows.
+
 # ZYX design system (agents)
 
 Authoritative tokens live in `app/globals.css` (`@theme inline`, `:root`, `.dark`, `@layer base`, `@layer components`). Prefer **semantic Tailwind utilities** that map to those tokens over hard-coded hex or ad hoc font stacks.
@@ -127,6 +132,17 @@ Use the **`photo-*`** classes on `<img>` or `next/image` for consistent crop, ra
 - Prefer **`next/image`** with explicit `width` / `height` (or `fill` in a sized container) for LCP and layout stability.
 - Hero and card images should **fill** their container; use `photo-*` so cropping is predictable.
 - For light borders on images, use `ring-1 ring-border` or a subtle `shadow-sm` if the design calls for separation—avoid random box-shadow values.
+
+---
+
+## Pills & Radius Constraints
+
+- **No Pills**: Do NOT use pill-shaped designs (elongated elements with `rounded-full` border radius, such as pill badges, toggle pills, or pill buttons). The site owner hates pills. Avoid `rounded-full` for any non-circular elements.
+- **Valid Border Radii**:
+  - Buttons and interactive items: default to `rounded-lg` or `rounded-md` based on size.
+  - Badges/tags: use `rounded-md` or `rounded` instead of `rounded-full`.
+  - Cards/panels: use `rounded-xl`, `rounded-2xl`, or `rounded-3xl` as structured.
+  - Perfect circles (e.g., avatars, 1:1 status dots, 1:1 icon containers, checkbox/radio indicators) may still use `rounded-full` as they are circles, not elongated "pills".
 
 ---
 

@@ -39,7 +39,7 @@ export default async function SubmissionReviewPage({ params }: Props) {
           <Button
             asChild
             variant="outline"
-            className="interactive rounded-full border-border/80 text-muted-foreground hover:text-foreground"
+            className="interactive rounded-md border-border/80 text-muted-foreground hover:text-foreground"
           >
             <Link href={`/courses/${id}/my-results`}>Kembali ke hasil</Link>
           </Button>

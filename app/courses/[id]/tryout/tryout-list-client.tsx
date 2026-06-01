@@ -64,13 +64,13 @@ export function TryoutListClient({ courseId, isEnrolled, tryouts }: TryoutListCl
                       {tryout.title}
                     </h3>
                     {!accessible ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">
+                      <span className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground ring-1 ring-border">
                         <Lock className="size-3" />
                         Premium
                       </span>
                     ) : null}
                     {isBlocked ? (
-                      <span className="rounded-full bg-status-error/12 px-2 py-0.5 text-xs font-semibold text-status-error ring-1 ring-status-error/20">
+                      <span className="rounded-md bg-status-error/12 px-2 py-0.5 text-xs font-semibold text-status-error ring-1 ring-status-error/20">
                         Batas habis
                       </span>
                     ) : null}
@@ -102,7 +102,7 @@ export function TryoutListClient({ courseId, isEnrolled, tryouts }: TryoutListCl
                   variant={canStart ? "default" : "outline"}
                   size="sm"
                   className={cn(
-                    "interactive rounded-full md:justify-self-end",
+                    "interactive rounded-md md:justify-self-end",
                     canStart ? "bg-brand-primary text-white hover:bg-brand-primary/95" : "border-dashed",
                   )}
                 >

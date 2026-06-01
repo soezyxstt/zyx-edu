@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getMaterialsForCourse } from "@/lib/student-course-fixtures";
@@ -23,7 +25,18 @@ export default async function CourseMaterialListPage({ params }: Props) {
   if (!course) return null;
 
   return (
-    <CoursePageShell title="Materi" hideHeader>
+    <CoursePageShell
+      eyebrow={
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+          <ChevronRight className="size-3" />
+          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
+        </div>
+      }
+      title="Materi Belajar"
+      description="Modul, diktat, dan lembar soal untuk membantu pemahaman materi Anda."
+      hideHeader
+    >
       <Reveal>
         <DocumentListClient courseId={id} materials={getMaterialsForCourse(id)} />
       </Reveal>

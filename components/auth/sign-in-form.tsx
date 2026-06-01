@@ -36,7 +36,7 @@ export function SignInForm({ callbackURL, urlErrorMessage }: SignInFormProps) {
           label="Sign in with Google"
           callbackURL={callbackURL}
           containerClassName="w-full"
-          className="h-11 w-full gap-2 rounded-full bg-primary text-primary-foreground hover:bg-primary-hover"
+          className="h-11 w-full gap-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary-hover"
         />
       </div>
     </AuthMarketingCard>

@@ -1,4 +1,5 @@
 import { type AnimatedOrnamentVariant } from "@/components/animated-ornament-canvas";
+import { cn } from "@/lib/utils";
 
 type MarketingPageHeroProps = {
   /** Used for `aria-labelledby` and stable SVG gradient id. */
@@ -6,6 +7,7 @@ type MarketingPageHeroProps = {
   eyebrow?: string;
   title: string;
   description: string;
+  className?: string;
   ornamentSymbols?: string[];
   ornamentVariant?: AnimatedOrnamentVariant;
 };
@@ -15,11 +17,12 @@ export function MarketingPageHero({
   eyebrow = "Zyx Edu",
   title,
   description,
+  className,
 }: MarketingPageHeroProps) {
   const headingId = `${sectionId}-heading`;
 
   return (
-    <header className="relative overflow-hidden border-b border-border bg-background py-20 md:py-28 text-center" aria-labelledby={headingId}>
+    <header className={cn("relative overflow-hidden border-b border-border bg-background py-16 md:py-24 text-center", className)} aria-labelledby={headingId}>
       {/* Soft radial glow */}
       <div className="absolute inset-0 z-0 bg-radial-gradient from-primary/5 via-transparent to-transparent opacity-65 pointer-events-none" />
       
@@ -31,11 +34,6 @@ export function MarketingPageHero({
       </svg>
 
       <div className="marketing-container relative z-10 space-y-4">
-        {eyebrow && (
-          <span className="inline-flex rounded-full border border-[var(--zx-accent)]/20 bg-[var(--zx-accent)]/5 px-3.5 py-1 text-xs font-semibold uppercase tracking-[0.25em] text-[var(--zx-accent)]">
-            {eyebrow}
-          </span>
-        )}
         <h1 id={headingId} className="font-heading text-h2 md:text-h1 font-extrabold tracking-tight text-foreground max-w-4xl mx-auto">
           {title}
         </h1>

@@ -142,13 +142,13 @@ function TutorProfileCard() {
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2 border-t border-border bg-background px-6 py-4">
-        <span className="rounded-full border border-[#1a2744]/20 bg-muted/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-foreground">
+        <span className="rounded-md border border-[#1a2744]/20 bg-muted/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-foreground">
           ITB
         </span>
-        <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="rounded-md border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           ≥ 3 tahun bimbing TPB
         </span>
-        <span className="rounded-full border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <span className="rounded-md border border-border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           Review mingguan
         </span>
       </div>
@@ -168,7 +168,7 @@ export function LandingAdvantages() {
               Selaras kampus
             </SectionHeading>
             <p className="mt-5 max-w-md text-body-md leading-relaxed text-muted-foreground md:text-body-lg">
-              Materi mengikuti ritme TPB dan awal jurusan — kamu belajar apa yang relevan dengan kelasmu sekarang, dengan penyusunan capaian yang bisa dipantau minggu demi minggu.
+              Materi mengikuti ritme TPB dan awal jurusan - kamu belajar apa yang relevan dengan kelasmu sekarang, dengan penyusunan capaian yang bisa dipantau minggu demi minggu.
             </p>
           </div>
           <div className="flex lg:justify-end">
@@ -177,7 +177,7 @@ export function LandingAdvantages() {
         </div>
       </SectionContainer>
 
-      {/* 2 · Latihan — grid kartu */}
+      {/* 2 · Latihan - grid kartu */}
       <SectionContainer
         className="border-b border-border bg-background py-14 md:py-20"
         aria-labelledby="advantage-practice-heading"

@@ -16,7 +16,7 @@ export function LandingPricingPreview() {
           Pratinjau paket
         </SectionHeading>
         <p className="mt-3 text-body-md text-muted-foreground">
-          Bandingkan tier sekilas — detail pembayaran dan aktivasi akses dibahas langsung dengan admin setelah Anda memilih jalur yang cocok.
+          Bandingkan tier sekilas - detail pembayaran dan aktivasi akses dibahas langsung dengan admin setelah Anda memilih jalur yang cocok.
         </p>
       </div>
 

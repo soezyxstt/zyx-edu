@@ -11,7 +11,7 @@ export function LandingCoursePreview() {
       <div className="max-w-2xl">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">Katalog</p>
         <SectionHeading id="courses-heading" tier="secondary" className="mt-2">
-          Bidang studi — jelas dan bertingkat
+          Bidang studi - jelas dan bertingkat
         </SectionHeading>
         <p className="mt-3 max-w-prose text-body-md text-muted-foreground">
           Pilih bidang di tab, lihat cuplikan topik di panel, lalu buka katalog untuk detail materi dan pendaftaran.

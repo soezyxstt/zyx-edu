@@ -21,9 +21,11 @@ import {
   Search,
 } from "lucide-react";
 import { getSiteSearchDocuments, getSiteSearchShortcutIds } from "@/lib/site-search-index";
-import { groupOrderIndex, searchSite } from "@/lib/site-search";
+import { groupOrderIndex } from "@/lib/site-search";
 import type { SiteSearchDocument } from "@/lib/site-search-index";
 import { cn } from "@/lib/utils";
+import { getStudentSearchDocuments } from "@/app/dashboard/search-actions";
+import Fuse from "fuse.js";
 
 type CommandMenuContextValue = {
   setOpen: (open: boolean) => void;
@@ -54,26 +56,14 @@ function groupIcon(group: SiteSearchDocument["group"]) {
   }
 }
 
-function useGroupedResults(query: string): Map<SiteSearchDocument["group"], SiteSearchDocument[]> | null {
-  const trimmed = query.trim();
-  return useMemo(() => {
-    if (!trimmed) return null;
-    const hits = searchSite(trimmed, 48);
-    const map = new Map<SiteSearchDocument["group"], SiteSearchDocument[]>();
-    for (const doc of hits) {
-      const arr = map.get(doc.group) ?? [];
-      arr.push(doc);
-      map.set(doc.group, arr);
-    }
-    return map;
-  }, [trimmed]);
-}
-
 export function CommandMenuProvider({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
+  
+  // Local state for search documents (seeded with static defaults, updated on mount)
+  const [docs, setDocs] = useState<SiteSearchDocument[]>(() => getSiteSearchDocuments());
 
   useEffect(() => {
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
@@ -81,8 +71,13 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
   }, []);
 
   useEffect(() => {
+    // Run student-specific search query on mount and cache it locally
+    getStudentSearchDocuments().then(setDocs).catch(console.error);
+  }, []);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "k" || !(e.metaKey || e.ctrlKey)) return;
+      if (e.key.toLowerCase() !== "k" || !(e.metaKey || e.ctrlKey)) return;
       const t = e.target as HTMLElement | null;
       if (t?.closest?.("[data-cmdk-ignore-shortcut]")) return;
       e.preventDefault();
@@ -92,7 +87,25 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
     return () => document.removeEventListener("keydown", onKey);
   }, []);
 
-  const docs = useMemo(() => getSiteSearchDocuments(), []);
+  // Client-cached Fuse instance
+  const fuse = useMemo(() => {
+    return new Fuse(docs, {
+      keys: [
+        { name: "title", weight: 0.42 },
+        { name: "keywords", weight: 0.18 },
+        { name: "content", weight: 0.32 },
+        { name: "subtitle", weight: 0.12 },
+        { name: "href", weight: 0.06 },
+      ],
+      threshold: 0.38,
+      ignoreLocation: true,
+      distance: 512,
+      minMatchCharLength: 2,
+      includeScore: true,
+      ignoreDiacritics: true,
+    });
+  }, [docs]);
+
   const shortcutDocs = useMemo(() => {
     const byId = new Map(docs.map((d) => [d.id, d]));
     return getSiteSearchShortcutIds()
@@ -100,9 +113,25 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
       .filter((d): d is SiteSearchDocument => d !== undefined);
   }, [docs]);
 
-  const grouped = useGroupedResults(search);
   const trimmed = search.trim();
-  const flatResults = useMemo(() => (trimmed ? searchSite(trimmed, 48) : []), [trimmed]);
+
+  // Search execution using local Fuse.js
+  const flatResults = useMemo(() => {
+    if (!trimmed || !fuse) return [];
+    return fuse.search(trimmed, { limit: 48 }).map((r) => r.item);
+  }, [trimmed, fuse]);
+
+  // Group search hits
+  const grouped = useMemo(() => {
+    if (!trimmed) return null;
+    const map = new Map<SiteSearchDocument["group"], SiteSearchDocument[]>();
+    for (const doc of flatResults) {
+      const arr = map.get(doc.group) ?? [];
+      arr.push(doc);
+      map.set(doc.group, arr);
+    }
+    return map;
+  }, [trimmed, flatResults]);
 
   const orderedGroups = useMemo(() => {
     if (!grouped) return [];
@@ -143,16 +172,16 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
           {/* Content wrapper — centers the panel */}
           <Dialog.Content
             aria-label="Pencarian situs"
-            className="fixed inset-0 z-[201] flex items-start justify-center px-[0.875rem] pt-[min(28%,12rem)]"
+            className={cn(
+              "fixed left-1/2 top-[15%] md:top-[20%] z-[201] w-[calc(100%-1.75rem)] max-w-xl translate-x-[-50%] overflow-hidden rounded-xl border border-border bg-popover shadow-lg outline-none",
+              "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+              "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+            )}
           >
             <Command
               shouldFilter={false}
               vimBindings={false}
-              className={cn(
-                "w-full max-w-xl overflow-hidden rounded-xl border border-border bg-popover shadow-lg",
-                "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-                "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-              )}
+              className="w-full flex flex-col"
             >
               <div className="flex items-center gap-2 border-b border-border px-3 py-2.5">
                 <Search className="text-muted-foreground size-4 shrink-0" aria-hidden />

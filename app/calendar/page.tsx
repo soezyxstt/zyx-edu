@@ -4,7 +4,7 @@ import { pageTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: pageTitle("Calendar"),
-  description: "Kalender jadwal dan acara internal Zyx Edu.",
+  description: "Kalender jadwal dan acara internal Zyx Academy.",
 };
 
 export default function CalendarPage() {
@@ -15,7 +15,7 @@ export default function CalendarPage() {
     >
       <div className="rounded-2xl border border-border bg-card p-10 text-center shadow-sm">
         <p className="text-body-md text-muted-foreground">
-          No events yet — this area will list schedules and Zyx internal events.
+          No events yet - this area will list schedules and Zyx internal events.
         </p>
       </div>
     </ShellPage>

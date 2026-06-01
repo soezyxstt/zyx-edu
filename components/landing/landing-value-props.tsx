@@ -5,7 +5,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 const items = [
   {
     title: "Kurikulum yang selaras kampus",
-    body: "Modul disusun mengikuti mata kuliah umum dan awal jurusan — fokus pada pemahaman, bukan sekadar mengerjakan soal.",
+    body: "Modul disusun mengikuti mata kuliah umum dan awal jurusan - fokus pada pemahaman, bukan sekadar mengerjakan soal.",
     icon: BookOpen,
   },
   {

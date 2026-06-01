@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, ClipboardList, Lock, Trophy } from "lucide-react";
+import { BookOpen, ChevronRight, ClipboardList, Lock, Trophy } from "lucide-react";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { DailyQuizSection } from "@/components/course/daily-quiz-section";
 import { CoursePageShell } from "@/components/course/course-page-shell";
@@ -45,7 +45,7 @@ export default async function CourseOverviewPage({ params }: Props) {
       title: "Dokumen",
       body: isEnrolled ? `${doneMaterials}/${materials.length} dipelajari` : `${materials.length} dokumen gratis`,
       actions: (
-        <Button asChild variant="outline" size="sm" className="interactive rounded-full">
+        <Button asChild variant="outline" size="sm" className="interactive rounded-md">
           <Link href={`/courses/${id}/material`}>Buka</Link>
         </Button>
       ),
@@ -58,7 +58,7 @@ export default async function CourseOverviewPage({ params }: Props) {
       body: isEnrolled ? `${quizzes.length} kuis, ${tryouts.length} tryout` : "Kuis gratis, tryout via token",
       actions: (
         <div className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm" className="interactive rounded-full">
+          <Button asChild variant="outline" size="sm" className="interactive rounded-md">
             <Link href={`/courses/${id}/quiz`}>Kuis</Link>
           </Button>
           <Button
@@ -66,7 +66,7 @@ export default async function CourseOverviewPage({ params }: Props) {
             variant={isEnrolled ? "outline" : "ghost"}
             disabled={!isEnrolled}
             size="sm"
-            className="interactive gap-1.5 rounded-full"
+            className="interactive gap-1.5 rounded-md"
           >
             <Link href={`/courses/${id}/tryout`}>
               {!isEnrolled && <Lock className="size-3 text-muted-foreground" />}
@@ -89,7 +89,7 @@ export default async function CourseOverviewPage({ params }: Props) {
             variant={isEnrolled ? "outline" : "ghost"}
             disabled={!isEnrolled}
             size="sm"
-            className="interactive gap-1.5 rounded-full"
+            className="interactive gap-1.5 rounded-md"
           >
             <Link href={`/courses/${id}/leaderboard`}>
               {!isEnrolled && <Lock className="size-3" />}
@@ -101,7 +101,7 @@ export default async function CourseOverviewPage({ params }: Props) {
             variant={isEnrolled ? "outline" : "ghost"}
             disabled={!isEnrolled}
             size="sm"
-            className="interactive gap-1.5 rounded-full"
+            className="interactive gap-1.5 rounded-md"
           >
             <Link href={`/courses/${id}/my-results`}>
               {!isEnrolled && <Lock className="size-3" />}
@@ -114,7 +114,18 @@ export default async function CourseOverviewPage({ params }: Props) {
   ] as const;
 
   return (
-    <CoursePageShell eyebrow={course.category} headingTier="primary" title={course.title} description={course.description} hideHeader>
+    <CoursePageShell
+      eyebrow={
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
+          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
+          <ChevronRight className="size-3" />
+          <span>{course.category}</span>
+        </div>
+      }
+      headingTier="primary"
+      title={course.title}
+      description={course.description}
+    >
       <Reveal>
         {!isEnrolled && (
           <div className="mb-5 rounded-lg border border-brand-secondary/25 bg-brand-secondary/5 p-4">

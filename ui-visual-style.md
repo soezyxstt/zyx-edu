@@ -1,6 +1,6 @@
 # UI Visual Style Guide
 
-This document defines the visual language used across ZYX Edu marketing surfaces and shared UI.
+This document defines the visual language used across ZYX Academy marketing surfaces and shared UI.
 
 ## 1) Design Tokens (Source of Truth)
 

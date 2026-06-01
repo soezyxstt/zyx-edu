@@ -89,7 +89,7 @@ export function FeatureBandQuizMock() {
           <span
             key={label}
             className={cn(
-              "rounded-full px-3 py-1 text-body-sm font-medium",
+              "rounded-md px-3 py-1 text-body-sm font-medium",
               i === 1 ? "bg-status-success text-white" : "bg-white/10 text-gray-4"
             )}
           >
