@@ -7,7 +7,7 @@ import * as path from "path";
 async function main() {
   console.log("=== Production Migration Safe Runner ===");
 
-  const url = process.env.TURSO_CONNECTION_URL || process.env.DATABASE_URL;
+  const url = process.env.TURSO_DATABASE_URL || process.env.TURSO_CONNECTION_URL || (process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith("postgres") ? process.env.DATABASE_URL : undefined);
   const authToken = process.env.TURSO_AUTH_TOKEN;
 
   if (!url || !url.startsWith("libsql://") && !url.startsWith("https://")) {
