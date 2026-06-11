@@ -10,10 +10,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { db } from '@/db';
-import { aiQuestionBank, quizTemplates } from '@/db/schema';
+import { aiQuestionBank, quizTemplates, chapters, knowledgeObjects } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { and, eq, count } from 'drizzle-orm';
+import { and, eq, count, sql } from 'drizzle-orm';
 import { startGenerationJob } from '@/lib/generation-pipeline';
 
 const Schema = z.object({
@@ -40,9 +40,37 @@ export async function POST(req: NextRequest) {
 
   const { courseId, title, topic, targetCount, difficulty, timeLimitSeconds, tags } = parsed.data;
 
-  // Check how many published questions exist for this course + difficulty
+  // Uniqueness check for tags per course
+  const validationTags = tags || [];
+  if (validationTags.length > 0) {
+    const existingTemplates = await db
+      .select()
+      .from(quizTemplates)
+      .where(eq(quizTemplates.courseId, courseId));
+
+    const hasDuplicateTags = existingTemplates.some((t) => {
+      const tRules = t.selectionRules as Record<string, any>;
+      const tTags = tRules?.tags as string[] | undefined;
+      if (!tTags) return false;
+      return validationTags.some((tag) => tTags.includes(tag));
+    });
+
+    if (hasDuplicateTags) {
+      return NextResponse.json(
+        { error: 'Template kuis dengan tag bab ini sudah ada di kelas ini.' },
+        { status: 409 },
+      );
+    }
+  }
+
+  // Check how many published questions exist for this course + difficulty + tags
   const diffCondition =
     difficulty !== 'mixed' ? eq(aiQuestionBank.difficulty, difficulty) : undefined;
+
+  const tagConditions = validationTags.map(
+    (tag) => sql`exists (select 1 from json_each(${aiQuestionBank.tags}) where json_each.value = ${tag})`
+  );
+  const tagCondition = validationTags.length > 0 ? and(...tagConditions) : undefined;
 
   const [{ total }] = await db
     .select({ total: count() })
@@ -52,6 +80,7 @@ export async function POST(req: NextRequest) {
         eq(aiQuestionBank.courseId, courseId),
         eq(aiQuestionBank.reviewStatus, 'published'),
         diffCondition,
+        tagCondition,
       ),
     );
 
@@ -67,14 +96,14 @@ export async function POST(req: NextRequest) {
       timeLimitSeconds: timeLimitSeconds ?? null,
       selectionRules: {
         topic,
-        tags: tags ?? [],
+        tags: validationTags,
         count: targetCount,
         difficulty_proportions:
           difficulty === 'mixed'
             ? {
                 easy: Math.round(targetCount * 0.3),
                 medium: Math.round(targetCount * 0.5),
-                hard: Math.round(targetCount * 0.2),
+                hard: targetCount - Math.round(targetCount * 0.3) - Math.round(targetCount * 0.5),
               }
             : { [difficulty]: targetCount },
       } as unknown as Record<string, unknown>,
@@ -83,20 +112,64 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ mode: 'bank_reuse', templateId }, { status: 201 });
   }
 
+  // Find matching chapterId based on KOs with matching tags
+  const [matchingKO] = await db
+    .select({ chapterId: knowledgeObjects.chapterId })
+    .from(knowledgeObjects)
+    .where(
+      and(
+        eq(knowledgeObjects.courseId, courseId),
+        eq(knowledgeObjects.status, 'active'),
+        validationTags.length > 0
+          ? and(...validationTags.map(tag => sql`exists (select 1 from json_each(${knowledgeObjects.tags}) where json_each.value = ${tag})`))
+          : undefined
+      )
+    )
+    .limit(1);
+
+  let finalChapterId = matchingKO?.chapterId;
+  if (!finalChapterId) {
+    const [firstChapter] = await db
+      .select({ id: chapters.id })
+      .from(chapters)
+      .where(eq(chapters.courseId, courseId))
+      .orderBy(chapters.orderIndex)
+      .limit(1);
+    finalChapterId = firstChapter?.id;
+  }
+
+  if (!finalChapterId) {
+    return NextResponse.json(
+      { error: 'Tidak ada bab atau materi aktif untuk kursus ini.' },
+      { status: 400 }
+    );
+  }
+
+  // Count active KOs in chapter
+  const activeKOs = await db
+    .select({ id: knowledgeObjects.id })
+    .from(knowledgeObjects)
+    .where(
+      and(
+        eq(knowledgeObjects.courseId, courseId),
+        eq(knowledgeObjects.chapterId, finalChapterId),
+        eq(knowledgeObjects.status, 'active')
+      )
+    );
+
   // Not enough — trigger generation pipeline first
   const jobId = await startGenerationJob({
     courseId,
     tutorId: session.user.id,
-    topic,
-    targetCount: targetCount * 2, // Generate 2N so tutor can curate N
-    difficulty,
+    chapterId: finalChapterId,
+    targetCount: activeKOs.length,
   });
 
   return NextResponse.json(
     {
       mode: 'generation_triggered',
       jobId,
-      message: `Only ${total} approved questions found. Generating ${targetCount * 2} more via Gemini. Poll /api/admin/generation-jobs/${jobId} for status, then create template manually.`,
+      message: `Only ${total} approved questions found. Generating ${activeKOs.length} more via Gemini. Poll /api/admin/generation-jobs/${jobId} for status, then create template manually.`,
     },
     { status: 202 },
   );

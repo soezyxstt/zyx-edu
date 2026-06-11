@@ -3,102 +3,21 @@ import Image from "next/image";
 import { MarketingPageHero } from "@/components/marketing-page-hero";
 import { SectionContainer } from "@/components/layout/section-container";
 import { Reveal } from "@/components/ui/reveal";
+import { PageOrnaments } from "@/components/ui/page-ornaments";
 import { pageTitle } from "@/lib/site";
+import { testimonialStories } from "@/lib/testimonials";
 
 export const metadata: Metadata = {
   title: pageTitle("Testimonials"),
-  description: "Testimoni singkat tutor dan murid Zyx Academy mengenai kualitas layanan dan pengalaman belajar.",
+  description: "Testimoni singkat murid Zyx Academy mengenai kualitas layanan dan pengalaman belajar.",
 };
 
-const stories = [
-  {
-    category: "Student Feedback",
-    program: "MS'24",
-    location: "Bandung",
-    quote:
-      "Belajar sama kak Adi beneran se asik dan se seru itu. Materi yang diajarin nya juga mudah buat dipahami :D. Di tambah kak Adi yang super sabar dan super baik buat ngajarin suatu hal pelan-pelan. pokoknya top tier respect besar bintang 5 :>!!!!",
-    name: "Yomi Gita",
-    avatarSrc: "/testimoni/yomi.jpeg",
-  },
-  {
-    category: "Student Feedback",
-    program: "GD'25",
-    location: "Bandung",
-    quote:
-      "lowkey one of the best decisions belajar sm kak adi pas TPB ^^ vibesnya enak bgt, no judging at all, jadi gak takut salah atau ngerasa ‘kok gue bego yap’ tiap gak ngerti 😭 malah bikin aku lebih berani nanya belajar dan akhirnya paham... he really makes sure you actually learn, bukan cuma ngapalin soal dan catatan :D AND IT WORKS, dapet ip di atas 3 pas TPB ternyata possible aja dengan ilmu daging yang dikasih 🆒🆒 highly recommend buat yang mau survive TPB dngn sehat dan waras",
-    name: "Agatha",
-    avatarSrc: "/testimoni/agatha.jpeg",
-  },
-  {
-    category: "Student Feedback",
-    program: "TK'25",
-    location: "Bandung",
-    quote:
-      "selama aku les bareng Kak Heidi itu ngebantu banget buat ngerti materi di kelas yang kadang masih bingung krn kak Heidi ngejelasinnya dengan cara yang simpel dan step by step, jd buat aku yg susah utk nyerap materi jadi lebih gampang nangkepnya😆",
-    name: "Florence",
-    avatarSrc: "/testimoni/florence.jpeg",
-  },
-  {
-    category: "Student Feedback",
-    program: "Mahasiswa TPB",
-    location: "Bandung",
-    quote:
-      "Saya suka bagaimana modulnya tidak melompat ke soal sulit tanpa fondasi. Diskusi per minggu membantu menjaga ritme.",
-    name: "Nadya",
-    avatarSrc:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=1200&h=900&fit=crop",
-  },
-  {
-    category: "Student Feedback",
-    program: "Teknik Industri",
-    location: "Depok",
-    quote:
-      "Feedback untuk esai jelas; bagian objektif langsung terlihat di dashboard. Cocok untuk persiapan ujian praktik.",
-    name: "Taufik",
-    avatarSrc:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=1200&h=900&fit=crop",
-  },
-  {
-    category: "Tutor Perspective",
-    program: "Pengajar Matematika",
-    location: "Jakarta",
-    quote:
-      "Sebagai tutor, alur pengajarannya membantu murid fokus ke konsep yang sering jadi kesalahan klasik.",
-    name: "Raka",
-    avatarSrc:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=1200&h=900&fit=crop",
-  },
-  {
-    category: "Parent Story",
-    program: "Orang Tua Siswa SMA",
-    location: "Bekasi",
-    quote:
-      "Progress report mingguannya ringkas dan mudah dibaca. Saya jadi tahu area mana yang perlu didampingi di rumah.",
-    name: "Maya",
-    avatarSrc:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=1200&h=900&fit=crop",
-  },
-  {
-    category: "Student Feedback",
-    program: "SMA Kelas 12",
-    location: "Surabaya",
-    quote:
-      "Kelasnya terstruktur dan materi rekamannya membantu saat saya ingin ulang topik yang belum paham.",
-    name: "Adrian",
-    avatarSrc:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=1200&h=900&fit=crop",
-  },
-  {
-    category: "Tutor Perspective",
-    program: "Pengajar Fisika",
-    location: "Yogyakarta",
-    quote:
-      "Template evaluasi dan rubriknya konsisten, jadi koreksi lebih cepat tanpa mengurangi kualitas feedback ke murid.",
-    name: "Dina",
-    avatarSrc:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=1200&h=900&fit=crop",
-  },
-];
+/** One accent colour per card, cycling through brand palette */
+const CARD_ACCENTS = [
+  "var(--primary)",               // blue
+  "var(--color-brand-secondary)", // orange
+  "var(--color-tertiary-1)",      // teal
+] as const;
 
 export default function TestimonialPage() {
   return (
@@ -108,55 +27,78 @@ export default function TestimonialPage() {
           sectionId="testimonial"
           eyebrow="Zyx Academy"
           title="Testimoni"
-          description="Cerita dari pengajar dan mahasiswa - transparansi proses adalah bagian dari kualitas layanan kami."
+          description="Cerita dari siswa ZYX Academy tentang proses belajar yang mereka jalani."
         />
       </Reveal>
 
       <Reveal>
-      <SectionContainer
-        className="border-b border-border bg-linear-to-b from-background via-muted/30 to-background"
-        aria-labelledby="testimonial-grid-heading"
-      >
-        <div className="mx-auto max-w-3xl text-center">
-          <h2 id="testimonial-grid-heading" className="font-heading text-h5 text-foreground md:text-h4">
-            Cerita nyata dari siswa, orang tua, dan tutor
-          </h2>
-          <p className="mt-3 text-body-base text-muted-foreground">
-            Kami merancang pengalaman belajar yang terukur, nyaman, dan mudah dipantau. Ini beberapa cerita dari
-            pengguna aktif Zyx Academy.
-          </p>
-        </div>
+        <SectionContainer
+          className="border-b border-border bg-background/80 overflow-hidden py-16 md:py-24"
+          aria-labelledby="testimonial-grid-heading"
+        >
+          <PageOrnaments variant="testimonial" />
 
-        <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {stories.map((story) => (
-            <article
-              key={story.name + story.program}
-              className="group flex h-full flex-col rounded-2xl border border-border bg-card p-6 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:shadow-sm"
-            >
-              <div className="flex items-center gap-3">
-                <Image
-                  src={story.avatarSrc}
-                  alt={`Foto ${story.name}`}
-                  width={48}
-                  height={48}
-                  className="size-12 rounded-full object-cover ring-1 ring-border"
-                />
-                <div className="min-w-0">
-                  <p className="truncate font-heading text-body-base font-semibold text-foreground">{story.name}</p>
-                  <p className="truncate text-body-sm text-muted-foreground">
-                    {story.program} • {story.location}
-                  </p>
-                </div>
-              </div>
+          <div className="columns-1 gap-6 sm:columns-2 lg:columns-3">
+            {testimonialStories.map((story, idx) => {
+              const accent = CARD_ACCENTS[idx % CARD_ACCENTS.length];
+              return (
+                <figure
+                  key={story.id}
+                  itemScope
+                  itemType="https://schema.org/Review"
+                  className="relative break-inside-avoid mb-6 flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background"
+                  style={{
+                    boxShadow: `0 8px 32px -4px color-mix(in oklch, ${accent} 18%, transparent), 0 2px 10px -2px rgba(0,0,0,0.09)`,
+                  }}
+                >
+                  {/* Coloured accent strip */}
+                  <div className="h-[3px] w-full shrink-0" style={{ background: accent }} />
 
-              <p className="mt-4 text-body-sm font-medium uppercase tracking-wide text-primary/80">{story.category}</p>
-              <blockquote className="mt-2 flex-1 text-body-base leading-relaxed text-foreground/90">
-                &ldquo;{story.quote}&rdquo;
-              </blockquote>
-            </article>
-          ))}
+                  {/* Large watermark quote — decorative only */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute -top-2 right-3 select-none font-heading text-[108px] font-black leading-none"
+                    style={{ color: accent, opacity: 0.08 }}
+                  >
+                    &rdquo;
+                  </span>
+
+                  <div className="relative z-10 flex flex-1 flex-col gap-4 p-6">
+                    <blockquote
+                      itemProp="reviewBody"
+                      className="flex-1 text-body-base leading-relaxed text-foreground/90"
+                    >
+                      &ldquo;{story.quote}&rdquo;
+                    </blockquote>
+
+                    <figcaption className="flex items-center gap-3 border-t border-border pt-4">
+                      <Image
+                        src={story.avatarSrc}
+                        alt={`Foto ${story.name}`}
+                        width={40}
+                        height={40}
+                        className="photo-thumb size-10 shrink-0"
+                      />
+                      <div className="min-w-0">
+                        <span
+                          itemScope
+                          itemType="https://schema.org/Person"
+                          itemProp="author"
+                          className="block truncate font-heading text-body-sm font-semibold text-foreground"
+                        >
+                          <span itemProp="name">{story.name}</span>
+                        </span>
+                        <span className="block truncate text-body-sm text-muted-foreground">
+                          {story.program} / {story.location}
+                        </span>
+                      </div>
+                    </figcaption>
+                  </div>
+                </figure>
+              );
+            })}
           </div>
-      </SectionContainer>
+        </SectionContainer>
       </Reveal>
     </div>
   );

@@ -44,7 +44,7 @@ export function Navbar() {
   }, []);
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 w-full">
+    <header className="fixed top-0 left-0 right-0 z-50">
       <nav
         className={cn(
           "w-full transition-all duration-200",
@@ -172,14 +172,6 @@ export function Navbar() {
                       ))}
                     </ul>
                     <div className="mt-4 flex flex-col gap-2 px-1">
-                      <SheetClose asChild>
-                        <Link
-                          href="/sign-in"
-                          className="interactive rounded-xl px-4 py-3 text-center text-body-sm font-medium text-foreground underline decoration-[var(--zx-accent)] underline-offset-4"
-                        >
-                          Masuk
-                        </Link>
-                      </SheetClose>
                       <SheetClose asChild>
                         <Button
                           asChild

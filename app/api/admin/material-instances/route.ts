@@ -1,8 +1,3 @@
-/**
- * POST /api/admin/material-instances
- * Parses raw material text into sections/chunks, saves to DB, and syncs to Pinecone.
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
 import { z } from 'zod';
@@ -12,11 +7,16 @@ import {
   aiMaterialInstances,
   aiMaterialInstanceSections,
   aiMaterialInstanceChunks,
+  masterTeachingDocuments,
+  chapters,
+  knowledgeObjects,
+  websiteMaterials,
 } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { parseMaterialIntoSections } from '@/lib/ingestion-parser';
 import { upsertChunkVector } from '@/lib/pinecone';
+import { extractKnowledgeObjectsForChapter } from '@/lib/ko-extractor';
 
 const BodySchema = z.object({
   courseId: z.string().min(1),
@@ -43,12 +43,26 @@ export async function POST(req: NextRequest) {
   const { courseId, title, sourceType, rawText, summary, learningObjectives, keywords } =
     parsed.data;
 
+  // Clean up any existing records for this course to prevent duplication
+  await db.delete(chapters).where(eq(chapters.courseId, courseId));
+  await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.courseId, courseId));
+  await db.delete(aiMaterialInstances).where(eq(aiMaterialInstances.courseId, courseId));
+
+  try {
+    const { getNs } = await import('@/lib/pinecone');
+    await getNs(courseId).deleteAll();
+  } catch (err) {
+    console.error('Failed to deleteAll vectors from Pinecone namespace:', err);
+  }
+
   const instanceId = randomUUID();
+  const mtdId = randomUUID();
+  const chapterId = randomUUID(); // One single chapter ID for the entire uploaded document
 
   // Parse text into sections → chunks
   const sections = parseMaterialIntoSections(rawText);
 
-  // Save instance (defaults pineconeSyncStatus to 'pending')
+  // Save legacy material instance (defaults pineconeSyncStatus to 'pending')
   await db.insert(aiMaterialInstances).values({
     id: instanceId,
     courseId,
@@ -61,17 +75,104 @@ export async function POST(req: NextRequest) {
     lastSyncError: null,
   });
 
+  // Save new domain: Master Teaching Document
+  await db.insert(masterTeachingDocuments).values({
+    id: mtdId,
+    courseId,
+    title,
+    markdownContent: rawText,
+    version: 1,
+    status: 'active',
+    createdById: session.user.id,
+  });
+
+  // Determine orderIndex for the single chapter based on title, fallback to 1
+  let orderIndex = 1;
+  const matchIndex = title.match(/Bab\s*(\d+)/i);
+  if (matchIndex) {
+    orderIndex = parseInt(matchIndex[1], 10);
+  }
+
+  // Create exactly ONE Chapter (initial status 'draft') for the entire uploaded document
+  await db.insert(chapters).values({
+    id: chapterId,
+    courseId,
+    title: title,
+    orderIndex: orderIndex,
+    status: 'draft',
+  });
+
+  // Create exactly ONE Website Material (initial status 'draft') for the entire chapter
+  const slug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  await db.insert(websiteMaterials).values({
+    id: randomUUID(),
+    courseId,
+    chapterId,
+    sourceMtdId: mtdId,
+    sourceMtdVersion: 1,
+    isStale: false,
+    generationHash: 'initial-hash',
+    title: title,
+    slug,
+    canonicalMarkdown: rawText,
+    structuredContent: [{ type: 'p', content: rawText }],
+    status: 'draft',
+  });
+
   const vectorUpserts: Promise<void>[] = [];
+  const chapterExtractions: Promise<void>[] = [];
 
   for (const section of sections) {
     const sectionId = randomUUID();
 
+    // 1. Insert Legacy Section
     await db.insert(aiMaterialInstanceSections).values({
       id: sectionId,
       materialInstanceId: instanceId,
       title: section.title,
       orderIndex: section.orderIndex,
     });
+
+    const sectionContent = section.chunks.map((c) => c.chunkText).join('\n\n');
+
+    // 2. Trigger KO extraction via Gemini (all linking to the same single chapterId!)
+    const extractionPromise = (async () => {
+      try {
+        await extractKnowledgeObjectsForChapter(
+          courseId,
+          mtdId,
+          chapterId,
+          section.title || `Bagian ${section.orderIndex + 1}`,
+          sectionContent
+        );
+      } catch (err) {
+        console.error(`Failed to extract KOs for section ${section.title}:`, err);
+        // Fallback: Insert a single dummy concept_overview KO
+        await db.insert(knowledgeObjects).values({
+          id: randomUUID(),
+          courseId,
+          mtdId,
+          chapterId,
+          conceptId: `ko-${courseId}-${section.orderIndex + 1}`,
+          learningOrder: 1,
+          title: `Konsep Utama: ${section.title || `Bagian ${section.orderIndex + 1}`}`,
+          conceptName: section.title || `Bagian ${section.orderIndex + 1}`,
+          content: sectionContent.slice(0, 800),
+          type: 'concept_overview',
+          difficulty: 'medium',
+          bloomLevel: 'understand',
+          tags: keywords,
+          importance: 'high',
+          status: 'active',
+        });
+      }
+    })();
+    chapterExtractions.push(extractionPromise);
 
     for (const chunk of section.chunks) {
       const chunkId = randomUUID();
@@ -111,6 +212,9 @@ export async function POST(req: NextRequest) {
       vectorUpserts.push(upsertPromise);
     }
   }
+
+  // Await the KO extractions to finish so the database is populated before returning
+  await Promise.all(chapterExtractions);
 
   // Fire vector upserts in background
   Promise.allSettled(vectorUpserts).then(async (results) => {
@@ -179,12 +283,18 @@ export async function DELETE(req: NextRequest) {
     try {
       const { deleteSectionVectors } = await import('@/lib/pinecone');
       await deleteSectionVectors(courseId, vectorIds);
+
+      // Also clear Pinecone course namespace
+      const { getNs } = await import('@/lib/pinecone');
+      await getNs(courseId).deleteAll();
     } catch (err) {
       console.error('Failed to delete vectors from Pinecone:', err);
     }
   })();
 
-  // Delete from Postgres (Cascade deletes sections and chunks)
+  // Delete chapters and MTDs from Postgres to clear all derived/domain structures
+  await db.delete(chapters).where(eq(chapters.courseId, courseId));
+  await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.courseId, courseId));
   await db.delete(aiMaterialInstances).where(eq(aiMaterialInstances.id, id));
 
   // Await Pinecone deletion completion in background

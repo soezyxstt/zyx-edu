@@ -34,7 +34,7 @@ function getPinecone() {
   return new Pinecone({ apiKey: env.PINECONE_API_KEY });
 }
 
-function getNs(courseId: string) {
+export function getNs(courseId: string) {
   if (!env.PINECONE_INDEX_NAME) {
     throw new Error('PINECONE_INDEX_NAME must be set.');
   }

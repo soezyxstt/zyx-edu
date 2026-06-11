@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Trophy,
   History,
+  Brain,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,12 @@ const segments: Segment[] = [
     label: "Dokumen",
     match: (path: string, id: string) => path.startsWith(`/courses/${id}/material`),
     icon: FileText,
+  },
+  {
+    href: (id: string) => `/courses/${id}/flashcard`,
+    label: "Flashcard",
+    match: (path: string, id: string) => path.startsWith(`/courses/${id}/flashcard`),
+    icon: Brain,
   },
   {
     href: (id: string) => `/courses/${id}/quiz`,
@@ -80,10 +87,11 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
   }, [pathname]);
 
   return (
-    <div className="relative">
-      <nav aria-label="Navigasi course" className="flex">
-        <details ref={detailsRef} className="group relative w-full max-w-80">
-          <summary className="flex h-11 cursor-pointer list-none items-center justify-between gap-3 rounded-md border border-border bg-background px-3 text-body-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/45 [&::-webkit-details-marker]:hidden">
+    <div className="relative w-full">
+      {/* Mobile Selector: Hidden on desktop */}
+      <nav aria-label="Navigasi course mobile" className="flex md:hidden w-full mobile-only-nav">
+        <details ref={detailsRef} className="group relative w-full">
+          <summary className="flex h-9 cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-border bg-background px-2.5 text-[13px] font-semibold text-foreground shadow-sm transition-colors hover:bg-muted/45 [&::-webkit-details-marker]:hidden">
             <span className="flex min-w-0 items-center gap-2">
               <ActiveIcon className="size-4 shrink-0 text-brand-primary" aria-hidden />
               <span className="min-w-0 truncate">{activeSegment.label}</span>
@@ -93,7 +101,7 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
               aria-hidden
             />
           </summary>
-          <div className="absolute left-0 top-[calc(100%+0.5rem)] z-30 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-md border border-border bg-popover p-1.5 text-popover-foreground shadow-lg">
+          <div className="absolute left-0 top-[calc(100%+0.25rem)] z-30 w-full overflow-hidden rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">
             {segments.map((seg) => {
               const href = seg.href(courseId);
               const active = seg.match(pathname, courseId);
@@ -104,7 +112,7 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
                   href={href}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "flex items-center justify-between gap-3 rounded-sm px-3 py-2.5 text-body-sm font-medium transition-colors",
+                    "flex items-center justify-between gap-3 rounded-sm px-2.5 py-2 text-[13px] font-medium transition-colors",
                     active
                       ? "bg-primary/10 text-brand-primary"
                       : "text-muted-foreground hover:bg-muted/70 hover:text-foreground",
@@ -121,6 +129,32 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
           </div>
         </details>
       </nav>
+
+      {/* Desktop Tabs: Hidden on mobile */}
+      <nav aria-label="Navigasi course desktop" className="hidden md:flex items-center gap-1 border-b border-border/40 w-full desktop-only-nav">
+        {segments.map((seg) => {
+          const href = seg.href(courseId);
+          const active = seg.match(pathname, courseId);
+          const Icon = seg.icon;
+          return (
+            <Link
+              key={seg.label}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2.5 text-body-sm font-semibold transition-all rounded-t-lg border-b-2 -mb-[1px] relative",
+                active
+                  ? "border-brand-primary text-brand-primary bg-brand-primary/5"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30",
+              )}
+            >
+              <Icon className="size-4 shrink-0" aria-hidden />
+              <span>{seg.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
       <p className="sr-only">Course: {courseTitle}</p>
     </div>
   );

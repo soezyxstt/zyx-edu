@@ -9,8 +9,11 @@ type CourseLayoutChromeProps = {
 
 export function CourseLayoutChrome({ courseId, courseTitle }: CourseLayoutChromeProps) {
   return (
-    <div className="sticky top-14 z-20 border-b border-border/70 bg-background/72 backdrop-blur-md md:top-0">
-      <div className="marketing-container flex flex-col gap-2 py-2.5 md:flex-row md:items-center md:justify-between">
+    <div 
+      className="sticky top-[56px] z-20 border-b border-border bg-background md:top-0 md:bg-background"
+      style={{ backgroundColor: "var(--background)" }}
+    >
+      <div className="marketing-container flex flex-col gap-1.5 py-1.5 md:flex-row md:items-center md:justify-between md:gap-2 md:py-2.5">
         <nav
           aria-label="Breadcrumb"
           className="hidden items-center gap-2 text-body-sm text-muted-foreground md:flex"
@@ -24,7 +27,7 @@ export function CourseLayoutChrome({ courseId, courseTitle }: CourseLayoutChrome
           <ChevronRight className="size-4 shrink-0 opacity-50" aria-hidden />
           <span className="truncate font-medium text-foreground">{courseTitle}</span>
         </nav>
-        <div className="w-full md:w-80">
+        <div className="w-full md:w-auto md:flex-1 md:flex md:justify-end">
           <CourseSubNav courseId={courseId} courseTitle={courseTitle} />
         </div>
       </div>

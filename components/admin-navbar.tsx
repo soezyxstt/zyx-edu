@@ -11,7 +11,7 @@ export function AdminNavbar() {
   const { setOpen: setSearchOpen } = useCommandMenu();
 
   return (
-    <header className="supports-[backdrop-filter]:bg-background/80 fixed top-0 right-0 left-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur">
+    <header className="supports-[backdrop-filter]:bg-background/80 fixed top-0 right-0 left-0 z-50 border-b border-border bg-background/95 backdrop-blur">
       <nav
         className="mx-auto flex w-full max-w-7xl min-w-0 items-center justify-between gap-4 px-3 py-3.5 sm:px-4 md:py-4 lg:px-5"
         aria-label="Admin"

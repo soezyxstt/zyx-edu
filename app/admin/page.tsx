@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
-import { FolderOpen, KeyRound, BookText, Zap, ListChecks, ClipboardList } from "lucide-react";
+import { FolderOpen, KeyRound, BookText, Zap, ListChecks, ClipboardList, Archive, Bell } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 
 export const metadata: Metadata = {
@@ -35,11 +35,21 @@ const sections = [
   {
     title: "Materi AI",
     description:
-      "Unggah dan segmentasikan materi kursus ke dalam basis pengetahuan AI. Teks diproses menjadi chunk yang dapat di-embedding ke Pinecone.",
+      "Unggah dan segmentasikan materi kurikulum ke dalam basis pengetahuan AI. Teks diproses menjadi chunk yang dapat di-embedding ke basis pengetahuan.",
     icon: BookText,
     iconColor: "text-tertiary-1",
     href: "/admin/ai/materials",
     label: "Kelola materi AI",
+    variant: "outline" as const,
+  },
+  {
+    title: "Kompilasi Diktat",
+    description:
+      "Gabungkan materi bab dan objek pengetahuan menjadi buku ajar PDF terformat lengkap dengan halaman cover dan indeks glosarium.",
+    icon: Archive,
+    iconColor: "text-brand-primary",
+    href: "/admin/ai/diktats",
+    label: "Buka compiler diktat",
     variant: "outline" as const,
   },
   {
@@ -70,6 +80,16 @@ const sections = [
     iconColor: "text-brand-primary",
     href: "/admin/ai/quizzes",
     label: "Kelola kuis",
+    variant: "outline" as const,
+  },
+  {
+    title: "Push Notification",
+    description:
+      "Kirim notifikasi push ke semua pengguna, kelas tertentu, atau satu pengguna. Lihat riwayat notifikasi yang telah dikirim.",
+    icon: Bell,
+    iconColor: "text-tertiary-3",
+    href: "/admin/notifications",
+    label: "Kelola notifikasi",
     variant: "outline" as const,
   },
 ];

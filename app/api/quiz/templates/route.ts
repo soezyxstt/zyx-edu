@@ -48,6 +48,29 @@ export async function POST(req: NextRequest) {
   const { courseId, title, category, visibility, timeLimitSeconds, maxAttempts, selectionRules } =
     parsed.data;
 
+  // Uniqueness check for tags per course
+  const tags = (selectionRules.tags as string[] | undefined) || [];
+  if (tags.length > 0) {
+    const existingTemplates = await db
+      .select()
+      .from(quizTemplates)
+      .where(eq(quizTemplates.courseId, courseId));
+
+    const hasDuplicateTags = existingTemplates.some((t) => {
+      const tRules = t.selectionRules as Record<string, any>;
+      const tTags = tRules?.tags as string[] | undefined;
+      if (!tTags) return false;
+      return tags.some((tag) => tTags.includes(tag));
+    });
+
+    if (hasDuplicateTags) {
+      return NextResponse.json(
+        { error: 'Template kuis dengan tag bab ini sudah ada di kelas ini.' },
+        { status: 409 },
+      );
+    }
+  }
+
   await db.insert(quizTemplates).values({
     id,
     courseId,

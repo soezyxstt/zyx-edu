@@ -78,8 +78,8 @@ export default async function CourseLeaderboardPage({ params }: Props) {
     .select({
       studentId: studentQuizAttempts.studentId,
       studentName: user.name,
-      attemptCount: sql<number>`count(*)::int`,
-      avgScore: sql<number>`avg(${studentQuizAttempts.score})::numeric(5,1)`,
+      attemptCount: sql<number>`count(*)`,
+      avgScore: sql<number>`round(avg(${studentQuizAttempts.score}), 1)`,
     })
     .from(studentQuizAttempts)
     .innerJoin(quizTemplates, eq(studentQuizAttempts.templateId, quizTemplates.id))

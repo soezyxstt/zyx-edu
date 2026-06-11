@@ -273,7 +273,7 @@ const materials: CourseMaterial[] = [
   },
 ];
 
-const exams: ExamFixture[] = [
+export const exams: ExamFixture[] = [
   {
     id: "quiz-calc-w1",
     courseId: "calc-1",

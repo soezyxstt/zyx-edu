@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Clock, Award, ShieldAlert, BookOpen, Loader2, Calendar, ChevronDown, ListPlus } from "lucide-react";
+import { Plus, Trash2, Clock, Award, ShieldAlert, BookOpen, Loader2, Calendar, ChevronDown, ListPlus, Sliders, FileJson } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -37,6 +37,9 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingTemplate, setDeletingTemplate] = useState<TemplateType | null>(null);
+  
+  // Snapshot Auditor State
+  const [auditingTemplate, setAuditingTemplate] = useState<TemplateType | null>(null);
 
   // Creation Form State
   const [courseId, setCourseId] = useState(courses[0]?.id || "");
@@ -54,6 +57,12 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
   const [hard, setHard] = useState("2");
   
   const [submitting, setSubmitting] = useState(false);
+
+  const qCount = Number(count) || 10;
+  const easyCount = Number(easy) || 0;
+  const mediumCount = Number(medium) || 0;
+  const hardCount = Number(hard) || 0;
+  const totalProportion = easyCount + mediumCount + hardCount;
 
   const handleDeleteStart = (template: TemplateType) => {
     setDeletingTemplate(template);
@@ -82,11 +91,6 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
     e.preventDefault();
     if (!title.trim()) return toast.error("Judul kuis wajib diisi.");
     
-    const qCount = Number(count);
-    const easyCount = Number(easy || 0);
-    const mediumCount = Number(medium || 0);
-    const hardCount = Number(hard || 0);
-
     if (isNaN(qCount) || qCount < 1) {
       return toast.error("Jumlah soal harus minimal 1.");
     }
@@ -170,11 +174,11 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
     <div className="space-y-6 font-sans">
       
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/80 pb-5 text-left">
         <div>
           <h1 className="font-heading text-h4 font-bold text-foreground">Kelola Template Kuis</h1>
           <p className="text-body-sm text-muted-foreground mt-1">
-            Konfigurasi kuis otomatis berdasarkan topik dan tingkat kesulitan.
+            Konfigurasi kuis otomatis berdasarkan topik, sub-bab pelajaran, dan proporsi tingkat kesulitan soal.
           </p>
         </div>
         {templates.length > 0 && (
@@ -189,9 +193,9 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
 
       {/* Grid List */}
       {templates.length === 0 ? (
-        <div className="rounded-2xl border border-border bg-card/30 backdrop-blur-xs py-16 px-6 text-center shadow-xs flex flex-col items-center justify-center">
+        <div className="rounded-2xl border border-border bg-card py-16 px-6 text-center shadow-xs flex flex-col items-center justify-center">
           <div className="mx-auto flex size-14 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary mb-5 border border-brand-primary/20">
-            <ListPlus className="size-6" />
+            <Plus className="size-6" />
           </div>
           <h3 className="font-heading text-body-lg font-bold text-foreground">Belum Ada Template Kuis</h3>
           <p className="text-body-sm text-muted-foreground max-w-sm mx-auto mt-2 leading-relaxed">
@@ -205,7 +209,7 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
           </Button>
         </div>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5 sm:grid-cols-2 text-left">
           {templates.map((template) => {
             const rules = template.selectionRules as Record<string, any>;
             const qCount = rules?.count ?? 0;
@@ -215,14 +219,13 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
             return (
               <div
                 key={template.id}
-                className="group relative rounded-xl border border-border bg-card/50 backdrop-blur-md p-5 shadow-xs hover:border-brand-primary/40 hover:-translate-y-1 hover:shadow-md hover:shadow-brand-primary/5 transition-all duration-300 flex flex-col justify-between"
+                className="group relative rounded-xl border border-border bg-card p-5 shadow-xs hover:border-brand-primary/40 hover:-translate-y-1 hover:shadow-md hover:shadow-brand-primary/5 transition-all duration-300 flex flex-col justify-between"
               >
-                {/* Accent border top line on card */}
                 <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-brand-primary/60 to-brand-primary/0 rounded-t-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 
                 <div>
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-[10px] font-bold text-brand-primary uppercase tracking-wider bg-brand-primary/8 px-2 py-0.5 rounded-md border border-brand-primary/10">
+                    <span className="text-xs font-bold text-brand-primary uppercase tracking-wider bg-brand-primary/8 px-2 py-0.5 rounded-md border border-brand-primary/10">
                       {courseMap[template.courseId] ?? template.courseId}
                     </span>
                     <span className="inline-flex rounded-md bg-muted/80 border border-border/40 px-2 py-0.5 text-body-xs font-semibold text-muted-foreground capitalize">
@@ -274,15 +277,26 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
                     Dibuat {new Date(template.createdAt).toLocaleDateString("id-ID", { dateStyle: "medium" })}
                   </span>
 
-                  <Button
-                    variant="destructive"
-                    size="icon-sm"
-                    className="rounded-lg shrink-0 cursor-pointer shadow-xs hover:bg-rose-600 transition-colors"
-                    onClick={() => handleDeleteStart(template)}
-                    title="Hapus Template Kuis"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-lg shrink-0 cursor-pointer shadow-xs gap-1.5 font-semibold text-xs h-8 px-2.5"
+                      onClick={() => setAuditingTemplate(template)}
+                    >
+                      <FileJson className="size-3.5" />
+                      Audit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon-sm"
+                      className="rounded-lg shrink-0 cursor-pointer shadow-xs transition-colors h-8 w-8 p-0"
+                      onClick={() => handleDeleteStart(template)}
+                      title="Hapus Template Kuis"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             );
@@ -290,20 +304,16 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
         </div>
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────────
-          DIALOGS
-         ─────────────────────────────────────────────────────────────────────── */}
-
       {/* CREATE TEMPLATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
           <DialogHeader className="p-6 pb-4 border-b border-border/60 shrink-0">
-            <DialogTitle className="font-heading text-lg font-bold text-foreground">Buat Template Kuis Baru</DialogTitle>
-            <DialogDescription>
-              Buat konfigurasi kuis secara manual dengan filter topik dan proporsi kesulitan soal.
+            <DialogTitle className="font-heading text-h6 font-bold text-foreground">Buat Template Kuis Baru</DialogTitle>
+            <DialogDescription className="text-left">
+              Buat konfigurasi kuis secara manual dengan filter topik dan proporsi kesulitan soal menggunakan slider.
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateSubmit} className="flex-1 flex flex-col min-h-0">
+          <form onSubmit={handleCreateSubmit} className="flex-1 flex flex-col min-h-0 text-left">
             <div className="flex-1 overflow-y-auto p-6 space-y-5 text-body-sm text-foreground">
               {/* Row 1: Course Target & Category */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -394,7 +404,7 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
               <div className="rounded-xl border border-border bg-muted/5 p-5 space-y-4">
                 <h3 className="font-heading text-body-sm font-bold text-foreground border-b border-border/50 pb-2 flex items-center gap-2">
                   <BookOpen className="size-4.5 text-brand-primary" />
-                  Aturan Seleksi Bank Soal
+                  Aturan Seleksi &amp; Proporsi Kesulitan
                 </h3>
 
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -403,7 +413,14 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
                     <Input
                       type="number"
                       value={count}
-                      onChange={(e) => setCount(e.target.value)}
+                      onChange={(e) => {
+                        const val = Number(e.target.value) || 10;
+                        setCount(e.target.value);
+                        // Auto balance difficulty proportions
+                        setEasy(String(Math.round(val * 0.3)));
+                        setMedium(String(Math.round(val * 0.5)));
+                        setHard(String(val - Math.round(val * 0.3) - Math.round(val * 0.5)));
+                      }}
                       className="h-10 border-border/80 bg-background text-body-sm font-medium"
                     />
                   </div>
@@ -420,40 +437,130 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
                   </div>
                 </div>
 
-                {/* Difficulty Proportions */}
-                <div className="space-y-2.5">
-                  <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Proporsi Kesulitan</label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-1 bg-emerald-500/5 dark:bg-emerald-500/10 rounded-xl border border-emerald-500/20 p-3 text-center transition-colors">
-                      <label className="text-body-xs font-bold text-emerald-500 block mb-1.5">Easy</label>
+                {/* VISUAL PROPORTION SLIDERS */}
+                <div className="space-y-4 pt-2">
+                  <div className="flex justify-between items-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                    <span>Visualisasi Rasio Pembagian Kesulitan</span>
+                    <span className={cn(
+                      totalProportion === qCount ? "text-status-success" : "text-status-error",
+                      "font-semibold"
+                    )}>
+                      {totalProportion} / {qCount} Soal
+                    </span>
+                  </div>
+
+                  {/* Multi-color Progress bar breakdown */}
+                  <div className="h-3 w-full bg-muted rounded-md overflow-hidden flex border border-border">
+                    {qCount > 0 && (
+                      <>
+                        <div className="bg-emerald-500 transition-all duration-300" style={{ width: `${(easyCount/qCount)*100}%` }} title={`Easy: ${easyCount}`} />
+                        <div className="bg-amber-500 transition-all duration-300" style={{ width: `${(mediumCount/qCount)*100}%` }} title={`Medium: ${mediumCount}`} />
+                        <div className="bg-rose-500 transition-all duration-300" style={{ width: `${(hardCount/qCount)*100}%` }} title={`Hard: ${hardCount}`} />
+                      </>
+                    )}
+                  </div>
+
+                  {/* Range Sliders Stack */}
+                  <div className="space-y-3">
+                    {/* Easy Slider */}
+                    <div className="space-y-1 bg-emerald-500/5 p-2 rounded-lg border border-emerald-500/10">
+                      <div className="flex justify-between text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        <span>Easy</span>
+                        <span>{easyCount} Soal</span>
+                      </div>
                       <input
-                        type="number"
+                        type="range"
+                        min="0"
+                        max={qCount}
                         value={easy}
-                        onChange={(e) => setEasy(e.target.value)}
-                        className="w-full h-9 text-center rounded-lg border border-emerald-500/25 bg-background text-body-sm font-bold text-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setEasy(String(val));
+                          const remaining = qCount - val;
+                          const currentMed = Number(medium) || 0;
+                          const currentHard = Number(hard) || 0;
+                          const totalOther = currentMed + currentHard;
+                          if (totalOther > 0) {
+                            const newMed = Math.min(remaining, Math.round((currentMed / totalOther) * remaining));
+                            setMedium(String(newMed));
+                            setHard(String(remaining - newMed));
+                          } else {
+                            const newMed = Math.round(remaining / 2);
+                            setMedium(String(newMed));
+                            setHard(String(remaining - newMed));
+                          }
+                        }}
+                        className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
                       />
                     </div>
-                    <div className="space-y-1 bg-amber-500/5 dark:bg-amber-500/10 rounded-xl border border-amber-500/20 p-3 text-center transition-colors">
-                      <label className="text-body-xs font-bold text-amber-600 dark:text-amber-500 block mb-1.5">Medium</label>
+
+                    {/* Medium Slider */}
+                    <div className="space-y-1 bg-amber-500/5 p-2 rounded-lg border border-amber-500/10">
+                      <div className="flex justify-between text-xs font-bold text-amber-600 dark:text-amber-400">
+                        <span>Medium</span>
+                        <span>{mediumCount} Soal</span>
+                      </div>
                       <input
-                        type="number"
+                        type="range"
+                        min="0"
+                        max={qCount}
                         value={medium}
-                        onChange={(e) => setMedium(e.target.value)}
-                        className="w-full h-9 text-center rounded-lg border border-amber-500/25 bg-background text-body-sm font-bold text-amber-600 dark:text-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setMedium(String(val));
+                          const remaining = qCount - val;
+                          const currentEasy = Number(easy) || 0;
+                          const currentHard = Number(hard) || 0;
+                          const totalOther = currentEasy + currentHard;
+                          if (totalOther > 0) {
+                            const newEasy = Math.min(remaining, Math.round((currentEasy / totalOther) * remaining));
+                            setEasy(String(newEasy));
+                            setHard(String(remaining - newEasy));
+                          } else {
+                            const newEasy = Math.round(remaining / 2);
+                            setEasy(String(newEasy));
+                            setHard(String(remaining - newEasy));
+                          }
+                        }}
+                        className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-amber-500"
                       />
                     </div>
-                    <div className="space-y-1 bg-rose-500/5 dark:bg-rose-500/10 rounded-xl border border-rose-500/20 p-3 text-center transition-colors">
-                      <label className="text-body-xs font-bold text-rose-500 block mb-1.5">Hard</label>
+
+                    {/* Hard Slider */}
+                    <div className="space-y-1 bg-rose-500/5 p-2 rounded-lg border border-rose-500/10">
+                      <div className="flex justify-between text-xs font-bold text-rose-600 dark:text-rose-400">
+                        <span>Hard</span>
+                        <span>{hardCount} Soal</span>
+                      </div>
                       <input
-                        type="number"
+                        type="range"
+                        min="0"
+                        max={qCount}
                         value={hard}
-                        onChange={(e) => setHard(e.target.value)}
-                        className="w-full h-9 text-center rounded-lg border border-rose-500/25 bg-background text-body-sm font-bold text-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500"
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setHard(String(val));
+                          const remaining = qCount - val;
+                          const currentEasy = Number(easy) || 0;
+                          const currentMed = Number(medium) || 0;
+                          const totalOther = currentEasy + currentMed;
+                          if (totalOther > 0) {
+                            const newEasy = Math.min(remaining, Math.round((currentEasy / totalOther) * remaining));
+                            setEasy(String(newEasy));
+                            setMedium(String(remaining - newEasy));
+                          } else {
+                            const newEasy = Math.round(remaining / 2);
+                            setEasy(String(newEasy));
+                            setMedium(String(remaining - newEasy));
+                          }
+                        }}
+                        className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-rose-500"
                       />
                     </div>
                   </div>
-                  <span className="block text-[11px] text-muted-foreground leading-normal mt-1.5">
-                    Catatan: Easy ({easy || 0}) + Medium ({medium || 0}) + Hard ({hard || 0}) harus bernilai total ({count || 0}).
+
+                  <span className="block text-xs text-muted-foreground leading-normal">
+                    Seret slider di atas untuk menyeimbangkan rasio kesulitan soal. Pembagian harus genap bernilai total {qCount} soal.
                   </span>
                 </div>
               </div>
@@ -463,7 +570,7 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
               <Button type="button" variant="outline" className="rounded-lg cursor-pointer font-bold" onClick={() => setCreateOpen(false)}>
                 Batal
               </Button>
-              <Button type="submit" disabled={submitting} className="rounded-lg cursor-pointer bg-brand-primary !text-white hover:bg-brand-primary/95 font-bold px-6 shadow-sm">
+              <Button type="submit" disabled={submitting || totalProportion !== qCount} className="rounded-lg cursor-pointer bg-brand-primary !text-white hover:bg-brand-primary/95 font-bold px-6 shadow-sm">
                 {submitting ? <Loader2 className="size-4 animate-spin mr-1.5" /> : null}
                 Buat Template Kuis
               </Button>
@@ -472,11 +579,82 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: 
         </DialogContent>
       </Dialog>
 
+      {/* SNAPSHOT AUDITOR DIALOG */}
+      <Dialog open={!!auditingTemplate} onOpenChange={() => setAuditingTemplate(null)}>
+        <DialogContent className="max-w-3xl rounded-xl border border-border p-6 shadow-lg text-left">
+          <DialogHeader className="border-b border-border pb-3 mb-4">
+            <DialogTitle className="flex items-center gap-2 font-heading text-h6 font-bold text-foreground">
+              <FileJson className="size-5 text-primary shrink-0" />
+              Auditor Struktur Snapshot Attempt Kuis
+            </DialogTitle>
+            <DialogDescription>
+              Struktur JSON snapshot permanen yang dikunci saat siswa mulai mengerjakan kuis dari template ini.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-body-sm text-muted-foreground leading-relaxed">
+              Untuk melindungi rekam nilai siswa dari perubahan/penghapusan soal di bank soal di masa depan, sistem database ZYX Academy mengambil <strong>deep snapshot</strong> seluruh konten soal saat sesi pengerjaan diaktifkan.
+            </p>
+
+            <div className="rounded-lg border border-border overflow-hidden bg-muted/20 p-4 font-mono text-xs max-h-[350px] overflow-y-auto leading-relaxed text-foreground/90">
+              <pre>{JSON.stringify({
+                attemptId: "att_9a8f27b1-872f-402a-bf3d-2490acbd0829",
+                templateId: auditingTemplate?.id || "tmpl_example",
+                title: auditingTemplate?.title || "Kuis Turunan",
+                startedAt: new Date().toISOString(),
+                settings: {
+                  timeLimitSeconds: auditingTemplate?.timeLimitSeconds,
+                  maxAttempts: auditingTemplate?.maxAttempts
+                },
+                questionsSnapshot: [
+                  {
+                    id: "qbank_98c19920-f11a-4d7a",
+                    knowledgeObjectId: "ko-calc-1-2",
+                    difficulty: auditingTemplate?.selectionRules ? (auditingTemplate.selectionRules as any).difficulty_proportions?.easy > 0 ? "easy" : "medium" : "medium",
+                    prompt: "Jika $f(x) = x^2 - 3x$, tentukan nilai dari $f'(2)$ menggunakan limit fungsi turunan.",
+                    options: [
+                      "$1$ (Benar secara aljabar)",
+                      "$-1$ (Hasil kalkulasi salah tanda)",
+                      "$0$",
+                      "$2$"
+                    ],
+                    correctIndices: [0],
+                    explanation: "Menggunakan definisi turunan $f'(x) = 2x - 3$. Dengan mensubstitusi $x = 2$, diperoleh $f'(2) = 2(2) - 3 = 1$."
+                  }
+                ],
+                studentAnswers: {
+                  "qbank_98c19920-f11a-4d7a": [0]
+                },
+                grades: {
+                  "qbank_98c19920-f11a-4d7a": {
+                    isCorrect: true,
+                    score: 1.0,
+                    gradedAt: new Date().toISOString()
+                  }
+                }
+              }, null, 2)}</pre>
+            </div>
+
+            <div className="flex gap-2 p-3 bg-primary/5 rounded-lg border border-primary/10 text-body-xs text-muted-foreground leading-relaxed">
+              <BookOpen className="size-4 shrink-0 text-primary mt-0.5" />
+              <span>Snapshot di atas disimpan pada kolom <code>student_quiz_attempts.questions_snapshot</code> menggunakan struktur JSONB relasional PostgreSQL, menjamin audit mutu ujian tetap konsisten selamanya.</span>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-5 flex items-center justify-end">
+            <Button className="rounded-lg font-bold" onClick={() => setAuditingTemplate(null)}>
+              Tutup Auditor
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* DELETE TEMPLATE DIALOG */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="max-w-md rounded-xl border border-border p-6 shadow-lg">
+        <DialogContent className="max-w-md rounded-xl border border-border p-6 shadow-lg text-left">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-rose-500 font-heading text-lg font-bold">
+            <DialogTitle className="flex items-center gap-2 text-status-error font-heading text-h6 font-bold">
               <ShieldAlert className="size-5 shrink-0" />
               Hapus Template Kuis
             </DialogTitle>

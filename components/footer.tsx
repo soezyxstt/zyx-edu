@@ -18,7 +18,7 @@ export function Footer() {
               <Logo className="[--logo-height:1.75rem] md:[--logo-height:2rem]" />
             </Link>
             <p className="mt-4 max-w-md text-body-sm leading-relaxed text-muted-foreground">
-              Zyx Academy membantu mahasiswa S1 ITB tahun pertama dan kedua (TPB dan awal jurusan) menguasai materi dengan modul selaras kampus,
+              Zyx Academy membantu mahasiswa S1 ITB tahun pertama dan kedua (TPB dan jurusan) menguasai materi dengan modul selaras kampus,
               latihan terarah, dan bimbingan tutor ITB.
             </p>
             <p className="mt-2 text-xs font-semibold text-[var(--zx-accent)] tracking-wide">

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { SectionContainer } from "@/components/layout/section-container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/ui/reveal";
+import { PageOrnaments } from "@/components/ui/page-ornaments";
 import { Globe } from "lucide-react";
 import { FaLinkedin, FaInstagram } from "react-icons/fa6";
 
@@ -49,27 +50,8 @@ const founders = [
 
 export function AboutClient() {
   return (
-    <div className="flex flex-col relative bg-blueprint-grid">
-      {/* Background Gradient Sparks / Glows (Primary Blue & Accent Orange) */}
-      <div 
-        className="absolute inset-0 z-0 pointer-events-none" 
-        style={{
-          backgroundImage: `
-            radial-gradient(circle at 12% 15%, color-mix(in oklch, var(--primary) 14%, transparent) 0%, transparent 45%),
-            radial-gradient(circle at 88% 50%, color-mix(in oklch, var(--color-brand-secondary) 11%, transparent) 0%, transparent 40%),
-            radial-gradient(circle at 20% 78%, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 45%)
-          `
-        }}
-      />
-
-      {/* Sweeping topological curves background wrapping the page */}
-      <svg className="absolute inset-0 z-0 h-full w-full opacity-[0.07] pointer-events-none" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M-100 200 C 150 150, 300 400, 500 320 C 700 240, 900 480, 1100 390 C 1300 300, 1400 200, 1800 250" stroke="var(--primary)" strokeWidth="2.5" />
-        <path d="M-100 320 C 180 250, 350 470, 550 390 C 750 310, 950 560, 1150 460 C 1350 360, 1450 280, 1850 320" stroke="var(--color-brand-secondary)" strokeWidth="1.8" />
-        <path d="M-100 440 C 210 350, 400 540, 600 460 C 800 380, 1000 640, 1200 530 C 1400 420, 1500 360, 1900 390" stroke="var(--primary)" strokeWidth="1.2" strokeDasharray="6 6" />
-        <path d="M-100 650 C 250 550, 450 780, 680 700 C 910 620, 1100 900, 1300 800 C 1500 700, 1600 600, 2000 650" stroke="var(--color-brand-secondary)" strokeWidth="2" strokeDasharray="4 4" />
-        <path d="M-100 900 C 280 800, 500 1100, 750 1000 C 1000 900, 1200 1200, 1450 1100 C 1700 1000, 1800 900, 2200 950" stroke="var(--primary)" strokeWidth="1.5" />
-      </svg>
+    <div className="flex flex-col relative overflow-hidden">
+      <PageOrnaments variant="about" />
 
       {/* Section A: Hero Section with centered title text */}
       <Reveal>
@@ -79,7 +61,7 @@ export function AboutClient() {
               Tentang kami
             </h1>
             <p className="mx-auto max-w-2xl text-body-md text-muted-foreground md:text-body-lg leading-relaxed font-normal">
-              Kami membangun pengalaman belajar yang tenang dan terukur - dari TPB hingga awal jurusan.
+              Kami membangun pengalaman belajar yang tenang dan terukur - dari TPB hingga jurusan.
             </p>
           </div>
         </header>

@@ -25,9 +25,9 @@ export async function GET(_req: NextRequest) {
     db
       .select({
         reviewStatus: aiQuestionBank.reviewStatus,
-        count: sql<number>`count(*)::int`,
-        avgQuality: sql<number>`avg(${aiQuestionBank.qualityScore})::numeric(4,3)`,
-        totalUseCount: sql<number>`sum(${aiQuestionBank.useCount})::int`,
+        count: sql<number>`count(*)`,
+        avgQuality: sql<number>`round(avg(${aiQuestionBank.qualityScore}), 3)`,
+        totalUseCount: sql<number>`sum(${aiQuestionBank.useCount})`,
       })
       .from(aiQuestionBank)
       .groupBy(aiQuestionBank.reviewStatus),
@@ -36,9 +36,9 @@ export async function GET(_req: NextRequest) {
     db
       .select({
         status: aiGenerationJobs.status,
-        count: sql<number>`count(*)::int`,
-        totalTokens: sql<number>`sum(${aiGenerationJobs.tokenUsage})::int`,
-        totalGenerated: sql<number>`sum(${aiGenerationJobs.generatedCount})::int`,
+        count: sql<number>`count(*)`,
+        totalTokens: sql<number>`sum(${aiGenerationJobs.tokenUsage})`,
+        totalGenerated: sql<number>`sum(${aiGenerationJobs.generatedCount})`,
       })
       .from(aiGenerationJobs)
       .groupBy(aiGenerationJobs.status),
@@ -47,8 +47,8 @@ export async function GET(_req: NextRequest) {
     db
       .select({
         status: studentQuizAttempts.status,
-        count: sql<number>`count(*)::int`,
-        avgScore: sql<number>`avg(${studentQuizAttempts.score})::numeric(5,2)`,
+        count: sql<number>`count(*)`,
+        avgScore: sql<number>`round(avg(${studentQuizAttempts.score}), 2)`,
       })
       .from(studentQuizAttempts)
       .groupBy(studentQuizAttempts.status),

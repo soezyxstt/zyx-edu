@@ -1,0 +1,41 @@
+import { cn } from "@/lib/utils";
+
+/**
+ * Shared visual recipe for quiz answer option rows.
+ *
+ * Single source of truth consumed by the real quiz player
+ * (`components/course/quiz-player.tsx`) and the landing-page quiz demo
+ * (`components/landing/demo/quiz-option-row.tsx`) so the marketing mock can
+ * never drift from the product UI.
+ */
+export type QuizOptionState = "idle" | "selected" | "correct" | "wrong";
+
+const optionStateClasses: Record<QuizOptionState, string> = {
+  idle: "border-border/80 bg-background hover:border-brand-primary/45 hover:bg-muted/30",
+  selected: "border-brand-primary bg-brand-primary/10 shadow-sm",
+  correct: "border-status-success bg-status-success/10 shadow-sm",
+  wrong: "border-status-error bg-status-error/10 shadow-sm",
+};
+
+export function quizOptionClasses(state: QuizOptionState, className?: string) {
+  return cn(
+    "flex w-full items-center gap-2.5 rounded-lg border px-3 py-2.5 text-left text-[13px] font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed md:gap-3 md:rounded-xl md:px-4 md:py-3 md:text-body-sm",
+    optionStateClasses[state],
+    className,
+  );
+}
+
+const letterStateClasses: Record<QuizOptionState, string> = {
+  idle: "bg-muted text-foreground",
+  selected: "bg-brand-primary text-white",
+  correct: "bg-status-success text-white",
+  wrong: "bg-status-error text-white",
+};
+
+export function quizOptionLetterClasses(state: QuizOptionState, className?: string) {
+  return cn(
+    "flex size-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold transition-colors md:size-7 md:text-body-xs",
+    letterStateClasses[state],
+    className,
+  );
+}

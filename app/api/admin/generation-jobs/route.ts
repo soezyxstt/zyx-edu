@@ -6,18 +6,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { db } from '@/db';
-import { aiGenerationJobs } from '@/db/schema';
+import { aiGenerationJobs, knowledgeObjects } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { startGenerationJob } from '@/lib/generation-pipeline';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, and, inArray, sql } from 'drizzle-orm';
 
 const CreateJobSchema = z.object({
   courseId: z.string().min(1),
-  topic: z.string().min(1),
-  targetCount: z.number().int().min(1).max(100),
-  difficulty: z.enum(['easy', 'medium', 'hard', 'mixed']).default('medium'),
-  sectionId: z.string().optional(),
+  chapterId: z.string().min(1),
+  koId: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -32,12 +30,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
+  const { courseId, chapterId, koId } = parsed.data;
+
+  // Verify KOs exist and count them
+  const conditions = [
+    eq(knowledgeObjects.courseId, courseId),
+    eq(knowledgeObjects.chapterId, chapterId),
+    eq(knowledgeObjects.status, 'active'),
+  ];
+  if (koId && koId !== 'all') {
+    conditions.push(eq(knowledgeObjects.id, koId));
+  }
+
+  const activeKOs = await db
+    .select({ id: knowledgeObjects.id })
+    .from(knowledgeObjects)
+    .where(and(...conditions));
+
+  if (activeKOs.length === 0) {
+    return NextResponse.json(
+      { error: 'Tidak ada Objek Pengetahuan aktif dalam bab/pilihan ini.' },
+      { status: 400 }
+    );
+  }
+
   const jobId = await startGenerationJob({
-    ...parsed.data,
+    courseId,
     tutorId: session.user.id,
+    chapterId,
+    koId: koId === 'all' ? undefined : koId,
+    targetCount: activeKOs.length,
   });
 
-  return NextResponse.json({ jobId }, { status: 201 });
+  return NextResponse.json({ jobId, targetCount: activeKOs.length }, { status: 201 });
 }
 
 export async function GET(req: NextRequest) {
@@ -45,6 +70,22 @@ export async function GET(req: NextRequest) {
   if (!session?.user || (session.user.role !== 'admin' && session.user.role !== 'teacher')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Auto-fail jobs that have been stuck in pending/processing for more than 10 minutes
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  await db
+    .update(aiGenerationJobs)
+    .set({
+      status: 'failed',
+      errorMessage: 'Job stuck or timed out. Background worker process terminated.',
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        inArray(aiGenerationJobs.status, ['pending', 'processing']),
+        sql`${aiGenerationJobs.updatedAt} < ${tenMinutesAgo}`
+      )
+    );
 
   const { searchParams } = new URL(req.url);
   const courseId = searchParams.get('courseId');

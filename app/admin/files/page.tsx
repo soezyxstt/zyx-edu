@@ -9,6 +9,7 @@ import { assertAdmin } from "@/lib/uploadthing-admin";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
+import { storage, STORAGE_PROVIDER_MODE } from "@/lib/storage";
 
 export const metadata: Metadata = {
   title: pageTitle("Files"),
@@ -47,7 +48,7 @@ export default async function AdminFilesPage({
     parentId: r.parentId,
     kind: r.kind,
     name: r.name,
-    ufsUrl: r.ufsUrl,
+    ufsUrl: r.ufsUrl ? storage.getUrl(r.ufsUrl) : null,
     mimeType: r.mimeType,
     sizeBytes: r.sizeBytes,
     updatedAt: r.updatedAt.toISOString(),
@@ -71,6 +72,7 @@ export default async function AdminFilesPage({
         rows={serialized}
         breadcrumbs={breadcrumbs}
         currentFolderId={currentFolderId}
+        storageProviderMode={STORAGE_PROVIDER_MODE}
       />
     </Reveal>
   );

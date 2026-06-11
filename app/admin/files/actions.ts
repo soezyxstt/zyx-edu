@@ -14,7 +14,7 @@ import {
   uniquifyName,
 } from "@/lib/drive";
 import { assertAdmin } from "@/lib/uploadthing-admin";
-import { utapi } from "@/lib/uploadthing-utapi";
+import { storage } from "@/lib/storage";
 
 const ADMIN_FILES_PATH = "/admin/files";
 
@@ -31,7 +31,7 @@ async function deleteSubtreeDeepFirst(id: string) {
   const self = await getRow(id);
   if (!self) return;
   if (self.kind === "file" && self.uploadthingKey) {
-    await utapi.deleteFiles(self.uploadthingKey);
+    await storage.delete(self.uploadthingKey);
   }
   await db.delete(driveItem).where(eq(driveItem.id, id));
 }
@@ -84,9 +84,12 @@ export async function driveRenameItem(input: { id: string; name: string }) {
     }
 
     if (row.kind === "file" && row.uploadthingKey && name !== row.name) {
-      const renamed = await utapi.renameFiles({ fileKey: row.uploadthingKey, newName: name });
-      if (!renamed.success) {
-        return { ok: false as const, error: "Storage could not rename this file." };
+      if (storage.rename) {
+        try {
+          await storage.rename(row.uploadthingKey, name);
+        } catch (err: any) {
+          return { ok: false as const, error: `Storage could not rename this file: ${err.message}` };
+        }
       }
     }
 
@@ -161,9 +164,12 @@ export async function driveMoveItems(input: { ids: string[]; targetParentId: str
       if (await nameTakenInFolder(destParent, row.name, row.id)) {
         newName = await uniquifyName(destParent, row.name);
         if (row.kind === "file" && row.uploadthingKey) {
-          const renamed = await utapi.renameFiles({ fileKey: row.uploadthingKey, newName });
-          if (!renamed.success) {
-            return { ok: false as const, error: "Storage could not rename a file during move." };
+          if (storage.rename) {
+            try {
+              await storage.rename(row.uploadthingKey, newName);
+            } catch (err: any) {
+              return { ok: false as const, error: `Storage could not rename a file during move: ${err.message}` };
+            }
           }
         }
       }

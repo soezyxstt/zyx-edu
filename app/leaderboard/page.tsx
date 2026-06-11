@@ -62,8 +62,8 @@ export default async function LeaderboardPage() {
     const rows = await db
       .select({
         studentName: user.name,
-        avgScore: sql<number>`avg(${studentQuizAttempts.score})::numeric(5,1)`,
-        attempts: sql<number>`count(*)::int`,
+        avgScore: sql<number>`round(avg(${studentQuizAttempts.score}), 1)`,
+        attempts: sql<number>`count(*)`,
       })
       .from(studentQuizAttempts)
       .innerJoin(quizTemplates, eq(studentQuizAttempts.templateId, quizTemplates.id))

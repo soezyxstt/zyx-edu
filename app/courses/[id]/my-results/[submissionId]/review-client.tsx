@@ -6,6 +6,7 @@ import { Check, HelpCircle, X, Lock, Sparkles, Video, ExternalLink } from "lucid
 import { Button } from "@/components/ui/button";
 import { MathText } from "@/components/course/math-text";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
+import { useTutor } from "@/components/course/tutor-drawer";
 import type { SubmissionReviewFixture, SubmissionListItem } from "@/lib/student-course-fixtures";
 
 type ReviewClientProps = {
@@ -15,6 +16,7 @@ type ReviewClientProps = {
 };
 
 export function ReviewClient({ listItem, review }: ReviewClientProps) {
+  const { openMistake } = useTutor();
   const [userPlan, setUserPlan] = useState<string>("essential");
 
   const loadPlan = () => {
@@ -108,6 +110,19 @@ export function ReviewClient({ listItem, review }: ReviewClientProps) {
                   <div className="mt-3 rounded-xl bg-muted/40 border border-border p-3 text-body-xs text-foreground leading-relaxed">
                     <span className="font-bold text-brand-secondary">Catatan Pengajar: </span>
                     <MathText>{item.teacherNote}</MathText>
+                  </div>
+                )}
+                {item.correct === false && (
+                  <div className="pt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openMistake(item.questionId, item.userAnswer || "")}
+                      className="text-body-xs font-semibold flex items-center gap-1.5 border-brand-primary/30 text-brand-primary hover:bg-brand-primary/5 rounded-lg h-9"
+                    >
+                      <Sparkles className="size-3.5" />
+                      Tanya Tutor AI: Analisis Kesalahan
+                    </Button>
                   </div>
                 )}
               </div>

@@ -22,6 +22,7 @@ import {
   getStudentSubmissions,
 } from "@/app/dashboard/actions";
 import { getMaterialsForCourse, getExamsForCourse } from "@/lib/student-course-fixtures";
+import { DashboardWeakConcepts } from "@/components/course/dashboard-weak-concepts";
 
 export const metadata: Metadata = {
   title: pageTitle("Dashboard Siswa"),
@@ -37,6 +38,31 @@ export default async function DashboardPage() {
   const enrollments = await getStudentEnrollments();
   const progressList = await getMaterialsProgress();
   const submissionsList = await getStudentSubmissions();
+
+  // Fetch weak concepts using AnalyticsService and KnowledgeService
+  let weakConcepts: any[] = [];
+  if (user?.id) {
+    try {
+      const { AnalyticsService } = await import("@/lib/analytics-service");
+      const { KnowledgeService } = await import("@/lib/knowledge-service");
+      const weakConceptIds = await AnalyticsService.getWeakConcepts(user.id);
+      
+      for (const koId of weakConceptIds) {
+        const ko = await KnowledgeService.getKO(koId);
+        if (ko) {
+          weakConcepts.push({
+            id: ko.id,
+            title: ko.title,
+            conceptName: ko.conceptName,
+            type: ko.type,
+            difficulty: ko.difficulty,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Error loading weak concepts for dashboard:", e);
+    }
+  }
 
   const isEnrolledInAny = enrollments.length > 0;
   const enrolledCourseIds = enrollments.map((e) => e.id);
@@ -245,6 +271,8 @@ export default async function DashboardPage() {
 
             {/* Right Column (Activities & Task list) - 5 cols */}
             <div className="space-y-5 lg:col-span-5">
+              <DashboardWeakConcepts weakConcepts={weakConcepts} />
+              
               {/* Quizzes and Tryouts */}
               <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md">
                 <h2 className="font-heading text-body-base font-semibold text-foreground flex items-center gap-2 mb-4">

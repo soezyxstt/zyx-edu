@@ -10,7 +10,7 @@ import { db } from '@/db';
 import { quizTemplates, aiQuestionBank, studentQuizAttempts } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { and, eq, asc, inArray, sql, desc } from 'drizzle-orm';
+import { and, eq, asc, inArray, sql, desc, notInArray } from 'drizzle-orm';
 
 const StartSchema = z.object({
   templateId: z.string().min(1),
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
   // Enforce max attempts
   if (template.maxAttempts !== null) {
     const [{ total }] = await db
-      .select({ total: sql<number>`count(*)::int` })
+      .select({ total: sql<number>`count(*)` })
       .from(studentQuizAttempts)
       .where(
         and(
@@ -66,6 +66,12 @@ export async function POST(req: NextRequest) {
     hard: totalCount - Math.round(totalCount * 0.3) - Math.round(totalCount * 0.5),
   };
 
+  const tags = (rules.tags as string[] | undefined) || [];
+  const tagConditions = tags.map(
+    (tag) => sql`exists (select 1 from json_each(${aiQuestionBank.tags}) where json_each.value = ${tag})`
+  );
+  const tagCondition = tags.length > 0 ? and(...tagConditions) : undefined;
+
   // Build question set from bank using difficulty proportions
   const questionsByDifficulty = await Promise.all(
     Object.entries(proportions).map(([diff, count]) =>
@@ -77,6 +83,7 @@ export async function POST(req: NextRequest) {
             eq(aiQuestionBank.courseId, template.courseId),
             eq(aiQuestionBank.reviewStatus, 'published'),
             eq(aiQuestionBank.difficulty, diff as 'easy' | 'medium' | 'hard'),
+            tagCondition,
           ),
         )
         .orderBy(asc(aiQuestionBank.useCount))
@@ -84,7 +91,32 @@ export async function POST(req: NextRequest) {
     ),
   );
 
-  const selected = questionsByDifficulty.flat().sort(() => Math.random() - 0.5);
+  let selected = questionsByDifficulty.flat();
+
+  // Fallback: If under-fetched due to difficulty proportions count mismatch, fill from remaining questions matching tags
+  if (selected.length < totalCount) {
+    const selectedIds = selected.map((q) => q.id);
+    const extraNeeded = totalCount - selected.length;
+
+    const extraQuestions = await db
+      .select()
+      .from(aiQuestionBank)
+      .where(
+        and(
+          eq(aiQuestionBank.courseId, template.courseId),
+          eq(aiQuestionBank.reviewStatus, 'published'),
+          selectedIds.length > 0 ? notInArray(aiQuestionBank.id, selectedIds) : undefined,
+          tagCondition,
+        ),
+      )
+      .orderBy(asc(aiQuestionBank.useCount))
+      .limit(extraNeeded);
+
+    selected = [...selected, ...extraQuestions];
+  }
+
+  // Shuffle selected questions
+  selected = selected.sort(() => Math.random() - 0.5);
 
   if (selected.length === 0) {
     return NextResponse.json(

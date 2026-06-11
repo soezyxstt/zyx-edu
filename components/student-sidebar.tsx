@@ -56,8 +56,10 @@ export function StudentSidebar() {
   const [coursesOpen, setCoursesOpen] = useState(true);
   const [enrolledCourses, setEnrolledCourses] = useState<StudentEnrollment[]>([]);
   const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
     setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
   }, []);
@@ -395,7 +397,9 @@ export function StudentSidebar() {
           </button>
         </div>
 
-        <UserCard c={collapsed} />
+        <div className="shrink-0">
+          {mounted && <UserCard c={collapsed} />}
+        </div>
 
         {/* Search trigger button for desktop sidebar */}
         <div className="px-3 pt-3 shrink-0">
@@ -457,7 +461,9 @@ export function StudentSidebar() {
             </button>
           </div>
 
-          <UserCard />
+          <div className="shrink-0">
+            {mounted && <UserCard />}
+          </div>
           <Nav onLink={closeDrawer} />
         </div>
       </dialog>

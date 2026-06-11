@@ -64,6 +64,7 @@ type DriveExplorerProps = {
   rows: DriveRow[];
   breadcrumbs: DriveBreadcrumb[];
   currentFolderId: string | null;
+  storageProviderMode?: string;
 };
 
 function formatBytes(bytes: number | null) {
@@ -255,7 +256,13 @@ function FolderTreeNodes({
   );
 }
 
-export function DriveExplorer({ tree, rows, breadcrumbs, currentFolderId }: DriveExplorerProps) {
+export function DriveExplorer({ 
+  tree, 
+  rows, 
+  breadcrumbs, 
+  currentFolderId,
+  storageProviderMode = "r2"
+}: DriveExplorerProps) {
   const router = useRouter();
   const [dialogBusy, setDialogBusy] = useState(false);
 
@@ -291,6 +298,61 @@ export function DriveExplorer({ tree, rows, breadcrumbs, currentFolderId }: Driv
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const handleCustomUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleCustomFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    setUploading(true);
+    setDialogBusy(true);
+    
+    let succeeded = 0;
+    let failed = 0;
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const formData = new FormData();
+      formData.append("file", file);
+      if (currentFolderId) {
+        formData.append("parentId", currentFolderId);
+      }
+      
+      try {
+        const res = await fetch("/api/storage/upload", {
+          method: "POST",
+          body: formData,
+        });
+        
+        if (!res.ok) {
+          throw new Error(await res.text());
+        }
+        succeeded++;
+      } catch (err) {
+        console.error("Upload error:", err);
+        failed++;
+      }
+    }
+    
+    setUploading(false);
+    setDialogBusy(false);
+    
+    if (succeeded > 0) {
+      toast.success(`Uploaded ${succeeded} file(s).`);
+      refreshList();
+    }
+    if (failed > 0) {
+      toast.error(`Failed to upload ${failed} file(s).`);
+    }
+    
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameName, setRenameName] = useState("");
@@ -767,33 +829,59 @@ export function DriveExplorer({ tree, rows, breadcrumbs, currentFolderId }: Driv
                   <Plus className="size-3.5" aria-hidden />
                   New folder
                 </Button>
-                <UploadButton
-                  endpoint="driveUploader"
-                  input={{ parentId: currentFolderId }}
-                  appearance={{
-                    container: "inline-flex justify-end",
-                    button: cn(
-                      buttonVariants({ variant: "default", size: "sm" }),
-                      "shadow-none hover:shadow-sm",
-                    ),
-                    allowedContent: "text-muted-foreground hidden sm:block text-[10px] leading-tight",
-                  }}
-                  content={{
-                    button: () => (
-                      <>
+                {storageProviderMode === "r2" ? (
+                  <>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleCustomFileChange}
+                      multiple
+                      className="hidden"
+                    />
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={handleCustomUploadClick}
+                      disabled={dialogBusy}
+                    >
+                      {uploading ? (
+                        <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                      ) : (
                         <Upload className="size-3.5" aria-hidden />
-                        Upload
-                      </>
-                    ),
-                  }}
-                  onClientUploadComplete={() => {
-                    toast.success("Uploaded.");
-                    refreshList();
-                  }}
-                  onUploadError={(err: Error) => {
-                    toast.error(err.message ?? "Upload failed.");
-                  }}
-                />
+                      )}
+                      Upload
+                    </Button>
+                  </>
+                ) : (
+                  <UploadButton
+                    endpoint="driveUploader"
+                    input={{ parentId: currentFolderId }}
+                    appearance={{
+                      container: "inline-flex justify-end",
+                      button: cn(
+                        buttonVariants({ variant: "default", size: "sm" }),
+                        "shadow-none hover:shadow-sm",
+                      ),
+                      allowedContent: "text-muted-foreground hidden sm:block text-[10px] leading-tight",
+                    }}
+                    content={{
+                      button: () => (
+                        <>
+                          <Upload className="size-3.5" aria-hidden />
+                          Upload
+                        </>
+                      ),
+                    }}
+                    onClientUploadComplete={() => {
+                      toast.success("Uploaded.");
+                      refreshList();
+                    }}
+                    onUploadError={(err: Error) => {
+                      toast.error(err.message ?? "Upload failed.");
+                    }}
+                  />
+                )}
               </div>
             </div>
             {selectedIds.size > 0 ? (

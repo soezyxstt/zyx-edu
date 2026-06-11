@@ -9,6 +9,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { SectionContainer } from "@/components/layout/section-container";
 import { MarketingPageHero } from "@/components/marketing-page-hero";
 import { Reveal } from "@/components/ui/reveal";
+import { PageOrnaments } from "@/components/ui/page-ornaments";
 import {
   DEFAULT_PERSONS,
   MIN_PERSONS,
@@ -194,7 +195,8 @@ export default function PlansClient() {
 
       {/* Pricing Cards Grid */}
       <Reveal>
-        <SectionContainer className="border-b border-border bg-muted pt-8 pb-16 md:pt-12 md:pb-24">
+        <SectionContainer className="border-b border-border bg-muted/70 overflow-hidden pt-8 pb-16 md:pt-12 md:pb-24">
+          <PageOrnaments variant="plans" />
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
             {planTiers.map((tier) => {
               const calculatedPrice = calculatePlanPrice(tier.key, persons, courses);

@@ -135,3 +135,93 @@ export function parseMaterialIntoSections(rawText: string): ParsedSection[] {
     },
   ];
 }
+
+export interface ExtractedChapter {
+  chapterTitle: string;
+  chapterSlug: string;
+  orderIndex: number;
+  chapterMarkdown: string;
+}
+
+/**
+ * Splits a Master Teaching Document (MTD) markdown string into structured chapter blocks.
+ * Chapters are parsed by H2 headings (e.g. "## Chapter 1: Kinematics" or "## Momentum").
+ * Handles edge cases: nested headings (###, ####), duplicate chapter titles, 
+ * malformed newlines, and documents missing chapter headings entirely.
+ */
+export function parseMtdIntoChapters(rawMarkdown: string): ExtractedChapter[] {
+  const normalized = rawMarkdown.replace(/\r\n/g, "\n").trim();
+  const lines = normalized.split("\n");
+  
+  const chapters: { title: string; markdown: string }[] = [];
+  let currentChapterTitle: string | null = null;
+  let currentLines: string[] = [];
+
+  function flushChapter() {
+    const textContent = currentLines.join("\n").trim();
+    if (textContent.length > 0 || currentChapterTitle !== null) {
+      if (currentChapterTitle === null) {
+        // Skip document titles (H1) or blank lines before the first actual chapter
+        const nonTitleLines = textContent
+          .split("\n")
+          .map(line => line.trim())
+          .filter(line => line.length > 0 && !line.startsWith("#"));
+        if (nonTitleLines.length === 0) {
+          return;
+        }
+      }
+      chapters.push({
+        title: currentChapterTitle || "Introduction",
+        markdown: textContent,
+      });
+    }
+  }
+
+  for (const line of lines) {
+    // Detect H2 headings, but ignore H3 (###) or deeper headings
+    const headingMatch = line.match(/^##\s+(.+)$/);
+    if (headingMatch && !line.startsWith("###")) {
+      // Flush the preceding chapter content
+      flushChapter();
+      currentChapterTitle = headingMatch[1].trim();
+      currentLines = [];
+    } else {
+      currentLines.push(line);
+    }
+  }
+
+  // Flush the final remaining chapter block
+  flushChapter();
+
+  // Deduplicate slugs and set orderIndex values
+  const seenSlugs = new Map<string, number>();
+  
+  return chapters.map((ch, idx) => {
+    let baseSlug = ch.title
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .trim()
+      .replace(/[-\s]+/g, "-");
+      
+    if (baseSlug.length === 0) {
+      baseSlug = "chapter";
+    }
+
+    let uniqueSlug = baseSlug;
+    if (seenSlugs.has(baseSlug)) {
+      const count = seenSlugs.get(baseSlug)! + 1;
+      seenSlugs.set(baseSlug, count);
+      uniqueSlug = `${baseSlug}-${count}`;
+    } else {
+      seenSlugs.set(baseSlug, 0);
+    }
+
+    return {
+      chapterTitle: ch.title,
+      chapterSlug: uniqueSlug,
+      orderIndex: idx + 1,
+      chapterMarkdown: ch.markdown,
+    };
+  });
+}
+

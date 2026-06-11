@@ -6,22 +6,23 @@ import { SectionHeading } from "@/components/ui/section-heading";
 export function LandingClosingCta() {
   return (
     <SectionContainer
-      className="border-b border-border bg-background text-foreground"
+      className="bg-landing-aurora text-foreground"
       aria-labelledby="closing-heading"
-      tight
     >
       <div className="text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">Mulai bertahap</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">
+          Mulai hari ini
+        </p>
         <SectionHeading id="closing-heading" tier="primary" className="mt-2 text-foreground">
-          Siap mulai semester ini dengan rencana belajar?
+          Mulai semester ini dengan arah yang jelas.
         </SectionHeading>
         <p className="mx-auto mt-4 max-w-prose text-body-lg text-muted-foreground">
-          Cek paket layanan, baca prinsip pengajaran kami, atau masuk dengan akun Google untuk menjelajahi dashboard begitu
-          akses diaktifkan.
+          Masuk dengan akun Google, kerjakan diagnosa singkat, dan lihat rencana belajar pertamamu
+          hari ini juga.
         </p>
         <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Button asChild variant="marketingPrimary" size="marketing">
-            <Link href="/plans">Lihat paket</Link>
+            <Link href="/sign-up">Mulai belajar</Link>
           </Button>
           <Button
             asChild
@@ -32,6 +33,9 @@ export function LandingClosingCta() {
             <Link href="/sign-in">Masuk dengan Google</Link>
           </Button>
         </div>
+        <p className="mt-8 text-xs text-muted-foreground">
+          200+ mahasiswa TPB · 15 tutor ITB · ★ 4,8
+        </p>
       </div>
     </SectionContainer>
   );

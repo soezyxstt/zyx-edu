@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Flag, Timer, BookOpen, AlertCircle, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
+import { quizOptionClasses, quizOptionLetterClasses } from "@/components/course/quiz-option-styles";
 
 type QuizPlayerProps = {
   courseId: string;
@@ -40,7 +41,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
       if (stored) {
         try {
           return JSON.parse(stored);
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -55,7 +56,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
       if (stored) {
         try {
           return JSON.parse(stored);
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -112,8 +113,9 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
       // Navigate to the review screen for this attempt
       router.replace(`/courses/${courseId}/quiz/${exam.id}?attemptId=${attemptId}`);
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.message || "Gagal mengumpulkan kuis. Silakan coba kembali.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Gagal mengumpulkan kuis. Silakan coba kembali.";
+      toast.error(message);
       setSubmitting(false);
     }
   }, [courseId, isSubmitted, submitting, router, timerStorageKey, attemptId, answers, durationSeconds, timeLeft, exam.id, exam.questions]);
@@ -166,8 +168,13 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
     [exam.questions],
   );
 
+  function isQuestionAnswered(questionId: string) {
+    return answers[questionId] !== undefined && answers[questionId] !== null;
+  }
+
   const q = sorted[index];
-  const progress = sorted.length > 0 ? ((index + 1) / sorted.length) * 100 : 0;
+  const answeredCount = sorted.filter((question) => isQuestionAnswered(question.id)).length;
+  const progress = sorted.length > 0 ? (answeredCount / sorted.length) * 100 : 0;
 
   function selectOption(qId: string, optionIndex: number) {
     if (isSubmitted || submitting) return;
@@ -191,10 +198,6 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
     if (index > 0) setIndex((i) => i - 1);
   }
 
-  const isQuestionAnswered = (questionId: string) => {
-    return answers[questionId] !== undefined && answers[questionId] !== null;
-  };
-
   if (!q) {
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/15 py-10 text-center">
@@ -207,17 +210,17 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
   const currentFlagged = !!flags[q.id];
 
   return (
-    <div className="grid grid-cols-1 items-start gap-6 font-sans lg:grid-cols-12">
+    <div className="grid grid-cols-1 items-start gap-4 font-sans md:gap-6 lg:grid-cols-12">
       
       {/* LEFT COLUMN: Main player and Question details (8 cols on lg) */}
-      <div className="space-y-5 lg:col-span-8">
+      <div className="space-y-4 md:space-y-5 lg:col-span-8">
         
         {/* Progress Bar & Header */}
-        <div className="flex items-center justify-between gap-4 border-b border-border pb-4">
+        <div className="flex flex-col gap-2.5 border-b border-border pb-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 md:pb-4">
           <div className="flex-1 space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center justify-between gap-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground sm:text-[11px]">
               <span>PROGRES PENGERJAAN</span>
-              <span>{Math.round(progress)}% ({index + 1} / {sorted.length} Soal)</span>
+              <span>{Math.round(progress)}% ({answeredCount} / {sorted.length} Terisi)</span>
             </div>
             <div className="h-2 overflow-hidden rounded-md bg-muted">
               <div
@@ -227,8 +230,8 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5 rounded-lg border border-brand-secondary/35 bg-brand-secondary/10 px-3 py-1.5 font-mono text-body-sm font-bold text-brand-secondary">
-            <Timer className="size-4 animate-pulse" />
+          <div className="flex w-fit shrink-0 items-center gap-1.5 rounded-lg border border-brand-secondary/35 bg-brand-secondary/10 px-2.5 py-1 font-mono text-[13px] font-bold text-brand-secondary sm:px-3 sm:py-1.5 sm:text-body-sm">
+            <Timer className="size-3.5 animate-pulse sm:size-4" />
             <span>{formatTime(timeLeft)}</span>
           </div>
         </div>
@@ -236,25 +239,25 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
         {/* Question Area Box */}
         <div
           className={cn(
-            "relative overflow-hidden rounded-2xl border border-border/85 bg-card p-5 shadow-xs backdrop-blur-xs md:p-6",
+            "relative overflow-hidden rounded-xl border border-border/85 bg-card p-4 shadow-xs backdrop-blur-xs md:rounded-2xl md:p-6",
             "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300",
             currentFlagged && "ring-1 ring-brand-secondary/35 border-brand-secondary/40"
           )}
         >
           {/* Heading */}
-          <div className="flex items-start gap-3">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-primary text-body-sm font-bold text-white shadow-xs">
+          <div className="flex items-start gap-2.5 md:gap-3">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-primary text-body-xs font-bold text-white shadow-xs md:size-8 md:text-body-sm">
               {index + 1}
             </span>
             <div className="space-y-1 flex-1 leading-relaxed text-foreground">
-              <div className="font-heading text-body-lg font-bold leading-normal">
+              <div className="font-heading text-body-base font-bold leading-normal md:text-body-lg">
                 <MarkdownRenderer content={q.prompt} />
               </div>
             </div>
           </div>
 
           {/* Options Display */}
-          <ul className="mt-5 space-y-2.5">
+          <ul className="mt-4 space-y-2 md:mt-5 md:space-y-2.5">
             {q.options.map((opt, i) => {
               const selected = ans === i;
               return (
@@ -263,18 +266,10 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
                     type="button"
                     disabled={submitting || isSubmitted}
                     onClick={() => selectOption(q.id, i)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-body-sm font-medium transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
-                      selected
-                        ? "border-brand-primary bg-brand-primary/10 shadow-sm"
-                        : "border-border/80 bg-background hover:border-brand-primary/45 hover:bg-muted/30"
-                    )}
+                    className={quizOptionClasses(selected ? "selected" : "idle")}
                   >
                     <span
-                      className={cn(
-                        "flex size-7 shrink-0 items-center justify-center rounded-full text-body-xs font-bold transition-colors",
-                        selected ? "bg-brand-primary text-white" : "bg-muted text-foreground",
-                      )}
+                      className={quizOptionLetterClasses(selected ? "selected" : "idle")}
                     >
                       {String.fromCharCode(65 + i)}
                     </span>
@@ -288,7 +283,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
           </ul>
 
           {/* Flagging Option Widget inside Card */}
-          <div className="mt-5 flex items-center justify-between border-t border-border/80 pt-4">
+          <div className="mt-4 flex flex-col gap-2.5 border-t border-border/80 pt-3 sm:flex-row sm:items-center sm:justify-between md:mt-5 md:pt-4">
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -298,7 +293,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
                 className="size-4 rounded-sm border-border text-brand-secondary accent-brand-secondary focus:ring-brand-secondary cursor-pointer"
               />
               <span className={cn(
-                "text-body-xs font-semibold flex items-center gap-1 transition-colors",
+                "flex items-center gap-1 text-[11px] font-semibold transition-colors sm:text-body-xs",
                 currentFlagged ? "text-brand-secondary" : "text-muted-foreground hover:text-foreground"
               )}>
                 <Flag className={cn("size-3.5", currentFlagged ? "fill-brand-secondary text-brand-secondary" : "")} />
@@ -306,7 +301,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
               </span>
             </label>
 
-            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <AlertCircle className="size-3 text-brand-primary" />
               Progress tersimpan otomatis
             </span>
@@ -314,11 +309,11 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
         </div>
 
         {/* Navigation Action Buttons */}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
           <Button
             type="button"
             variant="outline"
-            className="gap-1 border-border/80 rounded-md"
+            className="h-9 gap-1 rounded-md border-border/80 px-3 text-[13px] sm:text-body-sm"
             onClick={goPrev}
             disabled={index === 0}
           >
@@ -328,7 +323,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
 
           <div className="flex gap-2">
             {index < sorted.length - 1 ? (
-              <Button type="button" className="gap-1 bg-foreground text-background hover:bg-foreground/90 px-6 rounded-md" onClick={goNext}>
+              <Button type="button" className="h-9 gap-1 rounded-md bg-foreground px-4 text-[13px] text-background hover:bg-foreground/90 sm:px-6 sm:text-body-sm" onClick={goNext}>
                 Lanjut
                 <ChevronRight className="size-4" />
               </Button>
@@ -336,7 +331,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
               <Button
                 type="button"
                 disabled={submitting || isSubmitted}
-                className="bg-brand-primary text-white hover:bg-brand-primary/95 px-8 font-bold rounded-md"
+                className="h-9 rounded-md bg-brand-primary px-4 text-[13px] font-bold text-white hover:bg-brand-primary/95 sm:px-8 sm:text-body-sm"
                 onClick={handleSubmit}
               >
                 {submitting ? (
@@ -355,22 +350,22 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
       </div>
 
       {/* RIGHT COLUMN: Sidebar Question Grid & Info (4 cols on lg) */}
-      <div className="space-y-5 lg:col-span-4 lg:border-l lg:border-border lg:pl-6">
+      <div className="space-y-4 lg:col-span-4 lg:space-y-5 lg:border-l lg:border-border lg:pl-6">
         
         {/* Navigation Grid panel */}
-        <div className="space-y-5">
+        <div className="space-y-3 md:space-y-5">
           <div>
-            <h3 className="font-heading text-body-sm font-bold text-foreground flex items-center gap-2">
+            <h3 className="flex items-center gap-2 font-heading text-body-sm font-bold text-foreground">
               <BookOpen className="size-4 text-brand-primary" />
               Navigasi Pertanyaan
             </h3>
-            <p className="text-body-xs text-muted-foreground mt-1">
+            <p className="mt-1 text-[11px] text-muted-foreground md:text-body-xs">
               Lompat langsung ke soal dengan klik tombol angka di bawah:
             </p>
           </div>
 
           {/* Grid buttons list */}
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-6 gap-1.5 sm:grid-cols-8 md:gap-2 lg:grid-cols-5">
             {sorted.map((question, idx) => {
               const active = index === idx;
               const isAnswered = isQuestionAnswered(question.id);
@@ -382,7 +377,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
                   type="button"
                   onClick={() => setIndex(idx)}
                   className={cn(
-                    "flex size-9 items-center justify-center rounded-lg border font-heading text-body-xs font-bold transition-all cursor-pointer",
+                    "flex size-8 items-center justify-center rounded-lg border font-heading text-[11px] font-bold transition-all cursor-pointer md:size-9 md:text-body-xs",
                     active
                       ? "border-brand-primary ring-2 ring-brand-primary/20 scale-105"
                       : "border-transparent",
@@ -401,7 +396,7 @@ export function QuizPlayer({ courseId, exam, attemptId }: QuizPlayerProps) {
           </div>
 
           {/* Legend indicator */}
-          <div className="space-y-2 border-t border-border pt-4 text-body-xs">
+          <div className="space-y-2 border-t border-border pt-3 text-[11px] md:pt-4 md:text-body-xs">
             <span className="font-semibold text-foreground block">Keterangan Warna:</span>
             <div className="grid grid-cols-2 gap-2 text-muted-foreground">
               <div className="flex items-center gap-1.5">

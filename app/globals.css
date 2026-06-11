@@ -488,14 +488,160 @@
     animation: landing-fade-up 0.65s ease-out both;
   }
 
+  /* ── Landing v2: visibility-gated motion ─────────────────
+     A small client island (LandingVisible) sets data-visible="true" on its
+     wrapper when it scrolls into view. All animations below key off that
+     attribute, so server-rendered content animates without shipping JS for
+     each effect. Hidden states only apply inside a [data-visible] scope —
+     content outside the island is never hidden. */
+
+  [data-visible="false"] .landing-rise,
+  [data-visible="false"] .landing-pop,
+  [data-visible="false"] .landing-stagger-on-visible > * {
+    opacity: 0;
+  }
+
+  [data-visible="true"] .landing-rise,
+  [data-visible="true"] .landing-stagger-on-visible > * {
+    animation: landing-fade-up 0.6s ease-out both;
+  }
+
+  @keyframes landing-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  [data-visible="true"] .landing-pop {
+    animation: landing-pop-in 0.45s var(--ease-bounce) both;
+  }
+
+  /* Mastery / streak bar fill (transform-only, compositor friendly) */
+  @keyframes landing-bar-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  .landing-bar {
+    transform-origin: left;
+  }
+
+  [data-visible="false"] .landing-bar {
+    transform: scaleX(0);
+  }
+
+  [data-visible="true"] .landing-bar {
+    animation: landing-bar-fill 0.9s var(--ease-snappy) both;
+  }
+
+  /* SVG connector draw-in (set --draw-length to path length) */
+  @keyframes landing-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  .landing-draw-line {
+    stroke-dasharray: var(--draw-length, 240);
+  }
+
+  [data-visible="false"] .landing-draw-line {
+    stroke-dashoffset: var(--draw-length, 240);
+  }
+
+  [data-visible="true"] .landing-draw-line {
+    stroke-dashoffset: var(--draw-length, 240);
+    animation: landing-draw 0.9s ease-out both;
+  }
+
+  /* Flashcard 3D flip (toggled via data-flipped on .landing-flip) */
+  .landing-flip {
+    perspective: 1200px;
+  }
+
+  .landing-flip-inner {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.55s var(--ease-snappy);
+  }
+
+  .landing-flip[data-flipped="true"] .landing-flip-inner {
+    transform: rotateY(180deg);
+  }
+
+  .landing-flip-face {
+    backface-visibility: hidden;
+  }
+
+  .landing-flip-back {
+    transform: rotateY(180deg);
+  }
+
+  /* Tutor chat typing indicator */
+  @keyframes landing-typing-dot {
+    0%,
+    80%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.45;
+    }
+    40% {
+      transform: translateY(-3px);
+      opacity: 1;
+    }
+  }
+
+  .landing-typing-dot {
+    animation: landing-typing-dot 1s ease-in-out infinite;
+  }
+
+  /* Decorative-only scroll-driven parallax (progressive enhancement) */
+  @supports (animation-timeline: view()) {
+    @keyframes landing-parallax-y {
+      from {
+        transform: translateY(28px);
+      }
+      to {
+        transform: translateY(-28px);
+      }
+    }
+
+    .landing-parallax-drift {
+      animation: landing-parallax-y linear both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .landing-float,
     .landing-drift,
-    .landing-stagger > * {
+    .landing-stagger > *,
+    .landing-rise,
+    .landing-pop,
+    .landing-stagger-on-visible > *,
+    .landing-bar,
+    .landing-draw-line,
+    .landing-typing-dot,
+    .landing-parallax-drift {
       animation: none !important;
       /* Keyframe used both — without animation some engines leave opacity/transform from the animation start state. */
       opacity: 1 !important;
       transform: none !important;
+      stroke-dashoffset: 0 !important;
+    }
+
+    .landing-flip-inner {
+      transition: none !important;
     }
   }
 
@@ -536,5 +682,16 @@
 
   dialog.sidebar-dialog[open] .sidebar-panel {
     animation: sidebar-slide-in 0.28s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @media (max-width: 767px) {
+    .desktop-only-nav {
+      display: none;
+    }
+  }
+  @media (min-width: 768px) {
+    .mobile-only-nav {
+      display: none;
+    }
   }
 }

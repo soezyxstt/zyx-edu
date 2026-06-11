@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckSquare, Square, ChevronDown, ChevronUp, Filter, Plus, Edit2, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { CheckSquare, Square, ChevronDown, ChevronUp, Filter, Plus, Edit2, Trash2, Loader2, AlertTriangle, Lock, Cpu } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ interface Question {
   qualityScore: number;
   useCount: number;
   createdAt: Date;
+  knowledgeObjectId?: string | null;
+  generationHash?: string | null;
 }
 
 interface Course {
@@ -42,9 +44,9 @@ interface Props {
 
 const statusColors: Record<ReviewStatus, string> = {
   generated: "bg-muted text-muted-foreground",
-  reviewed: "bg-status-info/10 text-status-info",
-  published: "bg-status-success/10 text-status-success",
-  flagged: "bg-status-warning/10 text-status-warning",
+  reviewed: "bg-status-info/10 text-status-info border border-status-info/20",
+  published: "bg-status-success/10 text-status-success border border-status-success/20",
+  flagged: "bg-status-warning/10 text-status-warning border border-status-warning/20",
   retired: "bg-muted/50 text-muted-foreground line-through",
 };
 
@@ -57,6 +59,9 @@ const difficultyColors: Record<Difficulty, string> = {
 export function QuestionBankClient({ questions, courses, courseMap }: Props) {
   const [filterStatus, setFilterStatus] = useState<ReviewStatus | "all">("all");
   const [filterCourse, setFilterCourse] = useState("all");
+  const [filterKOId, setFilterKOId] = useState("");
+  const [filterBloom, setFilterBloom] = useState("all");
+  const [filterBlueprint, setFilterBlueprint] = useState("all");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [updating, setUpdating] = useState(false);
   const [localQuestions, setLocalQuestions] = useState(questions);
@@ -91,14 +96,15 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
     return localQuestions.filter((q) => {
       if (filterStatus !== "all" && q.reviewStatus !== filterStatus) return false;
       if (filterCourse !== "all" && q.courseId !== filterCourse) return false;
+      if (filterKOId && (!q.knowledgeObjectId || !q.knowledgeObjectId.toLowerCase().includes(filterKOId.toLowerCase()))) return false;
+      
+      const tagsList = Array.isArray(q.tags) ? (q.tags as string[]) : [];
+      if (filterBloom !== "all" && !tagsList.some(t => t.toLowerCase() === filterBloom.toLowerCase())) return false;
+      if (filterBlueprint !== "all" && !tagsList.some(t => t.toLowerCase().includes(filterBlueprint.toLowerCase()))) return false;
+      
       return true;
     });
-  }, [localQuestions, filterStatus, filterCourse]);
-
-  const uniqueCourses = useMemo(() => {
-    const ids = [...new Set(localQuestions.map((q) => q.courseId))];
-    return ids.map((id) => ({ id, title: courseMap[id] ?? id }));
-  }, [localQuestions, courseMap]);
+  }, [localQuestions, filterStatus, filterCourse, filterKOId, filterBloom, filterBlueprint]);
 
   function toggleSelect(id: string) {
     setSelected((prev) => {
@@ -245,6 +251,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
           explanation: editExplanation,
           difficulty: editDifficulty,
           tags,
+          reviewStatus: "published",
         }),
       });
 
@@ -253,7 +260,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
         throw new Error(data.error || "Gagal menyimpan perubahan");
       }
 
-      toast.success("Soal berhasil diperbarui!");
+      toast.success("Soal berhasil diperbarui dan dikunci!");
       
       setLocalQuestions(prev =>
         prev.map(item =>
@@ -266,6 +273,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                 explanation: editExplanation,
                 difficulty: editDifficulty,
                 tags,
+                reviewStatus: "published",
               }
             : item
         )
@@ -300,15 +308,15 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
     <div className="font-sans space-y-6">
       
       {/* Filters and Action */}
-      <div className="flex items-center gap-4 flex-wrap pb-4 border-b border-border/80 justify-between">
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1.5 text-muted-foreground mr-1.5">
-            <Filter className="size-4 shrink-0" />
-            <span className="text-body-sm font-semibold">Filter:</span>
-          </div>
-          
+      <div className="space-y-4 pb-4 border-b border-border/80 text-left">
+        <div className="flex items-center gap-1.5 text-muted-foreground">
+          <Filter className="size-4 shrink-0" />
+          <span className="text-body-sm font-semibold">Filter Pencarian &amp; Curation Grid</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as any)}>
-            <SelectTrigger className="h-9 border-border/80 bg-background/50 text-body-sm font-medium min-w-[140px]">
+            <SelectTrigger className="h-9 border-border/80 bg-background/50 text-body-sm font-medium">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -322,7 +330,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
           </Select>
 
           <Select value={filterCourse} onValueChange={setFilterCourse}>
-            <SelectTrigger className="h-9 border-border/80 bg-background/50 text-body-sm font-medium min-w-[150px]">
+            <SelectTrigger className="h-9 border-border/80 bg-background/50 text-body-sm font-medium">
               <SelectValue placeholder="Kursus" />
             </SelectTrigger>
             <SelectContent>
@@ -335,17 +343,54 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
             </SelectContent>
           </Select>
 
-          <span className="text-body-sm text-muted-foreground font-medium ml-1 bg-muted/65 border border-border/30 px-2.5 py-0.5 rounded-md">
-            {filtered.length} Soal
-          </span>
+          <Select value={filterBloom} onValueChange={setFilterBloom}>
+            <SelectTrigger className="h-9 border-border/80 bg-background/50 text-body-sm font-medium">
+              <SelectValue placeholder="Tingkat Kognitif (Bloom)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Kognitif</SelectItem>
+              <SelectItem value="remember">remember</SelectItem>
+              <SelectItem value="understand">understand</SelectItem>
+              <SelectItem value="apply">apply</SelectItem>
+              <SelectItem value="analyze">analyze</SelectItem>
+              <SelectItem value="evaluate">evaluate</SelectItem>
+              <SelectItem value="create">create</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterBlueprint} onValueChange={setFilterBlueprint}>
+            <SelectTrigger className="h-9 border-border/80 bg-background/50 text-body-sm font-medium">
+              <SelectValue placeholder="Tipe Blueprint" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Blueprint</SelectItem>
+              <SelectItem value="concept">Conceptual Check</SelectItem>
+              <SelectItem value="formula">Formula Application</SelectItem>
+              <SelectItem value="misconception">Misconception Rebuttal</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Input
+            type="text"
+            placeholder="Cari ID KO..."
+            className="h-9 border-border/80 bg-background/50 text-body-sm font-medium"
+            value={filterKOId}
+            onChange={(e) => setFilterKOId(e.target.value)}
+          />
         </div>
 
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="rounded-lg bg-brand-primary !text-white hover:bg-brand-primary/95 flex items-center gap-1.5 cursor-pointer text-body-sm font-bold shadow-sm px-4 py-2 interactive transition-all"
-        >
-          <Plus className="size-4" /> Tambah Soal Manual
-        </Button>
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <span className="text-body-sm text-muted-foreground font-medium bg-muted/65 border border-border/30 px-2.5 py-0.5 rounded-md">
+            Menampilkan {filtered.length} Soal
+          </span>
+
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="rounded-lg bg-brand-primary !text-white hover:bg-brand-primary/95 flex items-center gap-1.5 cursor-pointer text-body-sm font-bold shadow-sm px-4 py-2 interactive transition-all"
+          >
+            <Plus className="size-4" /> Tambah Soal Manual
+          </Button>
+        </div>
       </div>
 
       {/* Bulk actions - Floating Overlay */}
@@ -371,7 +416,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
       )}
 
       {/* Header row */}
-      <div className="flex items-center gap-3 py-3 border border-border bg-muted/20 px-4 rounded-t-xl">
+      <div className="flex items-center gap-3 py-3 border border-border bg-muted px-4 rounded-t-xl">
         <button onClick={toggleAll} className="text-muted-foreground hover:text-foreground cursor-pointer shrink-0 transition-colors">
           {selected.size === filtered.length && filtered.length > 0 ? (
             <CheckSquare className="size-4 text-brand-primary" />
@@ -380,16 +425,16 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
           )}
         </button>
         <span className="text-body-xs font-bold text-muted-foreground uppercase tracking-wider">
-          Soal
+          Daftar Soal Pelajaran
         </span>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground text-body-sm border-x border-b border-border/60 rounded-b-xl bg-card/20">
+        <div className="py-16 text-center text-muted-foreground text-body-sm border-x border-b border-border/60 rounded-b-xl bg-card">
           Tidak ada soal yang cocok dengan filter.
         </div>
       ) : (
-        <div className="divide-y divide-border/60 border-x border-b border-border/60 rounded-b-xl overflow-hidden bg-card/10">
+        <div className="divide-y divide-border/60 border-x border-b border-border/60 rounded-b-xl overflow-hidden bg-card">
           {filtered.map((q) => (
             <QuestionRow
               key={q.id}
@@ -404,20 +449,15 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
         </div>
       )}
 
-      {/* ───────────────────────────────────────────────────────────────────────
-          DIALOGS
-         ─────────────────────────────────────────────────────────────────────── */}
-
       {/* CREATE DIALOG */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
           <DialogHeader className="p-6 pb-4 border-b border-border/60 shrink-0">
-            <DialogTitle className="font-heading text-lg font-bold text-foreground">Tambah Soal Manual</DialogTitle>
+            <DialogTitle className="font-heading text-h6 font-bold text-foreground">Tambah Soal Manual</DialogTitle>
             <DialogDescription>Tambahkan soal pilihan ganda baru ke bank soal secara manual.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleCreateSubmit} className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 overflow-y-auto p-6 space-y-5 text-body-sm text-foreground">
-              {/* Target course and Difficulty */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Mata Kuliah</label>
@@ -450,7 +490,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                 </div>
               </div>
 
-              {/* Prompt */}
               <div className="space-y-1.5">
                 <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Pertanyaan / Prompt (Mendukung LaTeX, contoh: $x^2$)</label>
                 <textarea
@@ -462,7 +501,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                 />
               </div>
 
-              {/* Multiple Choice Options */}
               <div className="space-y-3 rounded-xl border border-border bg-muted/5 p-5">
                 <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">Opsi Pilihan (Isi Kelima Opsi & Pilih Opsi yang Benar)</label>
                 <div className="space-y-2.5">
@@ -492,7 +530,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                 </div>
               </div>
 
-              {/* Explanation */}
               <div className="space-y-1.5">
                 <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Penjelasan Solusi (Mendukung LaTeX)</label>
                 <textarea
@@ -504,7 +541,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                 />
               </div>
 
-              {/* Tags */}
               <div className="space-y-1.5">
                 <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Tags (Pisahkan dengan koma)</label>
                 <Input
@@ -532,8 +568,8 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden rounded-xl border border-border bg-popover shadow-xl">
           <DialogHeader className="p-6 pb-4 border-b border-border/60 shrink-0">
-            <DialogTitle className="font-heading text-lg font-bold text-foreground">Edit Soal</DialogTitle>
-            <DialogDescription>Modifikasi detail pertanyaan dan pilihan jawaban di bawah ini.</DialogDescription>
+            <DialogTitle className="font-heading text-h6 font-bold text-foreground">Edit Soal &amp; Kunci</DialogTitle>
+            <DialogDescription>Modifikasi detail pertanyaan. Menyimpan perubahan secara otomatis akan mengunci status peninjauan soal.</DialogDescription>
           </DialogHeader>
           {editingQuestion && (
             <form onSubmit={handleEditSubmit} className="flex-1 flex flex-col min-h-0">
@@ -552,7 +588,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                   </Select>
                 </div>
 
-                {/* Prompt */}
                 <div className="space-y-1.5">
                   <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Pertanyaan / Prompt (Mendukung LaTeX)</label>
                   <textarea
@@ -564,7 +599,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                   />
                 </div>
 
-                {/* Options */}
                 <div className="space-y-3 rounded-xl border border-border bg-muted/5 p-5">
                   <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">Opsi Pilihan (Isi Kelima Opsi & Pilih Opsi yang Benar)</label>
                   <div className="space-y-2.5">
@@ -594,7 +628,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                   </div>
                 </div>
 
-                {/* Explanation */}
                 <div className="space-y-1.5">
                   <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Penjelasan Solusi (Mendukung LaTeX)</label>
                   <textarea
@@ -606,7 +639,6 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                   />
                 </div>
 
-                {/* Tags */}
                 <div className="space-y-1.5">
                   <label className="text-body-xs font-semibold uppercase tracking-wider text-muted-foreground">Tags (Pisahkan dengan koma)</label>
                   <Input
@@ -623,7 +655,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
                 <Button type="button" variant="outline" className="rounded-lg cursor-pointer font-bold" onClick={() => setEditOpen(false)}>Batal</Button>
                 <Button type="submit" disabled={submittingEdit} className="rounded-lg cursor-pointer bg-brand-primary !text-white hover:bg-brand-primary/95 font-bold px-6 shadow-sm">
                   {submittingEdit ? <Loader2 className="size-4 animate-spin mr-1.5" /> : null}
-                  Simpan Perubahan
+                  Simpan Perubahan &amp; Kunci
                 </Button>
               </DialogFooter>
             </form>
@@ -635,7 +667,7 @@ export function QuestionBankClient({ questions, courses, courseMap }: Props) {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="max-w-md rounded-xl border border-border p-6 shadow-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-rose-500 font-heading text-lg font-bold">
+            <DialogTitle className="flex items-center gap-2 text-status-error font-heading text-h6 font-bold">
               <AlertTriangle className="size-5 shrink-0" />
               Hapus Soal
             </DialogTitle>
@@ -675,6 +707,26 @@ function QuestionRow({
     : [];
   const tags = Array.isArray(question.tags) ? (question.tags as string[]) : [];
 
+  // Edit Lock determination
+  const isLocked = question.reviewStatus === "reviewed" || question.reviewStatus === "published";
+
+  // Dynamic QC Validation warnings calculated client-side
+  const qcWarnings = useMemo(() => {
+    const warnings: string[] = [];
+    if (!question.prompt.includes("$")) {
+      warnings.push("⚠️ Kualitas Rendah: Tidak menggunakan LaTeX ($)");
+    }
+    if (question.explanation.length < 50) {
+      warnings.push("⚠️ Kualitas Rendah: Penjelasan terlalu singkat (<50 karakter)");
+    }
+    const promptLower = question.prompt.toLowerCase();
+    if ((promptLower.includes("gaya") || promptLower.includes("massa") || promptLower.includes("kecepatan")) && 
+        (!question.prompt.includes("kg") && !question.prompt.includes("m/s") && !question.prompt.includes("N"))) {
+      warnings.push("⚠️ Kelengkapan: Soal fisika terdeteksi tanpa satuan standar SI (kg, m/s, N)");
+    }
+    return warnings;
+  }, [question]);
+
   return (
     <div className={cn("py-4 transition-colors px-4 border-b border-border/55 last:border-b-0", selected ? "bg-muted/15" : "hover:bg-muted/5")}>
       <div className="flex items-start gap-3">
@@ -685,21 +737,30 @@ function QuestionRow({
           {selected ? <CheckSquare className="size-4.5 text-brand-primary" /> : <Square className="size-4.5" />}
         </button>
 
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 text-left">
           <div className="flex items-center gap-2.5 flex-wrap text-body-xs font-semibold">
             <span
-              className={cn("rounded-md px-2 py-0.5 uppercase tracking-wide border border-current/10 font-bold", statusColors[question.reviewStatus])}
+              className={cn("rounded-md px-2 py-0.5 uppercase tracking-wide border font-bold flex items-center gap-1", statusColors[question.reviewStatus])}
             >
               {question.reviewStatus}
             </span>
-            <span className={cn(difficultyColors[question.difficulty], "uppercase text-[10px]")}>
+            
+            {/* Tutor edit lock badge */}
+            {isLocked && (
+              <span className="rounded-md bg-status-warning/10 text-status-warning border border-status-warning/20 px-2 py-0.5 text-xs font-semibold flex items-center gap-1">
+                <Lock className="size-3" /> Locked
+              </span>
+            )}
+
+            <span className={cn(difficultyColors[question.difficulty], "uppercase text-xs")}>
               {question.difficulty}
             </span>
             <span className="text-muted-foreground font-medium bg-muted/40 px-1.5 py-0.5 rounded-md">
               {courseMap[question.courseId] ?? question.courseId}
             </span>
-            <span className="text-muted-foreground ml-auto font-medium text-[11px] normal-case">
-              used {question.useCount}×
+            
+            <span className="text-muted-foreground ml-auto font-medium text-xs normal-case">
+              digunakan {question.useCount}×
             </span>
           </div>
 
@@ -713,12 +774,22 @@ function QuestionRow({
             </p>
           )}
 
-          {tags.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap mt-2.5">
-              {tags.map((t) => (
-                <span key={t} className="rounded bg-muted/65 border border-border/20 px-1.5 py-0.5 text-body-xs font-semibold text-muted-foreground/90">
-                  #{t}
-                </span>
+          {/* Tags list */}
+          <div className="flex gap-1.5 flex-wrap mt-2.5">
+            {tags.length > 0 && tags.map((t) => (
+              <span key={t} className="rounded bg-muted/65 border border-border/20 px-1.5 py-0.5 text-body-xs font-semibold text-muted-foreground/90">
+                #{t}
+              </span>
+            ))}
+          </div>
+
+          {/* QC warnings box if fails criteria */}
+          {qcWarnings.length > 0 && (
+            <div className="mt-2.5 space-y-1">
+              {qcWarnings.map((w, idx) => (
+                <div key={idx} className="text-body-xs text-status-error bg-status-error/5 px-2 py-0.5 rounded border border-status-error/10 font-medium inline-block mr-2">
+                  {w}
+                </div>
               ))}
             </div>
           )}
@@ -733,7 +804,8 @@ function QuestionRow({
       </div>
 
       {expanded && (
-        <div className="mt-4 ml-7.5 space-y-4 border-t border-border/40 pt-4">
+        <div className="mt-4 ml-7.5 space-y-4 border-t border-border/40 pt-4 text-left">
+          {/* Multiple choice options */}
           <div className="grid gap-2 sm:grid-cols-2">
             {options.map((opt, i) => (
               <div
@@ -741,7 +813,7 @@ function QuestionRow({
                 className={cn(
                   "flex gap-3 text-body-sm rounded-lg px-3.5 py-2.5 border transition-all duration-200",
                   correctIndices.includes(i)
-                    ? "bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-medium"
+                    ? "bg-status-success/5 text-status-success border-status-success/20 font-medium"
                     : "text-muted-foreground border-border/30 hover:border-border/60 bg-muted/5"
                 )}
               >
@@ -750,16 +822,43 @@ function QuestionRow({
               </div>
             ))}
           </div>
+          
+          {/* Solution Explanation */}
           {question.explanation && (
             <div className="rounded-xl bg-muted/20 p-4 border border-border/60">
-              <p className="text-body-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Penjelasan</p>
+              <p className="text-body-xs font-bold text-muted-foreground uppercase tracking-wider mb-1.5">Penjelasan Solusi</p>
               <MarkdownRenderer content={question.explanation} className="text-body-sm text-foreground/80 leading-relaxed font-sans" />
             </div>
           )}
+
+          {/* AI Provenance details box */}
+          <div className="rounded-xl bg-muted/40 p-4 border border-border/50 space-y-2 text-xs text-muted-foreground">
+            <span className="font-bold text-foreground flex items-center gap-1.5 border-b border-border pb-1.5 mb-2">
+              <Cpu className="size-3.5 text-primary" /> Detail Provenansi Generasi AI (RAG)
+            </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono">
+              <div>
+                <span className="font-sans font-semibold text-foreground block">ID Objek Pengetahuan (KO)</span>
+                <span className="text-xs select-all">{question.knowledgeObjectId || "Tidak Terhubung (Input Manual)"}</span>
+              </div>
+              <div>
+                <span className="font-sans font-semibold text-foreground block">Model Generator</span>
+                <span>{question.knowledgeObjectId ? "gemini-2.5-flash" : "N/A (Tutor Created)"}</span>
+              </div>
+              <div>
+                <span className="font-sans font-semibold text-foreground block">Hash Keandalan</span>
+                <span className="text-xs select-all">{question.generationHash || "N/A"}</span>
+              </div>
+              <div>
+                <span className="font-sans font-semibold text-foreground block">Kualitas Penilaian</span>
+                <span>{question.qualityScore.toFixed(2)} / 1.00</span>
+              </div>
+            </div>
+          </div>
           
           <div className="flex gap-2 justify-end pt-3 border-t border-border/40">
             <Button size="sm" variant="outline" className="rounded-lg gap-1.5 cursor-pointer text-xs font-bold" onClick={() => onEdit(question)}>
-              <Edit2 className="size-3.5" /> Edit Soal
+              <Edit2 className="size-3.5" /> Edit Soal &amp; Kunci
             </Button>
             <Button size="sm" variant="destructive" className="rounded-lg gap-1.5 cursor-pointer text-xs font-bold animate-colors" onClick={() => onDelete(question)}>
               <Trash2 className="size-3.5" /> Hapus Soal

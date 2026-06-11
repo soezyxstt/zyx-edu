@@ -1,40 +1,19 @@
 {
   "version": "7",
-  "dialect": "postgresql",
+  "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "7",
-      "when": 1776703158484,
-      "tag": "0000_remarkable_black_cat",
+      "version": "6",
+      "when": 1781115973183,
+      "tag": "0000_slimy_quentin_quire",
       "breakpoints": true
     },
     {
       "idx": 1,
-      "version": "7",
-      "when": 1777742713708,
-      "tag": "0001_drive_item",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780278841121,
-      "tag": "0002_misty_skaar",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1780294160328,
-      "tag": "0003_cultured_vin_gonzales",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1780335958504,
-      "tag": "0004_sticky_robbie_robertson",
+      "version": "6",
+      "when": 1781139029849,
+      "tag": "0001_loving_master_mold",
       "breakpoints": true
     }
   ]

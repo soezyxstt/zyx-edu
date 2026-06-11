@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 type RevealProps = {
@@ -12,7 +13,7 @@ type RevealProps = {
    * @default "0px 0px -6% 0px"
    */
   rootMargin?: string;
-  /** IntersectionObserver threshold. @default 0.06 */
+  /** IntersectionObserver threshold. @default 0.01 */
   threshold?: number;
   /** Extra translate-y distance before animation. @default "translate-y-8" */
   translateFrom?: string;
@@ -28,14 +29,25 @@ export function Reveal({
   children,
   className,
   rootMargin = "0px 0px -6% 0px",
-  threshold = 0.06,
+  threshold = 0.01,
   translateFrom = "translate-y-8",
   duration = "duration-700",
 }: RevealProps) {
+  const pathname = usePathname();
   const ref = useRef<HTMLDivElement>(null);
+  
+  const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
 
+  const isAdmin = pathname !== null && pathname.startsWith("/admin");
+
   useEffect(() => {
+    setMounted(true);
+    if (isAdmin) {
+      setVisible(true);
+      return;
+    }
+
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
 
     const onMq = () => {
@@ -59,7 +71,12 @@ export function Reveal({
       mq.removeEventListener("change", onMq);
       ob.disconnect();
     };
-  }, [rootMargin, threshold]);
+  }, [rootMargin, threshold, isAdmin]);
+
+  // Once mounted, bypass animation completely on admin pages to prevent viewport lock on tall pages
+  if (isAdmin && mounted) {
+    return <div className={className}>{children}</div>;
+  }
 
   return (
     <div

@@ -27,7 +27,8 @@ import {
   Plus, 
   Trash2, 
   X, 
-  Check 
+  Check,
+  Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import type { CourseMaterial } from "@/lib/student-course-fixtures";
 import { updateMaterialProgress } from "@/app/dashboard/actions";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
+import { useTutor } from "@/components/course/tutor-drawer";
 
 type MaterialViewerProps = {
   material: CourseMaterial;
@@ -236,9 +238,98 @@ const MOCK_PAGES_META = [
   }
 ];
 
+interface ArticleSection {
+  title: string;
+  content: string;
+}
+
+function parseArticleSections(body: string, defaultTitle: string): { chapterTitle: string; sections: ArticleSection[] } {
+  if (!body) return { chapterTitle: defaultTitle, sections: [] };
+
+  const hasSections = body.includes("##") || body.includes("###");
+  if (!hasSections) {
+    return {
+      chapterTitle: defaultTitle,
+      sections: [{ title: "Materi", content: body }]
+    };
+  }
+
+  // 1. Extract Chapter Title
+  let chapterTitle = defaultTitle;
+  let cleanBody = body;
+
+  const firstHeaderMatch = body.match(/##\s+Bab\s+\d+:\s+([^\n]+)/i) || body.match(/##\s+([^\n]+)/);
+  if (firstHeaderMatch) {
+    chapterTitle = firstHeaderMatch[0].replace(/^##\s+/, "").trim();
+    const headerIndex = body.indexOf(firstHeaderMatch[0]);
+    if (headerIndex !== -1) {
+      const endOfHeading = body.indexOf("\n", headerIndex);
+      cleanBody = body.slice(endOfHeading !== -1 ? endOfHeading : headerIndex);
+    }
+  }
+
+  // Clean top-level dividers
+  cleanBody = cleanBody.replace(/^[\s\r\n]*---[\s\r\n]*/, "");
+
+  // 2. Remove Metadata blocks
+  cleanBody = cleanBody
+    .replace(/#### Knowledge Graph Metadata[\s\S]*?(?=(?:---|\r?\n###|\r?\n##|\r?\n####|$))/g, "")
+    .replace(/#### Metadata[\s\S]*?(?=(?:---|\r?\n###|\r?\n##|\r?\n####|$))/g, "");
+
+  // Remove Concept Hierarchy block completely
+  cleanBody = cleanBody.replace(/##\s+Concept\s+Hierarchy[\s\S]*?(?=(?:---|\r?\n###|\r?\n##|\r?\n####|$))/gi, "");
+
+  // 3. Promote ### to ##
+  const promoted = cleanBody.replace(/^(?:###\s+)/gm, "## ");
+
+  // 4. Split into sections
+  const splitBody = promoted.startsWith("##") ? "\n" + promoted : promoted;
+  const rawSections = splitBody.split(/\r?\n##\s+/);
+
+  const sections: ArticleSection[] = [];
+  const formulaSections: ArticleSection[] = [];
+
+  rawSections.forEach(sec => {
+    const lines = sec.split("\n");
+    const title = lines[0].trim();
+    let content = lines.slice(1).join("\n").trim();
+    content = content.replace(/[\s\r\n]*---[\s\r\n]*$/, "").trim();
+
+    if (!title || !content) return;
+
+    if (/^F-\d+/i.test(title)) {
+      const subHeading = `### ${title}\n\n`;
+      formulaSections.push({ title, content: subHeading + content });
+    } else {
+      sections.push({ title, content });
+    }
+  });
+
+  if (formulaSections.length > 0) {
+    const groupedContent = formulaSections.map(fs => fs.content).join("\n\n---\n\n");
+    sections.push({
+      title: "Daftar Rumus",
+      content: groupedContent
+    });
+  }
+
+  return { chapterTitle, sections };
+}
+
 export function MaterialViewer({ material }: MaterialViewerProps) {
   const [done, setDone] = useState(material.completed);
   const [viewerType, setViewerType] = useState<"custom" | "chrome">("custom");
+
+  // Article states
+  const [activeSectionIdx, setActiveSectionIdx] = useState(0);
+
+  useEffect(() => {
+    setActiveSectionIdx(0);
+  }, [material.id]);
+
+  const { chapterTitle, sections: articleSections } = useMemo(() => {
+    return parseArticleSections(material.body || "", material.title);
+  }, [material.body, material.title]);
   
   // Custom PDF states
   const [page, setPage] = useState<number>(1);
@@ -262,6 +353,54 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
 
   const viewerRef = useRef<HTMLDivElement>(null);
   const noteSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const { openExplain } = useTutor();
+  const [selectedText, setSelectedText] = useState("");
+  const [selectionCoords, setSelectionCoords] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    const handleSelectionChange = () => {
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.toString().trim()) {
+        setSelectedText("");
+        setSelectionCoords(null);
+        return;
+      }
+
+      const text = selection.toString().trim();
+      const anchorNode = selection.anchorNode;
+      if (!anchorNode) return;
+
+      const isInsideViewer = viewerRef.current?.contains(anchorNode) || 
+                             document.getElementById("article-paper-content")?.contains(anchorNode);
+
+      if (!isInsideViewer) {
+        setSelectedText("");
+        setSelectionCoords(null);
+        return;
+      }
+
+      if (text.length < 3) return;
+
+      try {
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        
+        setSelectionCoords({
+          top: rect.top - 45,
+          left: rect.left + rect.width / 2
+        });
+        setSelectedText(text);
+      } catch (e) {
+        // Safe fallback
+      }
+    };
+
+    document.addEventListener("selectionchange", handleSelectionChange);
+    return () => {
+      document.removeEventListener("selectionchange", handleSelectionChange);
+    };
+  }, []);
 
   // Set document as in progress on mount
   useEffect(() => {
@@ -1205,7 +1344,7 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
             currentThemeStyle.deskBg
           )}>
             {/* Reading settings overlay for articles */}
-            <div className="w-full max-w-4xl flex items-center justify-between mb-4 pb-4 border-b border-border/80">
+            <div className="w-full max-w-6xl flex items-center justify-between mb-6 pb-4 border-b border-border/80">
               <span className="text-body-xs font-mono text-muted-foreground uppercase tracking-wider">
                 Mode Membaca Artikel
               </span>
@@ -1227,15 +1366,103 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
               </div>
             </div>
 
-            {/* Styled Article Paper */}
-            <div className={cn(
-              "rounded-2xl border p-8 md:p-12 shadow-sm leading-relaxed max-w-4xl w-full transition-colors duration-300 font-sans",
-              currentThemeStyle.paperBg,
-              currentThemeStyle.text,
-              currentThemeStyle.border
-            )}>
-              <MarkdownRenderer content={material.body} />
-            </div>
+            {articleSections.length > 0 ? (
+              <div className="w-full max-w-6xl flex flex-col gap-6">
+                {/* Chapter Title Banner */}
+                <div className="w-full text-center md:text-left">
+                  <h1 className="font-heading text-h3 md:text-h2 font-bold tracking-tight text-foreground">
+                    {chapterTitle}
+                  </h1>
+                </div>
+
+                <div className="w-full grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
+                  {/* Left Navigation Sidebar */}
+                  <div className="lg:sticky lg:top-4 space-y-1.5 bg-card border border-border p-4 rounded-2xl max-h-[80vh] overflow-y-auto shadow-sm">
+                    <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-3 px-1">
+                      Daftar Subbab
+                    </div>
+                    <div className="space-y-1">
+                      {articleSections.map((sec, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setActiveSectionIdx(idx);
+                            document.getElementById("article-paper-content")?.scrollIntoView({ behavior: "smooth" });
+                          }}
+                          className={cn(
+                            "w-full text-left p-2.5 rounded-xl text-body-xs font-medium border transition-all duration-200 block truncate",
+                            activeSectionIdx === idx
+                              ? "bg-brand-primary/5 border-brand-primary/20 text-brand-primary font-semibold"
+                              : "border-transparent text-foreground hover:bg-muted/60"
+                          )}
+                          title={sec.title}
+                        >
+                          {sec.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Right Styled Article Paper */}
+                  <div id="article-paper-content" className={cn(
+                    "rounded-2xl border p-8 md:p-12 shadow-sm leading-relaxed w-full transition-colors duration-300 font-sans min-h-[500px] flex flex-col justify-between",
+                    currentThemeStyle.paperBg,
+                    currentThemeStyle.text,
+                    currentThemeStyle.border
+                  )}>
+                    <div>
+                      {/* Active Section Title inside the paper */}
+                      <h2 className="font-heading text-h3 font-bold border-b border-border/80 pb-3 mb-6">
+                        {articleSections[activeSectionIdx]?.title}
+                      </h2>
+                      
+                      {/* Render active section content */}
+                      <MarkdownRenderer content={articleSections[activeSectionIdx]?.content || ""} />
+                    </div>
+                    
+                    {/* Previous & Next Navigation at the bottom */}
+                    <div className="border-t border-border/80 pt-6 mt-12 flex items-center justify-between">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={activeSectionIdx === 0}
+                        onClick={() => {
+                          setActiveSectionIdx(prev => Math.max(0, prev - 1));
+                          document.getElementById("article-paper-content")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="rounded-md text-body-xs interactive"
+                      >
+                        <ChevronLeft className="mr-1 size-4" /> Sebelum
+                      </Button>
+                      <span className="text-[11px] font-mono text-muted-foreground">
+                        Subbab {activeSectionIdx + 1} dari {articleSections.length}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={activeSectionIdx === articleSections.length - 1}
+                        onClick={() => {
+                          setActiveSectionIdx(prev => Math.min(articleSections.length - 1, prev + 1));
+                          document.getElementById("article-paper-content")?.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="rounded-md text-body-xs interactive"
+                      >
+                        Selanjutnya <ChevronRight className="ml-1 size-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div id="article-paper-content" className={cn(
+                "rounded-2xl border p-8 md:p-12 shadow-sm leading-relaxed max-w-4xl w-full transition-colors duration-300 font-sans",
+                currentThemeStyle.paperBg,
+                currentThemeStyle.text,
+                currentThemeStyle.border
+              )}>
+                <MarkdownRenderer content={material.body} />
+              </div>
+            )}
           </div>
         ) : null}
 
@@ -1297,6 +1524,52 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
         ) : null}
 
       </div>
+
+      {selectionCoords && selectedText && (
+        <div
+          style={{
+            position: "fixed",
+            top: `${selectionCoords.top}px`,
+            left: `${selectionCoords.left}px`,
+            transform: "translateX(-50%)",
+            zIndex: 9999,
+          }}
+          className="animate-fade-in"
+        >
+          <Button
+            size="xs"
+            className="rounded-lg bg-brand-primary text-white hover:bg-brand-primary/95 shadow-md flex items-center gap-1.5 h-8 font-sans text-body-2xs px-3 border border-brand-primary/20"
+            onClick={async () => {
+              const textToQuery = selectedText;
+              // Clear selection to hide button
+              window.getSelection()?.removeAllRanges();
+              setSelectedText("");
+              setSelectionCoords(null);
+              
+              toast.promise(
+                (async () => {
+                  const { findKoForMaterialSectionAction } = await import("@/app/actions/tutor");
+                  const res = await findKoForMaterialSectionAction(material.courseId, textToQuery);
+                  if (res.success && res.koId) {
+                    openExplain(res.koId, "content");
+                  } else {
+                    // Fallback to general explain
+                    openExplain("ko-101", "content");
+                  }
+                })(),
+                {
+                  loading: "Menganalisis konsep...",
+                  success: "Tutor AI siap menjelaskan!",
+                  error: "Gagal memproses konsep."
+                }
+              );
+            }}
+          >
+            <Sparkles className="size-3.5" />
+            Tanya Tutor AI
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

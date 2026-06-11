@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useId, useState } from "react";
+import { useCallback, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,7 @@ function mapSignInError(err: unknown): string {
       return "Gagal jaringan. Periksa koneksi Anda lalu coba lagi.";
     }
   }
-  return "Terjadi kesalahan saat membuka masuk dengan Google. Coba lagi sebentar lagi.";
+  return "Terjadi kesalahan saat masuk dengan Google. Coba lagi sebentar lagi.";
 }
 
 export function GoogleSignInButton({
@@ -37,13 +38,10 @@ export function GoogleSignInButton({
   containerClassName,
   onBeforeOAuth,
 }: GoogleSignInButtonProps) {
-  const errorId = useId();
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const handleClick = useCallback(async () => {
     onBeforeOAuth?.();
-    setErrorMessage(null);
     setLoading(true);
     try {
       // better-auth redirects the browser on success; failures surface here.
@@ -52,21 +50,20 @@ export function GoogleSignInButton({
         callbackURL,
       });
     } catch (err) {
-      setErrorMessage(mapSignInError(err));
+      toast.error(mapSignInError(err));
     } finally {
       setLoading(false);
     }
   }, [callbackURL, onBeforeOAuth]);
 
   return (
-    <div className={cn("flex flex-col gap-2", containerClassName)}>
+    <div className={cn(containerClassName)}>
       <Button
         type="button"
         className={cn("gap-2", className)}
         onClick={() => void handleClick()}
         disabled={loading}
         aria-busy={loading}
-        aria-describedby={errorMessage ? errorId : undefined}
       >
         {loading ? (
           <>
@@ -85,15 +82,6 @@ export function GoogleSignInButton({
           </>
         )}
       </Button>
-      {errorMessage ? (
-        <p
-          id={errorId}
-          role="alert"
-          className="text-body-sm text-status-error"
-        >
-          {errorMessage}
-        </p>
-      ) : null}
     </div>
   );
 }

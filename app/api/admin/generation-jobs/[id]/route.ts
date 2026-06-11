@@ -8,7 +8,7 @@ import { db } from '@/db';
 import { aiGenerationJobs } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { eq } from 'drizzle-orm';
+import { eq, and, inArray, sql } from 'drizzle-orm';
 
 export async function GET(
   _req: NextRequest,
@@ -20,6 +20,23 @@ export async function GET(
   }
 
   const { id } = await params;
+
+  // Auto-fail this job if it has been stuck in pending/processing for more than 10 minutes
+  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+  await db
+    .update(aiGenerationJobs)
+    .set({
+      status: 'failed',
+      errorMessage: 'Job stuck or timed out. Background worker process terminated.',
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(aiGenerationJobs.id, id),
+        inArray(aiGenerationJobs.status, ['pending', 'processing']),
+        sql`${aiGenerationJobs.updatedAt} < ${tenMinutesAgo}`
+      )
+    );
 
   const [job] = await db
     .select()

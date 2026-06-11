@@ -5,7 +5,9 @@ import { publicAppUrlSchema } from '@/lib/public-app-url';
 
 export const env = createEnv({
   server: {
-    DATABASE_URL: z.string().url(),
+    DATABASE_URL: z.string().min(1),
+    TURSO_CONNECTION_URL: z.string().optional(),
+    TURSO_AUTH_TOKEN: z.string().optional(),
     /**
      * Public origin of this app (no trailing path). Used for OAuth callbacks.
      * Prefer `BETTER_AUTH_URL`; falls back to `NEXT_PUBLIC_APP_URL`, then localhost.
@@ -28,6 +30,31 @@ export const env = createEnv({
     PINECONE_API_KEY: z.string().transform((v) => v || undefined).optional(),
     /** Pinecone index name (e.g. "zyx-edu") */
     PINECONE_INDEX_NAME: z.string().transform((v) => v || undefined).optional(),
+    /** Inngest event key for sending events */
+    INNGEST_EVENT_KEY: z.string().min(1),
+    /** Inngest signing key for production request verification */
+    INNGEST_SIGNING_KEY: z.string().optional(),
+    // ── Cloudflare R2 Storage ──────────────────────────────────────────────
+    /** Cloudflare R2 S3-compatible endpoint URL */
+    R2_ENDPOINT: z.string().url().optional(),
+    /** Cloudflare R2 bucket name */
+    R2_BUCKET: z.string().optional(),
+    /** Cloudflare R2 public access URL (without trailing slash) */
+    R2_PUBLIC_URL: z.string().optional(),
+    /** Cloudflare R2 access key ID */
+    R2_ACCESS_KEY_ID: z.string().optional(),
+    /** Cloudflare R2 secret access key */
+    R2_SECRET_ACCESS_KEY: z.string().optional(),
+    /** Storage provider mode: 'r2' | 'uploadthing' (default: uploadthing) */
+    STORAGE_PROVIDER_MODE: z.enum(['r2', 'uploadthing']).optional(),
+    // ── Cloudflare AI Gateway ──────────────────────────────────────────────
+    /**
+     * Cloudflare AI Gateway base URL for Gemini requests.
+     * Format: https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/google-ai-studio
+     * When set, all Gemini SDK requests are routed through the gateway.
+     * Leave unset to use the Gemini API directly.
+     */
+    CF_AI_GATEWAY_URL: z.string().url().optional(),
   },
   client: {
     /** Absolute origin for better-auth client (e.g. https://app.example.com). Falls back for local dev. */
@@ -45,6 +72,8 @@ export const env = createEnv({
     NEXT_PUBLIC_DESMOS_API_KEY: process.env.NEXT_PUBLIC_DESMOS_API_KEY,
     NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
     DATABASE_URL: process.env.DATABASE_URL,
+    TURSO_CONNECTION_URL: process.env.TURSO_CONNECTION_URL,
+    TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
@@ -54,5 +83,16 @@ export const env = createEnv({
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
     PINECONE_API_KEY: process.env.PINECONE_API_KEY,
     PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME,
+    INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
+    INNGEST_SIGNING_KEY: process.env.INNGEST_SIGNING_KEY,
+    // R2
+    R2_ENDPOINT: process.env.R2_ENDPOINT,
+    R2_BUCKET: process.env.R2_BUCKET,
+    R2_PUBLIC_URL: process.env.R2_PUBLIC_URL,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    STORAGE_PROVIDER_MODE: process.env.STORAGE_PROVIDER_MODE,
+    // AI Gateway
+    CF_AI_GATEWAY_URL: process.env.CF_AI_GATEWAY_URL,
   },
 });

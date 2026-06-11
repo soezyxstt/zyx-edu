@@ -6,6 +6,9 @@ import { pageTitle } from "@/lib/site";
 import { getCourseById, getMaterialsForCourse } from "@/lib/student-course-fixtures";
 import { DocumentListClient } from "./document-list-client";
 import { Reveal } from "@/components/ui/reveal";
+import { db } from "@/db";
+import { aiMaterialInstances } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,6 +27,29 @@ export default async function CourseMaterialListPage({ params }: Props) {
   const course = getCourseById(id);
   if (!course) return null;
 
+  // Fetch db-backed materials
+  const dbMaterials = await db
+    .select({
+      id: aiMaterialInstances.id,
+      title: aiMaterialInstances.title,
+    })
+    .from(aiMaterialInstances)
+    .where(eq(aiMaterialInstances.courseId, id));
+
+  const mappedDb = dbMaterials.map((m) => ({
+    id: m.id,
+    courseId: id,
+    title: m.title.replace(/^\[DRAF\]\s*/, ""),
+    kind: "article" as const,
+    docCategory: m.title.toLowerCase().includes("diktat") ? ("diktat" as const) : ("materi" as const),
+    fileSize: "AI Generated",
+    completed: false,
+    isPastYear: false,
+    isPreview: true, // Allow review without enrolling for simplicity
+  }));
+
+  const allMaterials = [...getMaterialsForCourse(id), ...mappedDb];
+
   return (
     <CoursePageShell
       eyebrow={
@@ -38,7 +64,7 @@ export default async function CourseMaterialListPage({ params }: Props) {
       hideHeader
     >
       <Reveal>
-        <DocumentListClient courseId={id} materials={getMaterialsForCourse(id)} />
+        <DocumentListClient courseId={id} materials={allMaterials} />
       </Reveal>
     </CoursePageShell>
   );

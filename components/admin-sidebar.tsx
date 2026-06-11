@@ -8,6 +8,7 @@ import {
   FolderOpen,
   KeyRound,
   BookText,
+  Archive,
   Zap,
   ListChecks,
   ClipboardList,
@@ -37,8 +38,10 @@ export function AdminSidebar() {
 
   const [collapsed, setCollapsed] = useState(false);
   const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
     setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
   }, []);
@@ -98,6 +101,12 @@ export function AdminSidebar() {
         <Link href="/admin/ai/materials" onClick={onLink} title="Materi AI" className={linkClass("/admin/ai/materials")}>
           <BookText className="size-5 shrink-0" />
           {!c && "Materi AI"}
+        </Link>
+
+        {/* Kompilasi Diktat */}
+        <Link href="/admin/ai/diktats" onClick={onLink} title="Kompilasi Diktat" className={linkClass("/admin/ai/diktats")}>
+          <Archive className="size-5 shrink-0" />
+          {!c && "Kompilasi Diktat"}
         </Link>
 
         {/* Generasi Soal */}
@@ -245,7 +254,9 @@ export function AdminSidebar() {
           </button>
         </div>
 
-        <UserCard c={collapsed} />
+        <div className="shrink-0">
+          {mounted && <UserCard c={collapsed} />}
+        </div>
 
         <div className="px-3 pt-3 shrink-0">
           <button
@@ -295,7 +306,9 @@ export function AdminSidebar() {
             </button>
           </div>
 
-          <UserCard />
+          <div className="shrink-0">
+            {mounted && <UserCard />}
+          </div>
           <Nav onLink={closeDrawer} />
         </div>
       </dialog>

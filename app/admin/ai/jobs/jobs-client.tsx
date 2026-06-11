@@ -26,9 +26,26 @@ interface Course {
   title: string;
 }
 
+interface Chapter {
+  id: string;
+  courseId: string;
+  title: string;
+  orderIndex: number;
+}
+
+interface KnowledgeObject {
+  id: string;
+  courseId: string;
+  chapterId: string;
+  title: string;
+  conceptName: string;
+}
+
 interface Props {
   jobs: Job[];
   courses: Course[];
+  chapters: Chapter[];
+  knowledgeObjects: KnowledgeObject[];
   courseMap: Record<string, string>;
 }
 
@@ -39,21 +56,23 @@ const statusColors: Record<JobStatus, string> = {
   failed: "bg-status-error/10 text-status-error",
 };
 
-export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
+export function GenerationJobsClient({ jobs, courses, chapters, knowledgeObjects, courseMap }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [localJobs, setLocalJobs] = useState(jobs);
   const [form, setForm] = useState({
     courseId: "",
-    topic: "",
-    targetCount: 20,
-    difficulty: "mixed" as "easy" | "medium" | "hard" | "mixed",
+    chapterId: "",
+    koId: "all",
   });
+
+  const filteredChapters = chapters.filter((c) => c.courseId === form.courseId);
+  const filteredKOs = knowledgeObjects.filter((k) => k.chapterId === form.chapterId);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.courseId || !form.topic) {
-      toast.error("Kursus dan topik wajib diisi.");
+    if (!form.courseId || !form.chapterId) {
+      toast.error("Kursus dan bab wajib diisi.");
       return;
     }
     setSubmitting(true);
@@ -65,11 +84,14 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.error("Gagal membuat job: " + JSON.stringify(data.error));
+        toast.error("Gagal membuat job: " + (data.error ?? "Unknown error"));
         return;
       }
-      toast.success(`Job dibuat: ${data.jobId}. Pipeline berjalan di background.`);
+      
+      const targetCount = data.targetCount ?? (form.koId === "all" ? filteredKOs.length : 1);
+      toast.success(`Job berhasil dibuat: ${data.jobId}. Pipeline berjalan di background.`);
       setShowForm(false);
+      
       // Optimistically add job to list
       setLocalJobs((prev) => [
         {
@@ -77,8 +99,12 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
           courseId: form.courseId,
           tutorId: "",
           status: "pending" as JobStatus,
-          promptParameters: { topic: form.topic, difficulty: form.difficulty },
-          targetCount: form.targetCount,
+          promptParameters: { 
+            chapterId: form.chapterId, 
+            koId: form.koId,
+            logs: [`[${new Date().toLocaleString("id-ID")}] Job dibuat.`] 
+          },
+          targetCount,
           generatedCount: 0,
           tokenUsage: 0,
           errorMessage: null,
@@ -87,6 +113,8 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
         },
         ...prev,
       ]);
+    } catch (err: any) {
+      toast.error("Terjadi kesalahan jaringan.");
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +157,10 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
               <select
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-body-sm"
                 value={form.courseId}
-                onChange={(e) => setForm((f) => ({ ...f, courseId: e.target.value }))}
+                onChange={(e) => {
+                  const courseId = e.target.value;
+                  setForm({ courseId, chapterId: "", koId: "all" });
+                }}
                 required
               >
                 <option value="">Pilih kursus...</option>
@@ -142,49 +173,51 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
             </div>
 
             <div>
-              <label className="text-body-sm font-medium text-foreground mb-1 block">Difficulty</label>
+              <label className="text-body-sm font-medium text-foreground mb-1 block">Bab (Chapter)</label>
               <select
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-body-sm"
-                value={form.difficulty}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, difficulty: e.target.value as typeof form.difficulty }))
-                }
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-body-sm disabled:opacity-50"
+                value={form.chapterId}
+                onChange={(e) => {
+                  const chapterId = e.target.value;
+                  setForm((f) => ({ ...f, chapterId, koId: "all" }));
+                }}
+                disabled={!form.courseId}
+                required
               >
-                <option value="mixed">Mixed</option>
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
+                <option value="">Pilih bab...</option>
+                {filteredChapters.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Bab {c.orderIndex}: {c.title}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
           <div>
-            <label className="text-body-sm font-medium text-foreground mb-1 block">Topik / Query</label>
-            <input
-              type="text"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-body-sm"
-              placeholder="Contoh: Limit dan Kekontinuan Fungsi"
-              value={form.topic}
-              onChange={(e) => setForm((f) => ({ ...f, topic: e.target.value }))}
-              required
-            />
+            <label className="text-body-sm font-medium text-foreground mb-1 block">Objek Pengetahuan (KO)</label>
+            <select
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-body-sm disabled:opacity-50"
+              value={form.koId}
+              onChange={(e) => setForm((f) => ({ ...f, koId: e.target.value }))}
+              disabled={!form.chapterId}
+            >
+              <option value="all">Semua Objek Pengetahuan (Generate Massal)</option>
+              {filteredKOs.map((k) => (
+                <option key={k.id} value={k.id}>
+                  [{k.conceptName}] {k.title}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div>
-            <label className="text-body-sm font-medium text-foreground mb-1 block">
-              Jumlah Soal Target
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-body-sm"
-              value={form.targetCount}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, targetCount: Math.max(1, Number(e.target.value)) }))
-              }
-            />
-          </div>
+          {form.chapterId && (
+            <p className="text-xs text-muted-foreground">
+              {form.koId === "all"
+                ? `Menargetkan generasi kuis untuk ${filteredKOs.length} Objek Pengetahuan aktif dalam bab ini.`
+                : "Menargetkan generasi kuis untuk 1 Objek Pengetahuan terpilih."}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-2">
             <Button type="submit" className="rounded-lg" disabled={submitting}>
@@ -209,14 +242,24 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
       ) : (
         <div className="divide-y divide-border">
           {localJobs.map((job) => {
-            const params = job.promptParameters as Record<string, unknown>;
+            const params = job.promptParameters as Record<string, any> || {};
+            const chapter = chapters.find((c) => c.id === params.chapterId);
+            const chapterDisplay = chapter ? `Bab ${chapter.orderIndex}: ${chapter.title}` : params.chapterId || "—";
+            const koTitle = params.koId && params.koId !== "all"
+              ? knowledgeObjects.find((k) => k.id === params.koId)?.title || params.koId
+              : "Semua Objek Pengetahuan";
+
             return (
               <div key={job.id} className="py-4 flex items-start gap-4">
                 <Zap className="size-5 text-status-warning mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-foreground text-body-sm">
-                      {String(params.topic ?? "—")}
+                      {chapterDisplay}
+                    </span>
+                    <span className="text-muted-foreground text-body-sm">·</span>
+                    <span className="text-body-sm text-foreground">
+                      {koTitle}
                     </span>
                     <span className="text-muted-foreground text-body-sm">·</span>
                     <span className="text-body-sm text-muted-foreground">
@@ -230,19 +273,28 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
                   </div>
                   <p className="text-body-sm text-muted-foreground mt-1">
                     {job.generatedCount}/{job.targetCount} soal ·{" "}
-                    {job.tokenUsage.toLocaleString()} tokens ·{" "}
                     {new Date(job.createdAt).toLocaleString("id-ID")}
                   </p>
+                  {params?.logs && Array.isArray(params.logs) && params.logs.length > 0 && (
+                    <div className="mt-2.5 rounded-lg border border-border bg-muted/20 p-3 text-xs font-mono space-y-1 text-muted-foreground max-h-36 overflow-y-auto">
+                      <p className="font-sans font-bold text-[9px] text-muted-foreground/80 tracking-wider uppercase mb-1">PROGRES DETAIL:</p>
+                      {params.logs.map((log: string, idx: number) => (
+                        <div key={idx} className="leading-relaxed">
+                          {log}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {job.errorMessage && (
-                    <p className="text-body-sm text-status-error mt-1 truncate">
-                      {job.errorMessage}
+                    <p className="text-body-sm text-status-error mt-1.5 font-medium">
+                      Detail Error: {job.errorMessage}
                     </p>
                   )}
                 </div>
                 {(job.status === "pending" || job.status === "processing") && (
                   <button
                     onClick={() => refreshJob(job.id)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     aria-label="Refresh status"
                   >
                     <RefreshCw className="size-4" />
@@ -256,3 +308,4 @@ export function GenerationJobsClient({ jobs, courses, courseMap }: Props) {
     </div>
   );
 }
+
