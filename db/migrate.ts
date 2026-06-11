@@ -1,3 +1,6 @@
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { db } from "./index";
 
