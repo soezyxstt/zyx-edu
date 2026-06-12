@@ -173,11 +173,15 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
           <Dialog.Content
             aria-label="Pencarian situs"
             className={cn(
-              "fixed left-1/2 top-[15%] md:top-[20%] z-[201] w-[calc(100%-1.75rem)] max-w-xl translate-x-[-50%] overflow-hidden rounded-xl border border-border bg-popover shadow-lg outline-none",
+              "fixed left-1/2 top-[15%] md:top-[20%] z-[201] w-[calc(100%-1.75rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-popover shadow-lg outline-none",
               "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
               "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
             )}
           >
+            <Dialog.Title className="sr-only">Pencarian situs</Dialog.Title>
+            <Dialog.Description className="sr-only">
+              Cari halaman, course, materi, soal, dan topik di ZYX Academy.
+            </Dialog.Description>
             <Command
               shouldFilter={false}
               vimBindings={false}

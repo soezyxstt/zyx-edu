@@ -1191,7 +1191,7 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
                   <div className="h-20" />
 
                   {/* Floating Glassmorphic Control Toolbar */}
-                  <div className="absolute bottom-6 left-1/2 translate-x-[-50%] bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-2xl px-4 py-2 flex items-center gap-3.5 z-10 transition-all duration-200 hover:bg-card hover:shadow-xl w-max max-w-[90vw]">
+                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-2xl px-4 py-2 flex items-center gap-3.5 z-10 transition-all duration-200 hover:bg-card hover:shadow-xl w-max max-w-[90vw]">
                     
                     {/* Toggle Sidebar */}
                     <button
