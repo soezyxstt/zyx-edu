@@ -197,7 +197,7 @@ export default function PlansClient() {
       <Reveal>
         <SectionContainer className="border-b border-border bg-muted/70 overflow-hidden pt-8 pb-16 md:pt-12 md:pb-24">
           <PageOrnaments variant="plans" />
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
+          <div className="relative z-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-stretch">
             {planTiers.map((tier) => {
               const calculatedPrice = calculatePlanPrice(tier.key, persons, courses);
               const isCustom = tier.key === "custom";
@@ -224,7 +224,7 @@ export default function PlansClient() {
                   className={
                     tier.highlighted
                       ? "relative flex flex-col rounded-3xl border-2 border-[var(--zx-accent)] bg-card p-6 shadow-md ring-4 ring-[var(--zx-accent)]/10 md:p-7 transition-all duration-300 hover:scale-[1.02]"
-                      : "flex flex-col rounded-3xl border border-border bg-card p-6 shadow-sm md:p-7 transition-all duration-300 hover:scale-[1.01] hover:border-border-strong hover:shadow-md"
+                      : "relative flex flex-col rounded-3xl border border-border bg-card p-6 shadow-sm md:p-7 transition-all duration-300 hover:scale-[1.01] hover:border-border-strong hover:shadow-md"
                   }
                 >
                   {tier.highlighted ? (
