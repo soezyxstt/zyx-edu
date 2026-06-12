@@ -9,6 +9,7 @@ import { AppToaster } from "@/components/app-toaster";
 import { DesmosCalculatorScript } from "@/components/desmos-calculator-script";
 import { pageTitle, siteDescription } from "@/lib/site";
 import { PushPermissionInit } from "@/components/notifications/push-permission-init";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: pageTitle(),
@@ -45,6 +46,7 @@ export default function RootLayout({
         <AppToaster />
         {/* Silent FCM permission + token registration — no UI rendered */}
         <PushPermissionInit />
+        <SpeedInsights />
       </body>
     </html>
   );
