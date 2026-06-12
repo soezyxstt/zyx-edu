@@ -7,7 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Codebase Preview Reminder
 
 > [!IMPORTANT]
-> **READ BEFORE WRITING CODE**: Before working on any task or editing code, you must read the [PROJECT_RECAP.md](file:///d:/ZYX/web/zyx-edu/PROJECT_RECAP.md) file in the root directory. It contains the authoritative map of the project layout, technical system architecture, visual design rules (such as the absolute prohibition of pill shapes/`rounded-full` buttons/badges, and minimization of cards/boxes), and detailed student/tutor/admin workflows.
+> **READ BEFORE WRITING CODE**: Before working on any task or editing code, you must read the [AGENT_CONTEXT.md](file:///d:/ZYX/web/zyx-edu/AGENT_CONTEXT.md) file in the root directory. It contains the authoritative current state map, database details, technical architecture decisions, and styling system rules. Reference [ARCHIVE/project_architecture_v1.md](file:///d:/ZYX/web/zyx-edu/ARCHIVE/project_architecture_v1.md) only for historical Postgres/UploadThing structure context.
 
 # ZYX design system (agents)
 

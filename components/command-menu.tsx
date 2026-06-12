@@ -169,15 +169,16 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
             )}
           />
 
-          {/* Content wrapper — centers the panel */}
-          <Dialog.Content
-            aria-label="Pencarian situs"
-            className={cn(
-              "fixed left-1/2 top-[15%] md:top-[20%] z-[201] w-[calc(100%-1.75rem)] max-w-xl -translate-x-1/2 overflow-hidden rounded-xl border border-border bg-popover shadow-lg outline-none",
-              "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-              "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
-            )}
-          >
+          {/* Centering wrapper */}
+          <div className="fixed inset-0 z-[201] flex items-start justify-center p-4 md:p-10 pointer-events-none overflow-y-auto">
+            <Dialog.Content
+              aria-label="Pencarian situs"
+              className={cn(
+                "pointer-events-auto relative mt-[12vh] md:mt-[16vh] w-full max-w-xl overflow-hidden rounded-xl border border-border bg-popover shadow-lg outline-none",
+                "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+              )}
+            >
             <Dialog.Title className="sr-only">Pencarian situs</Dialog.Title>
             <Dialog.Description className="sr-only">
               Cari halaman, course, materi, soal, dan topik di ZYX Academy.
@@ -273,6 +274,7 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
               </p>
             </Command>
           </Dialog.Content>
+        </div>
         </Dialog.Portal>
       </Dialog.Root>
     </CommandMenuContext.Provider>

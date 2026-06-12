@@ -1,6 +1,14 @@
 # ZYX Academy Master Plan (v3, modular)
 
-One file per phase. Work top to bottom in the order below. Before ANY phase, read `globals.md` in this folder: it holds the execution rules, the UI Build Standard (referenced everywhere as UI-STD), and the service inventory. A phase is done only when every box in its file is checked and its Gate table is green.
+One file per phase. Work top to bottom in the order below. 
+
+Before starting any phase, read:
+1. [AGENT_CONTEXT.md](../AGENT_CONTEXT.md) (tracks current state, completed features, architecture, design guidelines, and standing decisions)
+2. [globals.md](../globals.md) (execution rules, UI-STD, and service limits)
+
+Large phases are split into task-level files under the `../tasks/` sub-directory (e.g. `../tasks/p3-01.md`) for incremental execution.
+
+A phase is done only when every box in its file is checked and its Gate table is green.
 
 ## Execution order and status
 

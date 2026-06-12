@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ZYX Academy
 
-## Getting Started
+Welcome to the **ZYX Academy** codebase. This is a Next.js (v15 App Router) web application.
+
+## 📖 Operational Documentation
+
+AI coding agents and human developers should use the following entrypoints for working on this project:
+
+- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)**: The single source of truth for the current development state, completed milestones, blockers, architectural decisions, and design standard constraints (UI-STD).
+- **[AGENTS.md](AGENTS.md)**: Coding rules, constraints, and standard conventions for AI agents.
+- **[docs/globals.md](docs/globals.md)**: The global project rules, UI Build Standards (primitives, layout constraints), and service quota inventory.
+- **[docs/roadmap/README.md](docs/roadmap/README.md)**: The modular roadmap containing phases P0 through P10.
+- **[docs/tasks/](docs/tasks/)**: Isolated, granular task-level specs (e.g. `p3-01.md`, `p3-02.md`) to execute phase implementations incrementally.
+- **[ARCHIVE/project_architecture_v1.md](ARCHIVE/project_architecture_v1.md)**: Historical document outlining the legacy Postgres/UploadThing structure.
+
+## 🛠️ Getting Started
 
 First, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
