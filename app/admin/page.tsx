@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
-import { FolderOpen, KeyRound, BookText, Zap, ListChecks, ClipboardList, Archive, Bell } from "lucide-react";
+import { FolderOpen, KeyRound, BookText, Zap, ListChecks, ClipboardList, Archive, Bell, Activity } from "lucide-react";
 import { Reveal } from "@/components/ui/reveal";
 
 export const metadata: Metadata = {
@@ -90,6 +90,16 @@ const sections = [
     iconColor: "text-tertiary-3",
     href: "/admin/notifications",
     label: "Kelola notifikasi",
+    variant: "outline" as const,
+  },
+  {
+    title: "Ops",
+    description:
+      "Pantau penggunaan AI harian, cache hit rate, KV write budget, antrean sync vektor, dan kesehatan job background.",
+    icon: Activity,
+    iconColor: "text-status-success",
+    href: "/admin/ops",
+    label: "Buka ops monitor",
     variant: "outline" as const,
   },
 ];

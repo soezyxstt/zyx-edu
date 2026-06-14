@@ -3,9 +3,11 @@
 import { headers } from "next/headers";
 import { randomUUID } from "node:crypto";
 import { db } from "@/db";
-import { enrollments, enrollmentTokens, progress, courses, submissions, groups, groupMembers, enrollmentTokenCourses } from "@/db/schema";
+import { enrollments, enrollmentTokens, progress, courses, submissions, groups, groupMembers, enrollmentTokenCourses, websiteMaterials } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq, and, gt, lt } from "drizzle-orm";
+import { recordLearningEvent } from "@/lib/learning-events";
+import { inngest } from "@/lib/inngest";
 import { getSemesterEndDate } from "@/lib/utils";
 
 async function requireUser() {
@@ -193,6 +195,29 @@ export async function updateMaterialProgress(materialId: string, status: "in_pro
       status,
       completedAt: status === "completed" ? now : null,
     });
+  }
+
+  // Fire learning event on completion
+  if (status === "completed") {
+    const [mat] = await db
+      .select({ courseId: websiteMaterials.courseId })
+      .from(websiteMaterials)
+      .where(eq(websiteMaterials.id, materialId))
+      .limit(1);
+
+    if (mat) {
+      await Promise.all([
+        recordLearningEvent({
+          studentId: user.id,
+          courseId: mat.courseId,
+          eventType: "material_completed",
+        }),
+        inngest.send({
+          name: "mastery/recompute.requested",
+          data: { studentId: user.id, courseId: mat.courseId },
+        }),
+      ]);
+    }
   }
 
   // Update user last activity

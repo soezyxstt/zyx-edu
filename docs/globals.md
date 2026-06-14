@@ -21,6 +21,33 @@ Status: PLAN ONLY. Nothing has been built unless a phase file's checklist says s
 
 ## 2. UI Build Standard (UI-STD)
 
+### 2.0 Landing page is the visual reference
+
+Before writing any UI or frontend code, open `app/page.tsx` and the components it renders from `components/landing/`. The landing page already previews the future product features as built components. Match them, do not reinvent.
+
+| Feature you are building | Previewed in |
+|---|---|
+| Quiz UI | `components/landing/landing-demo-quiz.tsx` |
+| AI tutor chat | `components/landing/landing-demo-tutor.tsx` |
+| Flashcards | `components/landing/landing-demo-flashcards.tsx` |
+| Study path | `components/landing/landing-demo-path.tsx` |
+| Learning loop, streak feel | `components/landing/landing-learning-loop.tsx` |
+| Course cards | `components/landing/landing-course-preview.tsx` |
+| Pricing | `components/landing/landing-pricing-preview.tsx` |
+
+Rule: when a phase tells you to build one of these features, the real page must look like its landing preview (same layout idea, spacing, tokens, icon usage). If the spec and the preview conflict, follow the spec and keep the preview's visual language.
+
+### 2.0b Page ornaments (required on full pages)
+
+Every standalone page gets the decorative background layer, the way `/plans`, `/testimonial`, and `/about` already do. Pages without it look flat and boring.
+
+- Component: `PageOrnaments` from `components/ui/page-ornaments.tsx`.
+- Usage: place `<PageOrnaments variant="..." />` as the first child inside a `relative overflow-hidden` wrapper, content goes above it with `relative z-10` if needed.
+- Existing variants: `testimonial`, `plans`, `about`. Reuse the closest one; add a new variant config in the same file (same glow + ring + shape + math layer pattern, same opacity ranges) only if a page needs its own composition.
+- Reference implementations: `app/plans/plans-client.tsx`, `app/testimonial/page.tsx`, `app/about/about-client.tsx`. The landing hero uses `components/animated-ornament-canvas.tsx` instead; that one stays landing-only.
+- Keep it subtle: tokens only (`var(--primary)`, `var(--color-brand-secondary)`, `var(--color-tertiary-1)`), opacities at or below the existing configs, `pointer-events-none`, `aria-hidden`.
+- Dense data surfaces (`/admin`, in-course lesson reader) may skip ornaments; marketing and app shell pages do not.
+
 ### 2.1 Available primitives (do not install new UI libraries)
 
 | Need | Use | Import |
@@ -81,7 +108,7 @@ Anything else (parallax, count-up, confetti, springs) is forbidden unless a phas
 
 - No `rounded-full` on anything that is not a perfect 1:1 circle (avatar, status dot).
 - No nested cards, no card-in-card, no grid of stat cards. Stats are typographic figures separated by dividers.
-- No new fonts, no gradient backgrounds, no purple, no centered hero layouts on app pages.
+- No new fonts, no gradient backgrounds (the radial glows inside `PageOrnaments` are the one exception), no purple, no centered hero layouts on app pages.
 - No em or en dash characters in UI copy. Use commas or periods.
 
 ---

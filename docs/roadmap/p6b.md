@@ -5,10 +5,10 @@ Goal: P6A grows into a diagnostic workbench: snapshots, 4-week trends, drill-dow
 Flag: extends `FEATURE_TUTOR_ANALYTICS`. Depends on: P6A, P1B, P4. Read `globals.md` first.
 
 ## Progress
-- [ ] Read-before-coding done
-- [ ] Schema migrated (`course_analytics_snapshots`)
-- [ ] Cron extension + refresh endpoint done
-- [ ] Frontend done (sparklines, drill-down, watchlist, actions)
+- [x] Read-before-coding done
+- [x] Schema migrated (`course_analytics_snapshots`)
+- [x] Cron extension + refresh endpoint done
+- [x] Frontend done (sparklines, drill-down, watchlist, actions)
 - [ ] Gate green
 
 ## Read before coding

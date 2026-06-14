@@ -26,6 +26,7 @@ import { getCourseById } from "@/lib/student-course-fixtures";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { useCommandMenu } from "@/components/command-menu";
+import { StreakTag } from "@/components/dashboard/streak-tag";
 
 /* ─────────────────────────────────────────────────────────────────
    Types
@@ -57,6 +58,7 @@ export function StudentSidebar() {
   const [enrolledCourses, setEnrolledCourses] = useState<StudentEnrollment[]>([]);
   const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
   const [mounted, setMounted] = useState(false);
+  const [streakCurrent, setStreakCurrent] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -71,6 +73,10 @@ export function StudentSidebar() {
   useEffect(() => {
     if (session?.user?.id) {
       getStudentEnrollments().then(setEnrolledCourses).catch(console.error);
+      fetch("/api/student/today")
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (d?.streak?.current != null) setStreakCurrent(d.streak.current); })
+        .catch(() => {});
     }
   }, [session?.user?.id]);
 
@@ -273,6 +279,13 @@ export function StudentSidebar() {
 
       {/* Spacer */}
       <div className="flex-1" />
+
+      {/* Streak tag (compact, above sign-out; only when FEATURE_TODAY active) */}
+      {!c && streakCurrent !== null && (
+        <div className="px-3 pb-1">
+          <StreakTag current={streakCurrent} />
+        </div>
+      )}
 
       {/* Sign out */}
       <button

@@ -1,0 +1,264 @@
+import { createHash } from "node:crypto";
+import { db } from "@/db";
+import { studentQuizAttempts, aiQuestionBank, knowledgeObjects, websiteMaterials, attemptFeedback, quizTemplates } from "@/db/schema";
+import { eq, inArray, and } from "drizzle-orm";
+import { kvGet, kvPut } from "@/lib/kv-cache";
+import { generateContentWithFallback } from "@/lib/gemini";
+import { randomUUID } from "node:crypto";
+
+interface FeedbackPayload {
+  whyWrong: string;
+  misconceptionName?: string | null;
+  correctApproach: string[];
+  reviewHref: string;
+}
+
+export function normalizeAnswer(indices: number[]): string {
+  const sorted = [...indices].sort((a, b) => a - b);
+  return JSON.stringify(sorted);
+}
+
+export function getAnswerHash(normalized: string): string {
+  return createHash("sha256").update(normalized).digest("hex");
+}
+
+export async function getReviewHref(courseId: string, conceptName: string | null): Promise<string> {
+  if (!conceptName) return `/courses/${courseId}`;
+  
+  const [row] = await db
+    .select({ materialId: websiteMaterials.id })
+    .from(websiteMaterials)
+    .innerJoin(knowledgeObjects, eq(knowledgeObjects.chapterId, websiteMaterials.chapterId))
+    .where(
+      and(
+        eq(websiteMaterials.courseId, courseId),
+        eq(knowledgeObjects.conceptName, conceptName)
+      )
+    )
+    .limit(1);
+
+  if (row?.materialId) {
+    return `/courses/${courseId}/material/${row.materialId}`;
+  }
+  return `/courses/${courseId}`;
+}
+
+export async function generateMistakeFeedback(attemptId: string): Promise<void> {
+  // 1. Fetch attempt
+  const [attempt] = await db
+    .select()
+    .from(studentQuizAttempts)
+    .where(eq(studentQuizAttempts.id, attemptId))
+    .limit(1);
+
+  if (!attempt) {
+    throw new Error(`Attempt ${attemptId} not found`);
+  }
+
+  const snapshot = attempt.questionsSnapshot as Array<{ id: string; correct_indices: number[] }>;
+  const answers = (attempt.answersSnapshot as Record<string, number[]>) ?? {};
+
+  // 2. Identify wrong answers
+  const wrongQuestions: Array<{ id: string; correctIndices: number[]; submitted: number[]; index: number }> = [];
+  
+  snapshot.forEach((q, index) => {
+    const submitted = answers[q.id] ?? [];
+    const isCorrect =
+      submitted.length === q.correct_indices.length &&
+      submitted.every((i) => q.correct_indices.includes(i));
+    
+    if (!isCorrect) {
+      wrongQuestions.push({
+        id: q.id,
+        correctIndices: q.correct_indices,
+        submitted,
+        index,
+      });
+    }
+  });
+
+  if (wrongQuestions.length === 0) {
+    return;
+  }
+
+  // 3. Process each wrong question
+  const hits: Array<{ questionId: string; questionIndex: number; payload: FeedbackPayload }> = [];
+  const misses: Array<{ id: string; correctIndices: number[]; submitted: number[]; index: number; cacheKey: string }> = [];
+
+  for (const wq of wrongQuestions) {
+    const norm = normalizeAnswer(wq.submitted);
+    const hash = getAnswerHash(norm);
+    const cacheKey = `feedback:${wq.id}:${hash}`;
+
+    const cached = await kvGet<FeedbackPayload>(cacheKey);
+    if (cached) {
+      hits.push({
+        questionId: wq.id,
+        questionIndex: wq.index,
+        payload: cached,
+      });
+    } else {
+      misses.push({
+        ...wq,
+        cacheKey,
+      });
+    }
+  }
+
+  // 4. If misses, call Gemini in batch
+  const newFeedbacks: Array<{ questionId: string; questionIndex: number; payload: FeedbackPayload }> = [];
+
+  if (misses.length > 0) {
+    // Resolve courseId from the template
+    const [templateRow] = await db
+      .select({ courseId: quizTemplates.courseId })
+      .from(quizTemplates)
+      .where(eq(quizTemplates.id, attempt.templateId))
+      .limit(1);
+    const resolvedCourseId = templateRow?.courseId || "calc-1";
+
+    // Fetch the missing question details from the bank
+    const questionIds = misses.map((m) => m.id);
+    const bankRows = await db
+      .select({
+        id: aiQuestionBank.id,
+        prompt: aiQuestionBank.prompt,
+        options: aiQuestionBank.options,
+        correctIndices: aiQuestionBank.correctIndices,
+        explanation: aiQuestionBank.explanation,
+        conceptName: knowledgeObjects.conceptName,
+        courseId: aiQuestionBank.courseId,
+      })
+      .from(aiQuestionBank)
+      .leftJoin(knowledgeObjects, eq(aiQuestionBank.knowledgeObjectId, knowledgeObjects.id))
+      .where(inArray(aiQuestionBank.id, questionIds));
+
+    const bankMap = new Map(bankRows.map((r) => [r.id, r]));
+
+    // Build batch prompt
+    let promptItems = "";
+    misses.forEach((m) => {
+      const details = bankMap.get(m.id);
+      if (!details) return;
+
+      const opts = (details.options as string[]) ?? [];
+      const formattedOptions = opts.map((o, i) => `${i}: ${o}`).join("\n");
+      const submittedAnswers = m.submitted.map((i) => opts[i] ?? `Option ${i}`).join(", ");
+      const correctIndices = (Array.isArray(details.correctIndices) ? details.correctIndices : []) as number[];
+      const correctAnswers = m.correctIndices.map((i) => opts[i] ?? `Option ${i}`).join(", ");
+
+      promptItems += `
+Question ID: ${m.id}
+Concept: ${details.conceptName ?? "General"}
+Question Prompt: ${details.prompt}
+Options:
+${formattedOptions}
+Correct Indices: [${correctIndices.join(", ")}] (${correctAnswers})
+Student's Selected Indices: [${m.submitted.join(", ")}] (${submittedAnswers})
+Authoritative Question Explanation: ${details.explanation}
+---
+`;
+    });
+
+    const userPrompt = `You are a helpful, expert tutor in Indonesian.
+Review the following student mistakes and generate clear, constructive feedback for each.
+You must output a JSON array of objects. Do not include any Markdown wrapper like \`\`\`json. Output raw JSON only.
+
+JSON schema:
+\`\`\`json
+[
+  {
+    "questionId": "string",
+    "whyWrong": "Clear explanation in Indonesian of why the student's selected answer is incorrect. Be friendly, constructive, and explain the core flaw. Do not use em or en dashes.",
+    "misconceptionName": "Short descriptive label for the misconception (e.g. 'Normal force equals weight', 'Confusing limit with function value'), or null if none",
+    "correctApproach": [
+      "Step 1 to solve correctly in Indonesian",
+      "Step 2 to solve correctly in Indonesian (max 3 steps)"
+    ]
+  }
+]
+\`\`\`
+
+Mistakes to analyze:
+${promptItems}`;
+
+    try {
+      const { response } = await generateContentWithFallback({
+        contents: userPrompt,
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+
+      const rawText = response.text || "";
+      const cleanJSON = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+      const parsed = JSON.parse(cleanJSON) as Array<{
+        questionId: string;
+        whyWrong: string;
+        misconceptionName?: string | null;
+        correctApproach: string[];
+      }>;
+
+      for (const item of parsed) {
+        const miss = misses.find((m) => m.id === item.questionId);
+        if (!miss) continue;
+
+        const details = bankMap.get(item.questionId);
+        const reviewHref = await getReviewHref(resolvedCourseId, details?.conceptName ?? null);
+
+        const payload: FeedbackPayload = {
+          whyWrong: item.whyWrong,
+          misconceptionName: item.misconceptionName || null,
+          correctApproach: item.correctApproach || [],
+          reviewHref,
+        };
+
+        // Cache it in KV
+        await kvPut(miss.cacheKey, payload, 30 * 24 * 3600);
+
+        newFeedbacks.push({
+          questionId: item.questionId,
+          questionIndex: miss.index,
+          payload,
+        });
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isQuota = /429|RESOURCE_EXHAUSTED|quota/i.test(msg);
+      if (isQuota) {
+        // Rethrow so Inngest retries with backoff; submission record is already written
+        throw err;
+      }
+      console.error("Gemini mistake feedback generation failed:", err);
+      // Fallback for non-quota errors: write placeholders so the student is not stuck
+      for (const miss of misses) {
+        const details = bankMap.get(miss.id);
+        const reviewHref = await getReviewHref(resolvedCourseId, details?.conceptName ?? null);
+        const payload: FeedbackPayload = {
+          whyWrong: "Penjelasan otomatis gagal dibuat. Silakan diskusikan soal ini dengan Tutor AI.",
+          misconceptionName: null,
+          correctApproach: ["Periksa kembali materi pembelajaran terkait."],
+          reviewHref,
+        };
+        newFeedbacks.push({
+          questionId: miss.id,
+          questionIndex: miss.index,
+          payload,
+        });
+      }
+    }
+  }
+
+  // 5. Store all feedback rows (hits + misses) in database
+  const allFeedback = [...hits, ...newFeedbacks];
+  if (allFeedback.length > 0) {
+    const insertValues = allFeedback.map((f) => ({
+      id: randomUUID(),
+      attemptId,
+      questionIndex: f.questionIndex,
+      payload: f.payload,
+    }));
+
+    await db.insert(attemptFeedback).values(insertValues).onConflictDoNothing();
+  }
+}

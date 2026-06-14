@@ -1,6 +1,15 @@
 import { serve } from "inngest/next";
 import { inngest } from "@/lib/inngest";
-import { vectorSyncWorker, vectorSyncCronWorker, bulkChapterGenerator } from "@/lib/inngest-functions";
+import {
+  vectorSyncWorker,
+  vectorSyncCronWorker,
+  bulkChapterGenerator,
+  masteryRecomputeWorker,
+  feedbackWorker,
+  courseAnalyticsSnapshotCron,
+  weeklyReflectionCron,
+  masterySnapshotCron
+} from "@/lib/inngest-functions";
 
 /**
  * Next.js App Router API Route Handler for Inngest webhooks.
@@ -8,6 +17,16 @@ import { vectorSyncWorker, vectorSyncCronWorker, bulkChapterGenerator } from "@/
  */
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [vectorSyncWorker, vectorSyncCronWorker, bulkChapterGenerator],
+  functions: [
+    vectorSyncWorker,
+    vectorSyncCronWorker,
+    bulkChapterGenerator,
+    masteryRecomputeWorker,
+    feedbackWorker,
+    courseAnalyticsSnapshotCron,
+    weeklyReflectionCron,
+    masterySnapshotCron
+  ],
 });
+
 

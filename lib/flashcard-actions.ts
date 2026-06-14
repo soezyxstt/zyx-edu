@@ -3,10 +3,16 @@ import {
   flashcards,
   flashcardSets,
   studentFlashcardProgress,
+  knowledgeObjects,
+  enrollments,
 } from "@/db/schema";
-import { eq, and, lte, or, inArray } from "drizzle-orm";
+import { eq, and, lte, or, inArray, isNull, gt } from "drizzle-orm";
 import { calculateNextReview } from "./flashcard-scheduler";
 import { randomUUID } from "crypto";
+import { recordLearningEvent } from "@/lib/learning-events";
+import { inngest } from "@/lib/inngest";
+import { markRecommendationDone } from "@/lib/recommendation-service";
+import { env } from "@/lib/env";
 
 export interface FlashcardHistoryItem {
   reviewedAt: string;
@@ -160,7 +166,7 @@ export async function submitReview(
     // Grade is NOT overridden. Standard manual self-evaluation is preserved.
   }
 
-  return await db.transaction(async tx => {
+  const result = await db.transaction(async tx => {
     // Check if progress already exists
     const [existingProgress] = await tx
       .select()
@@ -259,4 +265,85 @@ export async function submitReview(
       examInputPassed,
     };
   });
+
+  // Record learning event (grade 1=Again→0, 2=Hard→0.5, 3/4=Good/Easy→1)
+  const correctness = grade === 1 ? 0 : grade === 2 ? 0.5 : 1;
+  const koId = cardRecord.koId ?? null;
+
+  // Get courseId and conceptName via flashcard set + KO
+  const [setRow] = await db
+    .select({ courseId: flashcardSets.courseId })
+    .from(flashcardSets)
+    .where(eq(flashcardSets.id, cardRecord.setId))
+    .limit(1);
+
+  if (setRow) {
+    let conceptName: string | null = null;
+    if (koId) {
+      const koRows = await db
+        .select({ conceptName: knowledgeObjects.conceptName })
+        .from(knowledgeObjects)
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        .where(eq(knowledgeObjects.id, koId!))
+        .limit(1);
+      conceptName = koRows[0]?.conceptName ?? null;
+    }
+
+    await Promise.all([
+      recordLearningEvent({
+        studentId,
+        courseId: setRow.courseId,
+        eventType: "flashcard_review",
+        koId,
+        conceptName,
+        correctness,
+      }),
+      inngest.send({
+        name: "mastery/recompute.requested",
+        data: { studentId, courseId: setRow.courseId },
+      }),
+    ]);
+  }
+
+  // Auto-complete today's flashcard recommendation if no more due cards
+  if (env.FEATURE_TODAY === "1") {
+    Promise.resolve().then(async () => {
+      const now = new Date();
+      const remaining = await db
+        .selectDistinct({ id: flashcards.id })
+        .from(flashcards)
+        .innerJoin(flashcardSets, eq(flashcards.setId, flashcardSets.id))
+        .innerJoin(
+          enrollments,
+          and(
+            eq(flashcardSets.courseId, enrollments.courseId),
+            eq(enrollments.userId, studentId),
+            gt(enrollments.expiresAt, now)
+          )
+        )
+        .leftJoin(
+          studentFlashcardProgress,
+          and(
+            eq(studentFlashcardProgress.flashcardId, flashcards.id),
+            eq(studentFlashcardProgress.studentId, studentId)
+          )
+        )
+        .where(
+          and(
+            eq(flashcards.status, "active"),
+            eq(flashcardSets.status, "published"),
+            or(
+              isNull(studentFlashcardProgress.id),
+              lte(studentFlashcardProgress.nextReviewDue, now)
+            )
+          )
+        )
+        .limit(1);
+      if (remaining.length === 0) {
+        await markRecommendationDone("flashcards", studentId);
+      }
+    }).catch(() => {});
+  }
+
+  return result;
 }

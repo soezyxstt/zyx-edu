@@ -1,7 +1,14 @@
 import { db } from "@/db";
 import { aiUsageEvents } from "@/db/schema";
-import { and, eq, gte, lt, sql } from "drizzle-orm";
+import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import * as crypto from "crypto";
+
+/** Single source of truth for per-feature AI budgets (used by ops page + enforcement). */
+export const BUDGETS = {
+  tutorPerDay: 30,
+  feedbackPerSubmission: 1,
+  summariesPerDayPerUser: 5,
+} as const;
 
 export class UsageBudgetService {
   /**
@@ -16,7 +23,9 @@ export class UsageBudgetService {
       .where(
         and(
           eq(aiUsageEvents.userId, userId),
-          gte(aiUsageEvents.createdAt, startOfDay)
+          gte(aiUsageEvents.createdAt, startOfDay),
+          // Cache hits are logged for observability but never charge the budget
+          ne(aiUsageEvents.requestType, "cache:hit")
         )
       );
     return result[0]?.count ?? 0;

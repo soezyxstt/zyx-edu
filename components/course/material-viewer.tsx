@@ -26,22 +26,160 @@ import {
   Palette, 
   Plus, 
   Trash2, 
-  X, 
+  X,
   Check,
-  Sparkles
+  Sparkles,
+  Loader2,
+  AlertTriangle
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { CourseMaterial } from "@/lib/student-course-fixtures";
 import { updateMaterialProgress } from "@/app/dashboard/actions";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
+import { MathText } from "@/components/course/math-text";
 import { useTutor } from "@/components/course/tutor-drawer";
 
 type MaterialViewerProps = {
   material: CourseMaterial;
+  /** Chapter to summarize. When absent, the Summarize action is hidden. */
+  chapterId?: string;
+  /** P3 grounded-tutor feature flag, resolved on the server. */
+  ragEnabled?: boolean;
 };
+
+interface ChapterSummary {
+  keyConcepts: string[];
+  commonMistakes: string[];
+  importantFormulas: string[];
+  practiceRecommendations: string[];
+}
+
+function SummarySkeleton() {
+  return (
+    <div className="space-y-6">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="space-y-2">
+          <div className="w-24 h-3 bg-muted rounded-md animate-pulse" />
+          <div className="space-y-1.5">
+            <div className="h-4 bg-muted rounded-md animate-pulse" />
+            <div className="h-4 bg-muted rounded-md animate-pulse" />
+            <div className="h-4 bg-muted rounded-md animate-pulse w-2/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SummarySection({
+  title,
+  items,
+  asMath,
+}: {
+  title: string;
+  items: string[];
+  asMath?: boolean;
+}) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div>
+      <h3 className="text-body-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+        {title}
+      </h3>
+      <ul className="list-disc pl-4 space-y-1 text-body-base">
+        {items.map((item, i) => (
+          <li key={i}>{asMath ? <MathText>{item}</MathText> : item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ChapterSummarySheet({
+  chapterId,
+  chapterTitle,
+}: {
+  chapterId: string;
+  chapterTitle: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [summary, setSummary] = useState<ChapterSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function loadSummary() {
+    setOpen(true);
+    if (summary || loading) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/student/summarize-chapter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chapterId }),
+      });
+      if (!res.ok) throw new Error("request failed");
+      const data = await res.json();
+      if (data.budgetExhausted) {
+        setError("Batas harian tercapai. Disetel ulang tengah malam.");
+      } else {
+        setSummary(data.summary as ChapterSummary);
+      }
+    } catch {
+      setError("Gagal memuat ringkasan.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="rounded-md text-body-xs py-1 h-auto"
+        onClick={loadSummary}
+      >
+        {loading ? <Loader2 className="size-4 mr-1.5 animate-spin" /> : <Sparkles className="size-4 mr-1.5" />}
+        Ringkas
+      </Button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="text-h6 font-heading">{chapterTitle}</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-6">
+            {loading && <SummarySkeleton />}
+            {!loading && error && (
+              <div className="flex items-start gap-2 text-body-sm">
+                <AlertTriangle className="size-4 text-status-error shrink-0 mt-0.5" />
+                <span className="text-muted-foreground">{error}</span>
+              </div>
+            )}
+            {!loading && !error && summary && (
+              <div className="space-y-6">
+                <SummarySection title="Konsep utama" items={summary.keyConcepts} />
+                <SummarySection title="Kesalahan umum" items={summary.commonMistakes} />
+                <SummarySection title="Rumus penting" items={summary.importantFormulas} asMath />
+                <SummarySection title="Latihan" items={summary.practiceRecommendations} />
+              </div>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
+  );
+}
 
 type ThemeMode = "light" | "sepia" | "cream" | "dark";
 
@@ -316,7 +454,7 @@ function parseArticleSections(body: string, defaultTitle: string): { chapterTitl
   return { chapterTitle, sections };
 }
 
-export function MaterialViewer({ material }: MaterialViewerProps) {
+export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialViewerProps) {
   const [done, setDone] = useState(material.completed);
   const [viewerType, setViewerType] = useState<"custom" | "chrome">("custom");
 
@@ -688,6 +826,9 @@ export function MaterialViewer({ material }: MaterialViewerProps) {
         )}
 
         <div className="flex items-center gap-2">
+          {ragEnabled && chapterId && (
+            <ChapterSummarySheet chapterId={chapterId} chapterTitle={material.title} />
+          )}
           <Button
             type="button"
             onClick={markDone}

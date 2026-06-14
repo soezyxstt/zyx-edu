@@ -14,14 +14,16 @@ import {
   BookOpen, 
   Layers, 
   ClipboardList, 
-  HelpCircle, 
-  Compass, 
-  AlertTriangle, 
-  Loader2, 
-  Check, 
-  X, 
+  HelpCircle,
+  Compass,
+  AlertTriangle,
+  Loader2,
+  Check,
+  X,
   ArrowRight,
-  RefreshCw
+  RefreshCw,
+  FileQuestion,
+  Lightbulb
 } from "lucide-react";
 import { 
   explainConceptAction, 
@@ -293,9 +295,74 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
                           </h3>
                         </div>
 
+                        {/* Ungrounded notice: question not covered by course materials */}
+                        {data.grounded === false && (
+                          <p className="text-body-sm text-muted-foreground italic">
+                            Tidak tercakup dalam materi kelasmu. Penjelasan umum:
+                          </p>
+                        )}
+
                         <div className="text-body-sm text-foreground bg-card p-4 rounded-xl border border-border/80 shadow-2xs">
                           <MarkdownRenderer content={data.content} />
                         </div>
+
+                        {/* Sources footer */}
+                        {Array.isArray(data.sources) && data.sources.length > 0 && (
+                          <div className="mt-3 pt-2 border-t border-border">
+                            <span className="text-body-sm font-medium text-muted-foreground">Sumber</span>
+                            <div className="mt-1.5 flex flex-wrap gap-2">
+                              {data.sources.map((src: { type: string; id: string; label: string; href: string }, i: number) => (
+                                <a
+                                  key={`${src.id}-${i}`}
+                                  href={src.href}
+                                  className="inline-flex items-center gap-1 text-body-sm text-primary hover:underline"
+                                >
+                                  {src.type === "question" ? (
+                                    <FileQuestion className="size-3.5" />
+                                  ) : (
+                                    <BookOpen className="size-3.5" />
+                                  )}
+                                  {src.label}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Tier 3 personalized guidance */}
+                        {data.personalized && (
+                          <div className="rounded-md bg-muted px-3 py-2 text-body-sm text-foreground animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <MarkdownRenderer content={data.personalized} />
+                          </div>
+                        )}
+
+                        {/* Tier 2 personal addendum (weak concept) */}
+                        {data.addendum && (
+                          <div className="border-l-2 border-primary bg-muted rounded-md px-3 py-2 mt-3 space-y-1 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <span className="flex items-center gap-1.5 text-body-sm font-medium text-foreground">
+                              <Lightbulb className="size-4 text-primary" />
+                              Berkaitan dengan {data.addendum.conceptName}
+                            </span>
+                            <p className="text-body-sm text-muted-foreground">{data.addendum.message}</p>
+                            <div className="flex flex-wrap gap-3 pt-0.5">
+                              <a href={data.addendum.reviewHref} className="text-body-sm text-primary hover:underline">
+                                Tinjau materi
+                              </a>
+                              {data.addendum.flashcardsDue > 0 && (
+                                <span className="text-body-sm text-primary">
+                                  {data.addendum.flashcardsDue} flashcard menunggu
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Budget exhausted: Tier 1+2 still served, Tier 3 skipped */}
+                        {data.budgetExhausted && (
+                          <p className="text-body-sm text-muted-foreground">
+                            Batas harian tercapai. Disetel ulang tengah malam.
+                          </p>
+                        )}
 
                         {/* Mode switches */}
                         <div className="grid grid-cols-2 gap-2 pt-2">

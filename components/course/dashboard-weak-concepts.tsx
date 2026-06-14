@@ -1,86 +1,83 @@
 "use client";
 
 import * as React from "react";
-import { useTutor } from "@/components/course/tutor-drawer";
-import { Button } from "@/components/ui/button";
-import { Sparkles, AlertTriangle, BookOpen, ArrowRight } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Lock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-interface WeakConcept {
-  id: string;
-  title: string;
+interface MasteryConcept {
   conceptName: string;
-  type: string;
-  difficulty: string;
+  masteryScore: number;
+  evidenceCount: number;
+  trend?: "improving" | "stable" | "declining" | null;
+  blockedBy?: string[];
 }
 
 interface DashboardWeakConceptsProps {
-  weakConcepts: WeakConcept[];
+  concepts: MasteryConcept[];
 }
 
-export function DashboardWeakConcepts({ weakConcepts }: DashboardWeakConceptsProps) {
-  const { openExplain, openStudyPlan } = useTutor();
+function barTone(score: number) {
+  if (score >= 70) return "bg-status-success";
+  if (score >= 40) return "bg-status-warning";
+  return "bg-status-error";
+}
+
+function TrendIcon({ trend }: { trend?: "improving" | "stable" | "declining" | null }) {
+  if (trend === "improving") return <TrendingUp className="size-3.5 text-status-success" />;
+  if (trend === "declining") return <TrendingDown className="size-3.5 text-status-error" />;
+  if (trend === "stable") return <Minus className="size-3.5 text-muted-foreground" />;
+  return null; // P1A: trend slot reserved, filled by P1B
+}
+
+export function DashboardWeakConcepts({ concepts }: DashboardWeakConceptsProps) {
+  const weak = concepts.filter((c) => c.evidenceCount >= 3 && c.masteryScore < 70).slice(0, 5);
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="font-heading text-body-base font-semibold text-foreground flex items-center gap-2">
-          <Sparkles className="size-4 text-brand-primary animate-pulse" />
-          Rekomendasi Belajar AI
-        </h2>
-        <Button
-          size="xs"
-          variant="outline"
-          onClick={() => openStudyPlan()}
-          className="rounded-lg text-[11px] font-semibold border-brand-primary/20 text-brand-primary hover:bg-brand-primary/5 shrink-0"
-        >
-          <Sparkles className="size-3 mr-1" />
-          Apa yang Harus Saya Pelajari?
-        </Button>
-      </div>
+    <div>
+      <h2 className="text-h6 font-heading border-b border-border pb-2 mb-3">Weak concepts</h2>
 
-      {weakConcepts.length > 0 ? (
-        <div className="space-y-3">
-          {/* Warning banner */}
-          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 flex gap-2 items-start">
-            <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-body-xs text-foreground leading-normal">
-              <span className="font-bold text-amber-700">Peringatan Konsep Lemah:</span> Anda memiliki {weakConcepts.length} konsep dengan performa kuis di bawah 60%. Asisten AI merekomendasikan penguatan konsep berikut.
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {weakConcepts.map((ko) => (
-              <div
-                key={ko.id}
-                className="flex items-center justify-between gap-3 p-3 rounded-xl border border-border/40 bg-muted/10 hover:border-brand-primary/25 hover:bg-muted/20 transition-all text-body-xs"
-              >
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-heading text-body-xs font-bold text-foreground truncate">
-                    {ko.title}
-                  </h4>
-                  <p className="text-[10px] text-muted-foreground mt-0.5 uppercase font-semibold">
-                    Tipe: {ko.type} · Tingkat: {ko.difficulty}
-                  </p>
-                </div>
-                <div className="flex gap-1.5 shrink-0">
-                  <Button
-                    size="xs"
-                    variant="outline"
-                    onClick={() => openExplain(ko.id, "content")}
-                    className="rounded-lg text-[10px] h-7 px-2.5"
-                  >
-                    <BookOpen className="size-3 mr-1" />
-                    Tinjau
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {weak.length === 0 ? (
+        <p className="text-body-sm text-muted-foreground">
+          No weak concepts yet. Take a quiz to start tracking.
+        </p>
       ) : (
-        <div className="text-center py-6 text-body-xs text-muted-foreground border border-dashed border-border/60 rounded-xl space-y-1">
-          <p className="font-medium text-foreground">Pemahaman konsep Anda sangat baik! ✨</p>
-          <p className="text-[11px]">Belum ada konsep lemah yang terdeteksi dari hasil kuis terakhir.</p>
+        <div className="divide-y divide-border">
+          {weak.map((c, index) => (
+            <div
+              key={c.conceptName}
+              className="py-3 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              {/* Concept name + trend icon */}
+              <div className="flex-1 min-w-0">
+                <span className="flex items-center gap-1.5 text-body-base font-medium text-foreground truncate">
+                  {c.conceptName}
+                  <TrendIcon trend={c.trend} />
+                </span>
+                {c.blockedBy && c.blockedBy.length > 0 && (
+                  <Badge variant="outline" className="text-muted-foreground mt-1 gap-1 text-[11px] rounded-md">
+                    <Lock className="size-3" />
+                    needs {c.blockedBy[0]}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Score + bar */}
+              <div className="w-40 flex items-center gap-2 shrink-0">
+                <div className="flex-1 h-2 overflow-hidden rounded-md bg-muted">
+                  <div
+                    className={cn("landing-bar h-full rounded-md", barTone(c.masteryScore))}
+                    style={{ width: `${c.masteryScore}%`, animationDelay: `${index * 120}ms` }}
+                  />
+                </div>
+                {/* P1B trend icon slot — filled in P1B */}
+                <span className="text-body-sm text-muted-foreground tabular-nums w-6 text-right">
+                  {c.masteryScore}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

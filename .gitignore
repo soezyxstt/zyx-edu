@@ -49,3 +49,4 @@ drizzle-pg-backup/
 drizzle/backups/
 *.log
 
+.agents

@@ -269,7 +269,10 @@ export async function generateContentWithFallback(
     };
   }
 
-  const models = ['gemini-3.5-flash', 'gemini-3-flash', 'gemini-2.5-flash'];
+  // gemini-2.5-flash is the documented primary (AGENT_CONTEXT) and has the
+  // working free-tier quota; gemini-3.5-flash stays as a fallback. The former
+  // 'gemini-3-flash' entry was removed: it 404s (not served for generateContent).
+  const models = ['gemini-2.5-flash', 'gemini-3.5-flash'];
   const clients = getClients();
   let lastError: any = null;
 

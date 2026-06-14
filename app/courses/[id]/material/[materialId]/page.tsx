@@ -11,6 +11,7 @@ import { getCourseById, getMaterial, type CourseMaterial } from "@/lib/student-c
 import { db } from "@/db";
 import { aiMaterialInstances } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { env } from "@/lib/env";
 
 type Props = { params: Promise<{ id: string; materialId: string }> };
 
@@ -109,7 +110,11 @@ export default async function CourseMaterialDetailPage({ params }: Props) {
   return (
     <CoursePageShell title={material.title} description={`${course.title} · materi`} hideHeader>
       <Reveal>
-        <MaterialViewer material={material} />
+        <MaterialViewer
+          material={material}
+          chapterId={material.chapterId}
+          ragEnabled={env.FEATURE_TUTOR_RAG === "1"}
+        />
       </Reveal>
     </CoursePageShell>
   );

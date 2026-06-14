@@ -1,0 +1,55 @@
+import type { WatchlistStudent } from "@/lib/cohort-analytics";
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return "Never";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return `${Math.floor(diffDays / 7)}w ago`;
+}
+
+export function WatchlistTable({ students }: { students: WatchlistStudent[] }) {
+  if (students.length === 0) {
+    return (
+      <p className="text-body-sm text-muted-foreground">No students need attention.</p>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-body-sm">
+        <thead>
+          <tr className="border-b border-border text-left text-muted-foreground">
+            <th className="pb-2 pr-4 font-medium">Student</th>
+            <th className="pb-2 pr-4 font-medium">Declining concepts</th>
+            <th className="pb-2 font-medium whitespace-nowrap">Last active</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {students.map((s) => {
+            const shown = s.decliningConcepts.slice(0, 3);
+            const overflow = s.decliningConcepts.length - shown.length;
+            const conceptLabel =
+              shown.length === 0
+                ? `${s.activeInterventionCount} active intervention${s.activeInterventionCount !== 1 ? "s" : ""}`
+                : shown.join(", ") + (overflow > 0 ? ` +${overflow}` : "");
+
+            return (
+              <tr key={s.studentId}>
+                <td className="py-2.5 pr-4 font-medium text-foreground">{s.name}</td>
+                <td className="py-2.5 pr-4 text-muted-foreground max-w-xs truncate">
+                  {conceptLabel}
+                </td>
+                <td className="py-2.5 whitespace-nowrap text-muted-foreground">
+                  {relativeTime(s.lastActiveAt)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}

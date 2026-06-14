@@ -1,0 +1,12 @@
+name = "zyx-vector-api"
+main = "index.ts"
+compatibility_date = "2026-06-13"
+compatibility_flags = ["nodejs_compat"]
+
+[[vectorize]]
+binding = "VECTORIZE"
+index_name = "zyx-edu"
+
+# SHARED_SECRET must be set via: wrangler secret put SHARED_SECRET
+# Create the index first:
+#   wrangler vectorize create zyx-edu --dimensions=1024 --metric=cosine

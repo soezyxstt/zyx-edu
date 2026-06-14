@@ -13,6 +13,12 @@
 import { Pinecone } from '@pinecone-database/pinecone';
 import { env } from '@/lib/env';
 import { embedText, withGeminiRetry } from '@/lib/gemini';
+import {
+  shouldMirrorToVectorize,
+  serializeVzMetadata,
+  vectorizeUpsert,
+  vectorizeDelete,
+} from '@/lib/vectorize-client';
 
 export interface ChunkMetadata {
   course_id: string;
@@ -42,8 +48,9 @@ export function getNs(courseId: string) {
 }
 
 /**
- * Upserts a chunk vector into Pinecone.
- * Called after saving a new ai_material_instance_chunks row.
+ * Upserts a chunk vector into Pinecone (and mirrors to Vectorize when
+ * VECTOR_STORE=dual|vectorize). The Vectorize write is fire-and-forget to
+ * avoid adding latency to the admin material-instance routes.
  */
 export async function upsertChunkVector(
   vectorId: string,
@@ -54,6 +61,14 @@ export async function upsertChunkVector(
   await getNs(metadata.course_id).upsert({
     records: [{ id: vectorId, values, metadata }],
   });
+  if (shouldMirrorToVectorize()) {
+    vectorizeUpsert([{
+      id: vectorId,
+      values,
+      namespace: `course_${metadata.course_id}`,
+      metadata: serializeVzMetadata(metadata as Record<string, unknown>),
+    }]).catch((err) => console.error('[vectorize] chunk upsert mirror failed:', err));
+  }
 }
 
 /**
@@ -69,19 +84,24 @@ export async function updateChunkVector(
 }
 
 /**
- * Deletes a single chunk vector from Pinecone.
- * Called after deleting an ai_material_instance_chunks row.
+ * Deletes a single chunk vector from Pinecone (and mirrors to Vectorize when
+ * VECTOR_STORE=dual|vectorize).
  */
 export async function deleteChunkVector(
   courseId: string,
   vectorId: string,
 ): Promise<void> {
   await getNs(courseId).deleteOne({ id: vectorId });
+  if (shouldMirrorToVectorize()) {
+    vectorizeDelete([vectorId]).catch((err) =>
+      console.error('[vectorize] chunk delete mirror failed:', err),
+    );
+  }
 }
 
 /**
- * Deletes all vectors belonging to a list of vector IDs.
- * Called when an entire section is removed.
+ * Deletes all vectors belonging to a list of vector IDs from Pinecone (and
+ * mirrors to Vectorize when VECTOR_STORE=dual|vectorize).
  */
 export async function deleteSectionVectors(
   courseId: string,
@@ -89,6 +109,11 @@ export async function deleteSectionVectors(
 ): Promise<void> {
   if (vectorIds.length === 0) return;
   await getNs(courseId).deleteMany({ ids: vectorIds });
+  if (shouldMirrorToVectorize()) {
+    vectorizeDelete(vectorIds).catch((err) =>
+      console.error('[vectorize] section delete mirror failed:', err),
+    );
+  }
 }
 
 export interface VectorMatch {

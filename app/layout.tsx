@@ -11,6 +11,7 @@ import { pageTitle, siteDescription } from "@/lib/site";
 import { PushPermissionInit } from "@/components/notifications/push-permission-init";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 export const metadata: Metadata = {
   title: pageTitle(),
@@ -35,20 +36,22 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning className={`${inter.variable} ${lexend.variable}`}>
       <body className="font-sans min-h-screen flex flex-col">
-        <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
-        <DesmosCalculatorScript />
-        <a
-          href="#main-content"
-          className="bg-background text-foreground focus:ring-ring sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:rounded-md focus:px-4 focus:py-2 focus:ring-2"
-        >
-          Langsung ke isi utama
-        </a>
-        <AppChrome>{children}</AppChrome>
-        <AppToaster />
-        {/* Silent FCM permission + token registration — no UI rendered */}
-        <PushPermissionInit />
-        <SpeedInsights />
-        <Analytics />
+        <QueryProvider>
+          <NextSSRPlugin routerConfig={extractRouterConfig(uploadRouter)} />
+          <DesmosCalculatorScript />
+          <a
+            href="#main-content"
+            className="bg-background text-foreground focus:ring-ring sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-100 focus:rounded-md focus:px-4 focus:py-2 focus:ring-2"
+          >
+            Langsung ke isi utama
+          </a>
+          <AppChrome>{children}</AppChrome>
+          <AppToaster />
+          {/* Silent FCM permission + token registration — no UI rendered */}
+          <PushPermissionInit />
+          <SpeedInsights />
+          <Analytics />
+        </QueryProvider>
       </body>
     </html>
   );

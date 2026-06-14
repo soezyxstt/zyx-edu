@@ -8,13 +8,22 @@ import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
-import { getCourseById, getSubmissionsForCourse } from "@/lib/student-course-fixtures";
+import { db } from "@/db";
+import { studentQuizAttempts, quizTemplates, submissions, exams, courses } from "@/db/schema";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { and, eq } from "drizzle-orm";
 
 type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const course = getCourseById(id);
+  const [course] = await db
+    .select()
+    .from(courses)
+    .where(eq(courses.id, id))
+    .limit(1);
+
   return {
     title: pageTitle(course ? `${course.title} - Hasil saya` : "Hasil saya"),
     description: "Riwayat kuis dan tryout",
@@ -33,7 +42,13 @@ function statusBadge(status: string) {
 
 export default async function CourseMyResultsPage({ params }: Props) {
   const { id } = await params;
-  const course = getCourseById(id);
+  
+  const [course] = await db
+    .select()
+    .from(courses)
+    .where(eq(courses.id, id))
+    .limit(1);
+
   if (!course) return null;
 
   const isEnrolled = await checkEnrollment(id);
@@ -74,7 +89,78 @@ export default async function CourseMyResultsPage({ params }: Props) {
     );
   }
 
-  const submissions = getSubmissionsForCourse(id);
+  const session = await auth.api.getSession({ headers: await headers() });
+  const studentId = session?.user?.id;
+
+  let allSubmissions: Array<{
+    id: string;
+    courseId: string;
+    examId: string;
+    examTitle: string;
+    examType: "quiz" | "tryout";
+    status: string;
+    score: number | null;
+    submittedAt: string;
+  }> = [];
+  if (studentId) {
+    const dbAttempts = await db
+      .select({
+        id: studentQuizAttempts.id,
+        title: quizTemplates.title,
+        status: studentQuizAttempts.status,
+        score: studentQuizAttempts.score,
+        submittedAt: studentQuizAttempts.submittedAt,
+      })
+      .from(studentQuizAttempts)
+      .innerJoin(quizTemplates, eq(studentQuizAttempts.templateId, quizTemplates.id))
+      .where(
+        and(
+          eq(studentQuizAttempts.studentId, studentId),
+          eq(quizTemplates.courseId, id),
+          eq(studentQuizAttempts.status, 'completed')
+        )
+      );
+
+    const dbTryouts = await db
+      .select({
+        id: submissions.id,
+        title: exams.title,
+        status: submissions.status,
+        score: submissions.score,
+        submittedAt: submissions.submittedAt,
+      })
+      .from(submissions)
+      .innerJoin(exams, eq(submissions.examId, exams.id))
+      .where(
+        and(
+          eq(submissions.userId, studentId),
+          eq(exams.courseId, id)
+        )
+      );
+
+    allSubmissions = [
+      ...dbAttempts.map(a => ({
+        id: a.id,
+        courseId: id,
+        examId: a.id,
+        examTitle: a.title,
+        examType: 'quiz' as const,
+        status: a.status === 'completed' ? 'completed' as const : 'pending_review' as const,
+        score: a.score,
+        submittedAt: a.submittedAt ? a.submittedAt.toISOString() : new Date().toISOString(),
+      })),
+      ...dbTryouts.map(t => ({
+        id: t.id,
+        courseId: id,
+        examId: t.id,
+        examTitle: t.title,
+        examType: 'tryout' as const,
+        status: t.status,
+        score: t.score,
+        submittedAt: t.submittedAt ? t.submittedAt.toISOString() : new Date().toISOString(),
+      }))
+    ].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+  }
 
   return (
     <CoursePageShell
@@ -91,7 +177,7 @@ export default async function CourseMyResultsPage({ params }: Props) {
     >
       <Reveal>
         <ul className="space-y-2">
-          {submissions.map((submission) => (
+          {allSubmissions.map((submission) => (
             <li key={submission.id}>
               <Link href={`/courses/${id}/my-results/${submission.id}`} className={courseListRowClass("items-center")}>
                 <div className="min-w-0 flex-1 text-left">
@@ -130,7 +216,7 @@ export default async function CourseMyResultsPage({ params }: Props) {
             </li>
           ))}
         </ul>
-        {submissions.length === 0 ? (
+        {allSubmissions.length === 0 ? (
           <p className="text-body-md text-muted-foreground">Belum ada pengumpulan untuk course ini.</p>
         ) : null}
       </Reveal>

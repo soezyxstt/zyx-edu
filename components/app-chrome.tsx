@@ -8,6 +8,7 @@ import { SiteMain } from "@/components/site-main";
 import { Footer } from "@/components/footer";
 import { CommandMenuProvider } from "@/components/command-menu";
 import { StudentSidebar } from "@/components/student-sidebar";
+import { TutorSidebar } from "@/components/tutor/tutor-sidebar";
 import { useSession } from "@/lib/auth-client";
 
 import { CoursesAmbient } from "@/components/course/courses-ambient";
@@ -15,6 +16,10 @@ import { TutorProvider } from "@/components/course/tutor-drawer";
 
 function isAdminPath(pathname: string | null) {
   return pathname !== null && /^\/admin(?:\/|$)/.test(pathname);
+}
+
+function isTutorPath(pathname: string | null) {
+  return pathname !== null && /^\/tutor(?:\/|$)/.test(pathname);
 }
 
 export function AppChrome({ children }: { children: React.ReactNode }) {
@@ -27,7 +32,8 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     (pathname.startsWith("/dashboard") ||
       pathname.startsWith("/profile") ||
       pathname.startsWith("/settings") ||
-      (pathname.startsWith("/courses") && user && user.role !== "admin"));
+      (pathname.startsWith("/courses") && user && user.role !== "admin")) &&
+    !isTutorPath(pathname);
 
   return (
     <TutorProvider>
@@ -36,6 +42,17 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-hidden md:flex-row">
             <CoursesAmbient />
             <AdminSidebar />
+            <main
+              id="main-content"
+              tabIndex={-1}
+              className="relative z-10 min-w-0 flex-1 focus:outline-none"
+            >
+              {children}
+            </main>
+          </div>
+        ) : isTutorPath(pathname) ? (
+          <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-x-hidden md:flex-row">
+            <TutorSidebar />
             <main
               id="main-content"
               tabIndex={-1}

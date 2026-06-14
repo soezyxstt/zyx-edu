@@ -1,0 +1,260 @@
+"use client";
+
+import { useQuery } from "@tanstack/react-query";
+import { RefreshCw, TriangleAlert } from "lucide-react";
+import type { OpsMetrics } from "@/lib/ops-metrics";
+
+function relativeTime(iso: string | null): string {
+  if (!iso) return "never";
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin} min ago`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  return `${Math.floor(diffH / 24)}d ago`;
+}
+
+type StatusLevel = "healthy" | "degraded" | "down";
+
+const statusClass: Record<StatusLevel, string> = {
+  healthy: "text-status-success",
+  degraded: "text-status-warning",
+  down: "text-status-error",
+};
+
+function StatusWord({ level }: { level: StatusLevel }) {
+  return (
+    <span className={`text-body-sm font-semibold ${statusClass[level]}`}>{level}</span>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  unit,
+}: {
+  label: string;
+  value: string | number;
+  unit?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="font-heading text-h5 font-bold text-foreground">
+        {value}
+        {unit && (
+          <span className="ml-1 text-body-sm font-normal text-muted-foreground">{unit}</span>
+        )}
+      </span>
+      <span className="text-body-sm text-muted-foreground">{label}</span>
+    </div>
+  );
+}
+
+function SectionHead({
+  title,
+  status,
+  checkedAt,
+}: {
+  title: string;
+  status: StatusLevel;
+  checkedAt: string;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <h2 className="font-heading text-h6 font-semibold text-foreground">{title}</h2>
+        <StatusWord level={status} />
+      </div>
+      <span className="text-body-sm text-muted-foreground">
+        checked {relativeTime(checkedAt)}
+      </span>
+    </div>
+  );
+}
+
+async function fetchMetrics(): Promise<OpsMetrics> {
+  const res = await fetch("/api/admin/ops");
+  if (!res.ok) throw new Error("Failed to load ops metrics");
+  return res.json();
+}
+
+export function OpsClient() {
+  const { data, isLoading, isFetching, error, refetch } = useQuery<OpsMetrics>({
+    queryKey: ["ops-metrics"],
+    queryFn: fetchMetrics,
+    refetchInterval: 60_000,
+    staleTime: 55_000,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 space-y-8">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="space-y-3">
+            <div className="h-6 rounded-md bg-muted animate-pulse w-48" />
+            <div className="h-4 rounded-md bg-muted animate-pulse w-64" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
+        <div className="flex items-center gap-2">
+          <TriangleAlert className="size-4 text-status-error" />
+          <span className="text-body-sm text-status-error">
+            Failed to load ops metrics.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  const geminiStatus: StatusLevel =
+    data.gemini.reqToday > 240 ? "down" : data.gemini.reqToday > 200 ? "degraded" : "healthy";
+  const kvStatus: StatusLevel =
+    data.kv.writesToday > 900 ? "down" : data.kv.writesToday > 700 ? "degraded" : "healthy";
+  const failureStatus: StatusLevel = data.jobFailures24h > 0 ? "degraded" : "healthy";
+  const queueStatus: StatusLevel = data.syncQueueDepth > 100 ? "degraded" : "healthy";
+
+  return (
+    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="font-heading text-h4 font-semibold text-foreground">Ops</h1>
+          <p className="mt-1 text-body-sm text-muted-foreground">
+            AI usage, cache, and infrastructure health. Auto-refresh every 60 s.
+          </p>
+        </div>
+        <button
+          onClick={() => refetch()}
+          className="flex items-center gap-2 text-body-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+        >
+          <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
+          Refresh
+        </button>
+      </div>
+
+      <div className="divide-y divide-border">
+        {/* 1. Gemini Usage */}
+        <div className="py-8 first:pt-0 space-y-4">
+          <SectionHead title="Gemini Usage" status={geminiStatus} checkedAt={data.checkedAt} />
+          <div className="flex flex-wrap gap-8">
+            <Stat
+              label="AI requests today"
+              value={data.gemini.reqToday}
+              unit="/ 250 free"
+            />
+            <Stat label="cache hits today" value={data.gemini.cacheHitToday} />
+            <Stat label="cache hit rate" value={data.gemini.cacheHitPct} unit="%" />
+          </div>
+          <p className="text-body-sm text-muted-foreground">
+            Budget: tutor {data.budgets.tutorPerDay}/day, feedback{" "}
+            {data.budgets.feedbackPerSubmission}/submission, summaries{" "}
+            {data.budgets.summariesPerDayPerUser}/day per user.
+          </p>
+        </div>
+
+        {/* 2. KV Writes */}
+        <div className="py-8 space-y-4">
+          <SectionHead title="KV Writes" status={kvStatus} checkedAt={data.checkedAt} />
+          <div className="flex flex-wrap gap-8">
+            <Stat
+              label="writes today"
+              value={data.kv.writesToday}
+              unit={`/ ${data.kv.limit}`}
+            />
+            <Stat
+              label="headroom"
+              value={data.kv.limit - data.kv.writesToday}
+              unit="remaining"
+            />
+          </div>
+        </div>
+
+        {/* 3. Usage by Feature */}
+        <div className="py-8 space-y-4">
+          <SectionHead title="Usage by Feature" status="healthy" checkedAt={data.checkedAt} />
+          {data.usageByFeature.length === 0 ? (
+            <p className="text-body-sm text-muted-foreground">No AI requests logged today.</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {data.usageByFeature.map((row) => (
+                <div
+                  key={row.feature}
+                  className="py-3 flex items-center justify-between gap-4"
+                >
+                  <span className="text-body-sm font-medium text-foreground">
+                    {row.feature}
+                  </span>
+                  <div className="flex gap-6">
+                    <span className="text-body-sm text-muted-foreground">
+                      {row.count} req
+                    </span>
+                    <span className="text-body-sm text-muted-foreground">
+                      {row.tokens.toLocaleString()} tokens
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 4. Job Failures */}
+        <div className="py-8 space-y-4">
+          <SectionHead
+            title="Job Failures (24 h)"
+            status={failureStatus}
+            checkedAt={data.checkedAt}
+          />
+          <div className="flex flex-wrap gap-8">
+            <Stat label="failed generation jobs" value={data.jobFailures24h} />
+          </div>
+        </div>
+
+        {/* 5. Vector Sync Queue */}
+        <div className="py-8 space-y-4">
+          <SectionHead
+            title="Vector Sync Queue"
+            status={queueStatus}
+            checkedAt={data.checkedAt}
+          />
+          <div className="flex flex-wrap gap-8">
+            <Stat label="pending items" value={data.syncQueueDepth} />
+          </div>
+        </div>
+
+        {/* 6. Job Health */}
+        <div className="py-8 space-y-4">
+          <SectionHead title="Job Health" status="healthy" checkedAt={data.checkedAt} />
+          <div className="divide-y divide-border">
+            <div className="py-3 flex items-center justify-between gap-4">
+              <span className="text-body-sm text-muted-foreground">Daily recommendations</span>
+              <span className="text-body-sm text-foreground">
+                {relativeTime(data.jobHealth.recommendationsLastAt)}
+              </span>
+            </div>
+            <div className="py-3 flex items-center justify-between gap-4">
+              <span className="text-body-sm text-muted-foreground">
+                Course analytics snapshots
+              </span>
+              <span className="text-body-sm text-foreground">
+                {relativeTime(data.jobHealth.snapshotsLastAt)}
+              </span>
+            </div>
+            <div className="py-3 flex items-center justify-between gap-4">
+              <span className="text-body-sm text-muted-foreground">Study paths</span>
+              <span className="text-body-sm text-foreground">
+                {relativeTime(data.jobHealth.pathsLastAt)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

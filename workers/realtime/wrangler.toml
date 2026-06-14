@@ -1,0 +1,16 @@
+name = "zyxrealtime"
+main = "src/index.ts"
+compatibility_date = "2026-06-10"
+compatibility_flags = ["nodejs_compat"]
+
+[[durable_objects.bindings]]
+name = "LIVE_QUIZ_ROOM"
+class_name = "LiveQuizRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LiveQuizRoom"]
+
+[vars]
+LIVE_HMAC_SECRET = "WtZoUSZI+aM4UpT1nCkMCjj9bBNk9XPvMHfVSIv12KA="
+NEXT_APP_URL = "https://www.zyxacademy.com"

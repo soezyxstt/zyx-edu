@@ -23,6 +23,15 @@ import {
 } from "@/app/dashboard/actions";
 import { getMaterialsForCourse, getExamsForCourse } from "@/lib/student-course-fixtures";
 import { DashboardWeakConcepts } from "@/components/course/dashboard-weak-concepts";
+import { TodayPlan } from "@/components/dashboard/today-plan";
+import { env } from "@/lib/env";
+import { getMastery } from "@/lib/mastery-store";
+import { InterventionBanner } from "@/components/dashboard/intervention-banner";
+import { db } from "@/db";
+import { weeklyReflections } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
+import { WeeklyReflection } from "@/components/dashboard/weekly-reflection";
+
 
 export const metadata: Metadata = {
   title: pageTitle("Dashboard Siswa"),
@@ -35,32 +44,67 @@ export default async function DashboardPage() {
   const user = session?.user;
   const userName = user?.name || "Siswa";
 
+  const featureToday = env.FEATURE_TODAY === "1";
+  const firstName = userName.split(" ")[0];
+
   const enrollments = await getStudentEnrollments();
   const progressList = await getMaterialsProgress();
   const submissionsList = await getStudentSubmissions();
 
-  // Fetch weak concepts using AnalyticsService and KnowledgeService
-  let weakConcepts: any[] = [];
-  if (user?.id) {
+  // Fetch latest weekly reflection if feature is enabled
+  let latestReflection = null;
+  if (user?.id && env.FEATURE_REFLECTION === "1") {
     try {
-      const { AnalyticsService } = await import("@/lib/analytics-service");
-      const { KnowledgeService } = await import("@/lib/knowledge-service");
-      const weakConceptIds = await AnalyticsService.getWeakConcepts(user.id);
-      
-      for (const koId of weakConceptIds) {
-        const ko = await KnowledgeService.getKO(koId);
-        if (ko) {
-          weakConcepts.push({
-            id: ko.id,
-            title: ko.title,
-            conceptName: ko.conceptName,
-            type: ko.type,
-            difficulty: ko.difficulty,
-          });
-        }
+      const rows = await db
+        .select()
+        .from(weeklyReflections)
+        .where(eq(weeklyReflections.studentId, user.id))
+        .orderBy(desc(weeklyReflections.weekStart))
+        .limit(1);
+
+      if (rows[0]) {
+        latestReflection = {
+          ...rows[0],
+          createdAt: rows[0].createdAt.toISOString(),
+        };
       }
     } catch (e) {
-      console.error("Error loading weak concepts for dashboard:", e);
+      console.error("Error loading weekly reflection:", e);
+    }
+  }
+
+
+  // Fetch weak concepts
+  let masteryConcepts: Awaited<ReturnType<typeof getMastery>> = [];
+  if (user?.id && env.FEATURE_MASTERY === "1") {
+    try {
+      const firstCourseId = (await getStudentEnrollments())[0]?.id;
+      if (firstCourseId) {
+        masteryConcepts = await getMastery(user.id, firstCourseId);
+      }
+    } catch (e) {
+      console.error("Error loading mastery concepts:", e);
+    }
+  }
+
+  // Fetch next concepts from study paths
+  const nextConcepts: Record<string, string> = {};
+  if (user?.id && env.FEATURE_STUDY_PATH === "1") {
+    try {
+      const { getOrComputeStudyPath } = await import("@/lib/study-path-service");
+      await Promise.all(
+        enrollments.map(async (course) => {
+          const path = await getOrComputeStudyPath(user.id, course.id);
+          const activeStep = path.find(
+            (step) => step.status === "available" || step.status === "in_progress"
+          );
+          if (activeStep) {
+            nextConcepts[course.id] = activeStep.conceptName;
+          }
+        })
+      );
+    } catch (e) {
+      console.error("Error loading next concepts for dashboard:", e);
     }
   }
 
@@ -111,17 +155,25 @@ export default async function DashboardPage() {
   return (
     <div className="pb-16 pt-8 md:pt-12">
       <div className="marketing-container">
-        {/* Welcome Header */}
-        <Reveal duration="duration-500">
-          <header className="mx-auto mb-10 max-w-4xl text-center">
-            <h1 className="font-heading text-h3 font-bold text-foreground md:text-h2">
-              Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>! 👋
-            </h1>
-            <p className="mt-1.5 text-body-base text-muted-foreground">
-              Mari lanjutkan aktivitas belajarmu hari ini.
-            </p>
-          </header>
-        </Reveal>
+        {env.FEATURE_FEEDBACK === "1" && user?.id && <InterventionBanner />}
+        {env.FEATURE_REFLECTION === "1" && latestReflection && (
+          <WeeklyReflection reflection={latestReflection} />
+        )}
+        {featureToday && user?.id ? (
+          <TodayPlan firstName={firstName} />
+        ) : (
+          /* Welcome Header (shown when FEATURE_TODAY is off) */
+          <Reveal duration="duration-500">
+            <header className="mx-auto mb-10 max-w-4xl text-center">
+              <h1 className="font-heading text-h3 font-bold text-foreground md:text-h2">
+                Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>! 👋
+              </h1>
+              <p className="mt-1.5 text-body-base text-muted-foreground">
+                Mari lanjutkan aktivitas belajarmu hari ini.
+              </p>
+            </header>
+          </Reveal>
+        )}
 
         <Reveal duration="duration-700">
         {!isEnrolledInAny ? (
@@ -216,6 +268,17 @@ export default async function DashboardPage() {
                             </div>
                             <span className="text-body-xs text-muted-foreground shrink-0">{progressPct}%</span>
                           </div>
+
+                          {env.FEATURE_STUDY_PATH === "1" && nextConcepts[course.id] && (
+                            <div className="mt-2.5">
+                              <Link
+                                href={`/courses/${course.id}/path`}
+                                className="text-body-sm text-primary font-medium hover:underline"
+                              >
+                                Continue: {nextConcepts[course.id]}
+                              </Link>
+                            </div>
+                          )}
                         </div>
 
                         <Button asChild size="sm" variant="outline" className="rounded-md shrink-0">
@@ -271,7 +334,7 @@ export default async function DashboardPage() {
 
             {/* Right Column (Activities & Task list) - 5 cols */}
             <div className="space-y-5 lg:col-span-5">
-              <DashboardWeakConcepts weakConcepts={weakConcepts} />
+              <DashboardWeakConcepts concepts={masteryConcepts} />
               
               {/* Quizzes and Tryouts */}
               <div className="rounded-2xl border border-border/60 bg-card/65 p-5 shadow-xs backdrop-blur-md">

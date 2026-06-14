@@ -55,6 +55,33 @@ export const env = createEnv({
      * Leave unset to use the Gemini API directly.
      */
     CF_AI_GATEWAY_URL: z.string().url().optional(),
+    /** Cloudflare account ID (used for KV REST API and Workers) */
+    CF_ACCOUNT_ID: z.string().optional(),
+    /** Cloudflare Workers KV namespace ID for zyx-ai-cache */
+    CF_KV_NAMESPACE_ID: z.string().optional(),
+    /** Cloudflare API token with Workers KV Storage: Edit permission */
+    CF_API_TOKEN: z.string().optional(),
+    FEATURE_MASTERY: z.string().optional(),
+    FEATURE_TODAY: z.string().optional(),
+    /** P3 grounded tutor pipeline (RAG + KV cache + learner memory). "1" enables. */
+    FEATURE_TUTOR_RAG: z.string().optional(),
+    FEATURE_FEEDBACK: z.string().optional(),
+    FEATURE_STUDY_PATH: z.string().optional(),
+    /** P6A tutor analytics MVP. "1" enables /tutor area for teacher role. */
+    FEATURE_TUTOR_ANALYTICS: z.string().optional(),
+    /** P9 real-time classroom. "1" enables live quiz routes. */
+    FEATURE_LIVE: z.string().optional(),
+    /** Shared secret for HMAC token generation and Worker auth (P9). */
+    LIVE_HMAC_SECRET: z.string().optional(),
+    FEATURE_REFLECTION: z.string().optional(),
+    FEATURE_REFLECTION_EMAIL: z.string().optional(),
+    // ── P8 Vectorize Migration ─────────────────────────────────────────────
+    /** Active vector store: 'pinecone' (default) | 'dual' (write both) | 'vectorize' (read from VZ) */
+    VECTOR_STORE: z.enum(['pinecone', 'vectorize', 'dual']).optional(),
+    /** Base URL of the deployed zyx-vector-api Cloudflare Worker (no trailing slash) */
+    VECTORIZE_WORKER_URL: z.string().url().optional(),
+    /** Shared secret matching SHARED_SECRET set on the zyx-vector-api Worker */
+    VECTORIZE_SHARED_SECRET: z.string().optional(),
   },
   client: {
     /** Absolute origin for better-auth client (e.g. https://app.example.com). Falls back for local dev. */
@@ -66,6 +93,8 @@ export const env = createEnv({
      * Hanya angka; `+`/spasi diperbolehkan.
      */
     NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
+    /** Base URL of the Cloudflare Worker for real-time quiz (P9). e.g. https://zyx-realtime.workers.dev */
+    NEXT_PUBLIC_REALTIME_URL: z.string().url().optional(),
   },
   runtimeEnv: {
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
@@ -94,5 +123,22 @@ export const env = createEnv({
     STORAGE_PROVIDER_MODE: process.env.STORAGE_PROVIDER_MODE,
     // AI Gateway
     CF_AI_GATEWAY_URL: process.env.CF_AI_GATEWAY_URL,
+    CF_ACCOUNT_ID: process.env.CF_ACCOUNT_ID,
+    CF_KV_NAMESPACE_ID: process.env.CF_KV_NAMESPACE_ID,
+    CF_API_TOKEN: process.env.CF_API_TOKEN,
+    FEATURE_MASTERY: process.env.FEATURE_MASTERY,
+    FEATURE_TODAY: process.env.FEATURE_TODAY,
+    FEATURE_TUTOR_RAG: process.env.FEATURE_TUTOR_RAG,
+    FEATURE_FEEDBACK: process.env.FEATURE_FEEDBACK,
+    FEATURE_STUDY_PATH: process.env.FEATURE_STUDY_PATH,
+    FEATURE_TUTOR_ANALYTICS: process.env.FEATURE_TUTOR_ANALYTICS,
+    FEATURE_LIVE: process.env.FEATURE_LIVE,
+    LIVE_HMAC_SECRET: process.env.LIVE_HMAC_SECRET,
+    FEATURE_REFLECTION: process.env.FEATURE_REFLECTION,
+    FEATURE_REFLECTION_EMAIL: process.env.FEATURE_REFLECTION_EMAIL,
+    NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
+    VECTOR_STORE: process.env.VECTOR_STORE,
+    VECTORIZE_WORKER_URL: process.env.VECTORIZE_WORKER_URL,
+    VECTORIZE_SHARED_SECRET: process.env.VECTORIZE_SHARED_SECRET,
   },
 });

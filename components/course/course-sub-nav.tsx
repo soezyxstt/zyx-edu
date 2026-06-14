@@ -13,6 +13,8 @@ import {
   Trophy,
   History,
   Brain,
+  Compass,
+  Target,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -72,12 +74,37 @@ const segments: Segment[] = [
 type CourseSubNavProps = {
   courseId: string;
   courseTitle: string;
+  showStudyPath?: boolean;
+  showMastery?: boolean;
 };
 
-export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
+export function CourseSubNav({ courseId, courseTitle, showStudyPath = false, showMastery = false }: CourseSubNavProps) {
   const pathname = usePathname();
   const detailsRef = useRef<HTMLDetailsElement>(null);
-  const activeSegment = segments.find((seg) => seg.match(pathname, courseId)) ?? segments[0];
+
+  const activeSegments = [...segments];
+  if (showStudyPath) {
+    activeSegments.splice(1, 0, {
+      href: (id: string) => `/courses/${id}/path`,
+      label: "Alur Belajar",
+      match: (path: string, id: string) => path.startsWith(`/courses/${id}/path`),
+      icon: Compass,
+    });
+  }
+
+  if (showMastery) {
+    const idx = activeSegments.findIndex((seg) => seg.href(courseId).endsWith("/my-results"));
+    if (idx !== -1) {
+      activeSegments.splice(idx, 0, {
+        href: (id: string) => `/courses/${id}/mastery`,
+        label: "Penguasaan",
+        match: (path: string, id: string) => path.startsWith(`/courses/${id}/mastery`),
+        icon: Target,
+      });
+    }
+  }
+
+  const activeSegment = activeSegments.find((seg) => seg.match(pathname, courseId)) ?? activeSegments[0];
   const ActiveIcon = activeSegment.icon;
 
   useEffect(() => {
@@ -102,7 +129,7 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
             />
           </summary>
           <div className="absolute left-0 top-[calc(100%+0.25rem)] z-30 w-full overflow-hidden rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-lg">
-            {segments.map((seg) => {
+            {activeSegments.map((seg) => {
               const href = seg.href(courseId);
               const active = seg.match(pathname, courseId);
               const Icon = seg.icon;
@@ -132,7 +159,7 @@ export function CourseSubNav({ courseId, courseTitle }: CourseSubNavProps) {
 
       {/* Desktop Tabs: Hidden on mobile */}
       <nav aria-label="Navigasi course desktop" className="hidden md:flex items-center gap-1 border-b border-border/40 w-full desktop-only-nav">
-        {segments.map((seg) => {
+        {activeSegments.map((seg) => {
           const href = seg.href(courseId);
           const active = seg.match(pathname, courseId);
           const Icon = seg.icon;

@@ -5,9 +5,9 @@ Goal: the flagship intelligence demo. A tutor opens a course and sees: enrolled 
 Flag: `FEATURE_TUTOR_ANALYTICS=1`. Depends on: P1A only (`parallel-ok`, pull forward for demos). Intervention panel renders a dash before P4 exists. Read `globals.md` first.
 
 ## Progress
-- [ ] Read-before-coding done
-- [ ] Backend done (4 queries, guarded route)
-- [ ] Frontend done (tutor area, selector, analytics page)
+- [x] Read-before-coding done
+- [x] Backend done (4 queries, guarded route)
+- [x] Frontend done (tutor area, selector, analytics page)
 - [ ] Demo seed done + screenshot saved
 - [ ] Out of code done
 - [ ] Gate green

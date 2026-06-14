@@ -11,8 +11,14 @@ export const metadata: Metadata = {
   title: pageTitle("Kelola Template Kuis"),
 };
 
-export default async function AIQuizzesPage() {
+type Props = {
+  searchParams: Promise<{ courseId?: string; tags?: string }>;
+};
+
+export default async function AIQuizzesPage({ searchParams }: Props) {
   await assertTutorOrAdmin();
+
+  const { courseId: prefillCourseId, tags: prefillTags } = await searchParams;
 
   const [templates, allCourses] = await Promise.all([
     db
@@ -30,6 +36,8 @@ export default async function AIQuizzesPage() {
         initialTemplates={templates}
         courses={allCourses}
         courseMap={courseMap}
+        prefillCourseId={prefillCourseId}
+        prefillTags={prefillTags}
       />
     </Reveal>
   );

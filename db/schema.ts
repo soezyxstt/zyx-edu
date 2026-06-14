@@ -6,6 +6,7 @@ import {
   real,
   index,
   unique,
+  uniqueIndex,
 } from "drizzle-orm/sqlite-core";
 
 // Enums
@@ -584,6 +585,9 @@ export const studentQuizAttempts = sqliteTable(
     answersSnapshot: text("answers_snapshot", { mode: "json" }),
     startedAt: integer("started_at", { mode: "timestamp" }).defaultNow().notNull(),
     submittedAt: integer("submitted_at", { mode: "timestamp" }),
+    strongAreas: text("strong_areas", { mode: "json" }),
+    weakAreas: text("weak_areas", { mode: "json" }),
+    recommendedNextSteps: text("recommended_next_steps", { mode: "json" }),
   },
   (table) => [
     index("idx_attempts_student").on(table.studentId, table.status),
@@ -1227,7 +1231,154 @@ export const notifications = sqliteTable(
   ]
 );
 
+// ─── P1A: Mastery Foundation ──────────────────────────────────────────────────
+
+// learning_events — append-only event log; recompute worker reads this
+export const learningEvents = sqliteTable(
+  "learning_events",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    conceptName: text("concept_name"),
+    koId: text("ko_id").references(() => knowledgeObjects.id, { onDelete: "set null" }),
+    eventType: text("event_type")
+      .$type<"quiz_answer" | "flashcard_review" | "material_completed" | "tutor_question">()
+      .notNull(),
+    correctness: real("correctness"),
+    weight: real("weight").default(1).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_le_student_course_created").on(table.studentId, table.courseId, table.createdAt),
+    index("idx_le_student_concept").on(table.studentId, table.conceptName),
+  ]
+);
+
+// student_concept_mastery — one row per (student, course, concept)
+export const studentConceptMastery = sqliteTable(
+  "student_concept_mastery",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    conceptName: text("concept_name").notNull(),
+    masteryScore: integer("mastery_score").notNull(),
+    confidence: integer("confidence").notNull(),
+    evidenceCount: integer("evidence_count").notNull(),
+    trend: text("trend").$type<"improving" | "stable" | "declining">(),
+    lastEvidenceAt: integer("last_evidence_at", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("uq_scm_student_course_concept").on(table.studentId, table.courseId, table.conceptName),
+    index("idx_scm_student_course_score").on(table.studentId, table.courseId, table.masteryScore),
+  ]
+);
+
+// student_concept_mastery_history — daily snapshots for trend computation (P1B)
+export const studentConceptMasteryHistory = sqliteTable(
+  "student_concept_mastery_history",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    conceptName: text("concept_name").notNull(),
+    masteryScore: integer("mastery_score").notNull(),
+    confidence: integer("confidence").notNull(),
+    snapshotDate: text("snapshot_date").notNull(), // yyyy-mm-dd
+  },
+  (table) => [
+    unique("uq_scmh_student_concept_date").on(table.studentId, table.conceptName, table.snapshotDate),
+    index("idx_scmh_student_course").on(table.studentId, table.courseId),
+  ]
+);
+
+// ─── P2: Streak + Daily Recommendations ──────────────────────────────────────
+
+export const studentStreaks = sqliteTable("student_streaks", {
+  studentId: text("student_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastActiveDate: text("last_active_date").notNull(), // yyyy-mm-dd (UTC)
+});
+
+export const dailyRecommendations = sqliteTable(
+  "daily_recommendations",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // yyyy-mm-dd (UTC)
+    payload: text("payload", { mode: "json" }).notNull(),
+    completedItems: text("completed_items", { mode: "json" })
+      .$defaultFn(() => [])
+      .notNull(),
+    generatedAt: integer("generated_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("uq_daily_rec_student_date").on(table.studentId, table.date),
+    index("idx_daily_rec_student").on(table.studentId),
+  ]
+);
+
+// ─── P3: Tutor session memory ────────────────────────────────────────────────
+
+// tutor_session_summaries — one row per (student, course), deterministic update after each tutor exchange
+export const tutorSessionSummaries = sqliteTable(
+  "tutor_session_summaries",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    askedConcepts: text("asked_concepts", { mode: "json" })
+      .$defaultFn(() => [])
+      .notNull(),
+    questionCount: integer("question_count").default(0).notNull(),
+    lastSessionAt: integer("last_session_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("uq_tss_student_course").on(table.studentId, table.courseId),
+  ]
+);
+
 // ─── Push Notifications Relations ─────────────────────────────────────────────
+
+export const studentStreaksRelations = relations(studentStreaks, ({ one }) => ({
+  student: one(user, {
+    fields: [studentStreaks.studentId],
+    references: [user.id],
+  }),
+}));
+
+export const dailyRecommendationsRelations = relations(dailyRecommendations, ({ one }) => ({
+  student: one(user, {
+    fields: [dailyRecommendations.studentId],
+    references: [user.id],
+  }),
+}));
 
 export const userPushTokensRelations = relations(userPushTokens, ({ one }) => ({
   user: one(user, {
@@ -1239,6 +1390,247 @@ export const userPushTokensRelations = relations(userPushTokens, ({ one }) => ({
 export const notificationsRelations = relations(notifications, ({ one }) => ({
   user: one(user, {
     fields: [notifications.userId],
+    references: [user.id],
+  }),
+}));
+
+// P4: Quiz Feedback + Adaptive Companion Tables
+export const attemptFeedback = sqliteTable(
+  "attempt_feedback",
+  {
+    id: text("id").primaryKey(),
+    attemptId: text("attempt_id")
+      .notNull()
+      .references(() => studentQuizAttempts.id, { onDelete: "cascade" }),
+    questionIndex: integer("question_index").notNull(),
+    payload: text("payload", { mode: "json" }).notNull(),
+  },
+  (table) => [
+    unique("uq_attempt_feedback_question").on(table.attemptId, table.questionIndex),
+  ]
+);
+
+export const interventions = sqliteTable(
+  "interventions",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    conceptName: text("concept_name").notNull(),
+    reason: text("reason").notNull(),
+    status: text("status")
+      .$type<"active" | "dismissed" | "resolved">()
+      .default("active")
+      .notNull(),
+    payload: text("payload", { mode: "json" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    resolvedAt: integer("resolved_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    uniqueIndex("uq_active_intervention")
+      .on(table.studentId, table.conceptName)
+      .where(sql`"status" = 'active'`),
+  ]
+);
+
+export const attemptFeedbackRelations = relations(attemptFeedback, ({ one }) => ({
+  attempt: one(studentQuizAttempts, {
+    fields: [attemptFeedback.attemptId],
+    references: [studentQuizAttempts.id],
+  }),
+}));
+
+export const interventionsRelations = relations(interventions, ({ one }) => ({
+  student: one(user, {
+    fields: [interventions.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [interventions.courseId],
+    references: [courses.id],
+  }),
+}));
+
+// P5: Personalized Study Paths
+export const studyPaths = sqliteTable(
+  "study_paths",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    pathJson: text("path_json", { mode: "json" }).notNull(),
+    computedAt: integer("computed_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("uq_study_paths_student_course").on(table.studentId, table.courseId),
+    index("idx_study_paths_student").on(table.studentId),
+  ]
+);
+
+export const studyPathsRelations = relations(studyPaths, ({ one }) => ({
+  student: one(user, {
+    fields: [studyPaths.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [studyPaths.courseId],
+    references: [courses.id],
+  }),
+}));
+
+// P6B: Course analytics snapshots — daily pre-computed payloads for fast tutor page loads
+export const courseAnalyticsSnapshots = sqliteTable(
+  "course_analytics_snapshots",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    date: text("date").notNull(), // yyyy-mm-dd
+    payload: text("payload", { mode: "json" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("uq_course_snapshot_date").on(table.courseId, table.date),
+    index("idx_course_snapshot_lookup").on(table.courseId, table.date),
+  ]
+);
+
+export const courseAnalyticsSnapshotsRelations = relations(courseAnalyticsSnapshots, ({ one }) => ({
+  course: one(courses, {
+    fields: [courseAnalyticsSnapshots.courseId],
+    references: [courses.id],
+  }),
+}));
+
+// ─── P9: Live Quiz ────────────────────────────────────────────────────────────
+
+export const liveQuizSessions = sqliteTable(
+  "live_quiz_sessions",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    tutorId: text("tutor_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    templateId: text("template_id")
+      .references(() => quizTemplates.id, { onDelete: "set null" }),
+    code: text("code").notNull().unique(),
+    state: text("state")
+      .$type<"lobby" | "question" | "reveal" | "ended">()
+      .default("lobby")
+      .notNull(),
+    questionsSnapshot: text("questions_snapshot", { mode: "json" }).notNull(),
+    participantCount: integer("participant_count").default(0).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    endedAt: integer("ended_at", { mode: "timestamp" }),
+  },
+  (table) => [
+    index("idx_live_sessions_code").on(table.code),
+    index("idx_live_sessions_course").on(table.courseId),
+  ]
+);
+
+export const liveQuizResults = sqliteTable(
+  "live_quiz_results",
+  {
+    id: text("id").primaryKey(),
+    sessionId: text("session_id")
+      .notNull()
+      .references(() => liveQuizSessions.id, { onDelete: "cascade" }),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    score: integer("score").default(0).notNull(),
+    rank: integer("rank"),
+    answersSnapshot: text("answers_snapshot", { mode: "json" }).notNull(),
+    completedAt: integer("completed_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_live_results_session").on(table.sessionId),
+    index("idx_live_results_student").on(table.studentId),
+    unique("uq_live_result_session_student").on(table.sessionId, table.studentId),
+  ]
+);
+
+export const liveQuizSessionsRelations = relations(liveQuizSessions, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [liveQuizSessions.courseId],
+    references: [courses.id],
+  }),
+  tutor: one(user, {
+    fields: [liveQuizSessions.tutorId],
+    references: [user.id],
+  }),
+  template: one(quizTemplates, {
+    fields: [liveQuizSessions.templateId],
+    references: [quizTemplates.id],
+  }),
+  results: many(liveQuizResults),
+}));
+
+export const liveQuizResultsRelations = relations(liveQuizResults, ({ one }) => ({
+  session: one(liveQuizSessions, {
+    fields: [liveQuizResults.sessionId],
+    references: [liveQuizSessions.id],
+  }),
+  student: one(user, {
+    fields: [liveQuizResults.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [liveQuizResults.courseId],
+    references: [courses.id],
+  }),
+}));
+
+// ─── PWR: Weekly Learning Reflection ──────────────────────────────────────────
+
+export const weeklyReflections = sqliteTable(
+  "weekly_reflections",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    weekStart: text("week_start").notNull(), // yyyy-mm-dd (Monday)
+    payload: text("payload", { mode: "json" }).$type<{
+      completed: {
+        quizzes: number;
+        flashcards: number;
+        modules: number;
+      };
+      masteryGrowth: number;
+      mostImproved: string | null;
+      streak: {
+        currentStreak: number;
+        longestStreak: number;
+      };
+    }>().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("uq_weekly_ref_student_week").on(table.studentId, table.weekStart),
+    index("idx_weekly_ref_student").on(table.studentId),
+  ]
+);
+
+export const weeklyReflectionsRelations = relations(weeklyReflections, ({ one }) => ({
+  student: one(user, {
+    fields: [weeklyReflections.studentId],
     references: [user.id],
   }),
 }));

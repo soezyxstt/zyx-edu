@@ -21,6 +21,8 @@ export type CourseMaterial = {
   completed: boolean;
   isPastYear?: boolean;
   isPreview?: boolean;
+  /** Chapter this material belongs to, when known (enables P3 chapter summary). */
+  chapterId?: string;
 };
 
 export type ExamType = "quiz" | "tryout";

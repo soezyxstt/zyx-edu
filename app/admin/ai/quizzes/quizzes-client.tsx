@@ -30,28 +30,34 @@ interface Props {
   initialTemplates: TemplateType[];
   courses: Course[];
   courseMap: Record<string, string>;
+  prefillCourseId?: string;
+  prefillTags?: string;
 }
 
-export function QuizzesCurationClient({ initialTemplates, courses, courseMap }: Props) {
+export function QuizzesCurationClient({ initialTemplates, courses, courseMap, prefillCourseId, prefillTags }: Props) {
   const [templates, setTemplates] = useState<TemplateType[]>(initialTemplates);
-  const [createOpen, setCreateOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(() => !!prefillCourseId || !!prefillTags);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingTemplate, setDeletingTemplate] = useState<TemplateType | null>(null);
-  
+
   // Snapshot Auditor State
   const [auditingTemplate, setAuditingTemplate] = useState<TemplateType | null>(null);
 
-  // Creation Form State
-  const [courseId, setCourseId] = useState(courses[0]?.id || "");
+  // Creation Form State — pre-populated from remediation action if params provided
+  const [courseId, setCourseId] = useState(
+    prefillCourseId && courses.some((c) => c.id === prefillCourseId)
+      ? prefillCourseId
+      : (courses[0]?.id || "")
+  );
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<TemplateType["category"]>("weekly");
   const [visibility, setVisibility] = useState<TemplateType["visibility"]>("free");
   const [timeLimitMinutes, setTimeLimitMinutes] = useState("");
   const [maxAttempts, setMaxAttempts] = useState("");
-  
+
   // Selection Rules State
   const [count, setCount] = useState("10");
-  const [tagsStr, setTagsStr] = useState("");
+  const [tagsStr, setTagsStr] = useState(prefillTags ?? "");
   const [easy, setEasy] = useState("3");
   const [medium, setMedium] = useState("5");
   const [hard, setHard] = useState("2");

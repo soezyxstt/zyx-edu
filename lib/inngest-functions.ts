@@ -1,9 +1,13 @@
 import { inngest } from "@/lib/inngest";
 import { db } from "@/db";
-import { vectorSyncQueue, knowledgeObjects, chapters, masterTeachingDocuments } from "@/db/schema";
+import { vectorSyncQueue, knowledgeObjects, chapters, masterTeachingDocuments, enrollments, studentConceptMasteryHistory, studentConceptMastery, user } from "@/db/schema";
+import { computeSnapshotPayload } from "@/lib/cohort-analytics";
+import { recomputeMastery, recomputeTrends } from "@/lib/mastery-store";
+import { generateMistakeFeedback } from "@/lib/mistake-feedback";
 import { getNs } from "@/lib/pinecone";
 import { embedTexts } from "@/lib/gemini";
-import { eq, and, or, lt, inArray } from "drizzle-orm";
+import { shouldMirrorToVectorize, serializeVzMetadata, vectorizeUpsert } from "@/lib/vectorize-client";
+import { eq, and, or, lt, gt, sql, inArray } from "drizzle-orm";
 import { generateFlashcardsForChapter } from "@/lib/flashcard-generator";
 import { generateQuestionsForKO, generateQuestionsForKOBatch } from "@/lib/question-generator";
 import { generateMarkdownForChapter } from "@/lib/material-generator";
@@ -77,7 +81,7 @@ export async function processBatch(step: any, courseId?: string) {
       });
 
       // Step 5: Upsert to Pinecone course namespace
-      await step.run(`upsert-pinecone-${cId}`, async () => {
+      const koRecords = await step.run(`upsert-pinecone-${cId}`, async () => {
         const records = rows.map((row: VectorSyncRow, idx: number) => {
           const payload = row.payload as any;
           return {
@@ -98,7 +102,22 @@ export async function processBatch(step: any, courseId?: string) {
 
         const ns = getNs(cId);
         await ns.upsert({ records });
+        return records;
       });
+
+      // Step 5b: Mirror to Vectorize when VECTOR_STORE=dual|vectorize
+      if (shouldMirrorToVectorize()) {
+        await step.run(`upsert-vectorize-${cId}`, async () => {
+          await vectorizeUpsert(
+            koRecords.map((r: { id: string; values: number[]; metadata: Record<string, unknown> }) => ({
+              id: r.id,
+              values: r.values,
+              namespace: `course_${cId}`,
+              metadata: serializeVzMetadata(r.metadata),
+            })),
+          );
+        });
+      }
 
       // Step 6: Mark rows completed in database & update pineconeVectorId on KOs
       await step.run(`finalize-success-${cId}`, async () => {
@@ -340,4 +359,222 @@ export const bulkChapterGenerator = inngest.createFunction(
     }
   }
 );
+
+// ─── P1A: Mastery recompute worker ────────────────────────────────────────────
+
+export const masteryRecomputeWorker = inngest.createFunction(
+  {
+    id: "mastery-recompute-worker",
+    name: "Mastery Recompute Worker",
+    triggers: [{ event: "mastery/recompute.requested" }],
+  },
+  async ({ event, step }) => {
+    const { studentId, courseId } = event.data as { studentId: string; courseId: string };
+
+    await step.run("recompute-mastery", async () => {
+      await recomputeMastery(studentId, courseId);
+    });
+
+    return { studentId, courseId };
+  }
+);
+
+export const feedbackWorker = inngest.createFunction(
+  {
+    id: "quiz-feedback-worker",
+    name: "Quiz Feedback Worker",
+    triggers: [{ event: "quiz/feedback.requested" }],
+  },
+  async ({ event, step }) => {
+    const { attemptId } = event.data as { attemptId: string };
+
+    await step.run("generate-feedback", async () => {
+      await generateMistakeFeedback(attemptId);
+    });
+
+    return { attemptId };
+  }
+);
+
+// ─── P6B: Daily course analytics snapshot cron ───────────────────────────────
+// Runs once per day at 02:00 UTC.
+// P1B placeholder: when P1B ships, add the per-student mastery history loop here
+// BEFORE the per-course snapshot loop so trends are current.
+
+export const courseAnalyticsSnapshotCron = inngest.createFunction(
+  {
+    id: "course-analytics-snapshot-cron",
+    name: "Course Analytics Snapshot Cron",
+    triggers: [{ cron: "0 2 * * *" }],
+  },
+  async ({ step }) => {
+    const now = new Date();
+
+    // Fetch all courses that have at least one active enrollment
+    const activeCourseIds = await step.run("fetch-active-courses", async () => {
+      const rows = await db
+        .select({ courseId: enrollments.courseId })
+        .from(enrollments)
+        .where(gt(enrollments.expiresAt, now))
+        .groupBy(enrollments.courseId)
+        .having(sql`COUNT(*) > 0`);
+      return rows.map((r) => r.courseId);
+    });
+
+    let built = 0;
+    let failed = 0;
+
+    for (const courseId of activeCourseIds) {
+      try {
+        await step.run(`snapshot-course-${courseId}`, async () => {
+          await computeSnapshotPayload(courseId);
+        });
+        built++;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { activeCourseIds: activeCourseIds.length, built, failed };
+  }
+);
+
+// ─── PWR: Weekly Learning Reflection Cron ────────────────────────────────────
+
+import { computeWeeklyReflection, getPreviousWeekRange } from "@/lib/reflection-service";
+import { learningEvents } from "@/db/schema";
+import { env } from "@/lib/env";
+import { gte, lte } from "drizzle-orm";
+
+export const weeklyReflectionCron = inngest.createFunction(
+  {
+    id: "weekly-reflection-cron",
+    name: "Weekly Reflection Cron",
+    triggers: [{ cron: "0 6 * * 1" }], // Monday 06:00 UTC
+  },
+  async ({ step }) => {
+    const now = new Date();
+    const { monday, sunday } = getPreviousWeekRange(now);
+
+    // Fetch all student IDs who have had >= 1 learning event during this week
+    const activeStudentIds = await step.run("fetch-active-students", async () => {
+      const rows = await db
+        .selectDistinct({ studentId: learningEvents.studentId })
+        .from(learningEvents)
+        .where(
+          and(
+            gte(learningEvents.createdAt, monday),
+            lte(learningEvents.createdAt, sunday)
+          )
+        );
+      return rows.map((r) => r.studentId);
+    });
+
+    let processed = 0;
+    let failed = 0;
+
+    for (const studentId of activeStudentIds) {
+      try {
+        await step.run(`process-reflection-${studentId}`, async () => {
+          await computeWeeklyReflection(studentId, now);
+        });
+        processed++;
+      } catch (err) {
+        console.error(`Failed to process reflection for student ${studentId}:`, err);
+        failed++;
+      }
+    }
+
+    const isEmailEnabled = env.FEATURE_REFLECTION_EMAIL === "1";
+    if (isEmailEnabled && activeStudentIds.length <= 90) {
+      await step.run("email-branch-placeholder", async () => {
+        console.log(`Email branch active for ${activeStudentIds.length} students (placeholder)`);
+      });
+    }
+
+    return {
+      activeStudents: activeStudentIds.length,
+      processed,
+      failed,
+    };
+  }
+);
+
+/**
+ * Daily cron running off-peak (19:00 UTC) to snapshot student mastery
+ * and update trend directions.
+ */
+export const masterySnapshotCron = inngest.createFunction(
+  {
+    id: "mastery-snapshot-cron",
+    name: "Mastery Snapshot Cron",
+    triggers: [{ cron: "0 19 * * *" }],
+  },
+  async ({ step }) => {
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const activeStudentIds = await step.run("fetch-active-students", async () => {
+      const rows = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(
+          and(
+            eq(user.role, "student"),
+            gt(user.lastActivityAt, thirtyDaysAgo)
+          )
+        );
+      return rows.map((r) => r.id);
+    });
+
+    if (activeStudentIds.length === 0) {
+      return { activeStudents: 0, snapshotsWritten: 0 };
+    }
+
+    const todayStr = now.toISOString().split("T")[0];
+
+    const result = await step.run("snapshot-and-recompute-trends", async () => {
+      const masteryRows = await db
+        .select()
+        .from(studentConceptMastery)
+        .where(inArray(studentConceptMastery.studentId, activeStudentIds));
+
+      if (masteryRows.length === 0) {
+        return { snapshotsWritten: 0 };
+      }
+
+      const snapshotInserts = masteryRows.map((r) => ({
+        id: crypto.randomUUID(),
+        studentId: r.studentId,
+        courseId: r.courseId,
+        conceptName: r.conceptName,
+        masteryScore: r.masteryScore,
+        confidence: r.confidence,
+        snapshotDate: todayStr,
+      }));
+
+      // Chunk write snapshots for idempotency (uq_scmh_student_concept_date unique constraint)
+      for (let i = 0; i < snapshotInserts.length; i += 100) {
+        await db
+          .insert(studentConceptMasteryHistory)
+          .values(snapshotInserts.slice(i, i + 100))
+          .onConflictDoNothing();
+      }
+
+      // Recompute trend for each active student
+      for (const studentId of activeStudentIds) {
+        await recomputeTrends(studentId);
+      }
+
+      return { snapshotsWritten: snapshotInserts.length };
+    });
+
+    return {
+      activeStudents: activeStudentIds.length,
+      snapshotsWritten: result.snapshotsWritten,
+    };
+  }
+);
+
 
