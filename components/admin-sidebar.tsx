@@ -439,12 +439,19 @@ export function AdminSidebar() {
             active={isLinkActive("/admin/ai/quizzes")}
           />
 
-          <NavItem
-            href="/admin/ai/distractors"
-            icon={BarChart3}
-            label="Analitik Distraktor"
-            active={isLinkActive("/admin/ai/distractors")}
-          />
+  <NavItem
+    href="/admin/ai/distractors"
+    icon={BarChart3}
+    label="Analitik Distraktor"
+    active={isLinkActive("/admin/ai/distractors")}
+  />
+
+  <NavItem
+    href="/admin/ai/keys"
+    icon={KeyRound}
+    label="AI Keys"
+    active={isLinkActive("/admin/ai/keys")}
+  />
 
           {/* Push Notification */}
           <NavItem

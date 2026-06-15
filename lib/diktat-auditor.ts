@@ -1,5 +1,6 @@
 import { DiktatStructure } from "./diktat-generator";
 import { generateContentWithFallback } from "./gemini";
+import { USE_CASES } from "@/lib/ai-router";
 
 function safeParseJson<T>(text: string): T | null {
   const jsonMatch = text.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
@@ -186,7 +187,7 @@ Format output sebagai JSON:
 Berikan hanya JSON.`;
 
   try {
-    const { response } = await generateContentWithFallback({ contents: prompt });
+    const { response } = await generateContentWithFallback({ useCase: USE_CASES.DIKTAT_AUDIT, contents: prompt });
     const text: string = typeof response.text === "function" ? response.text() : response.text;
     const parsed = safeParseJson<any>(text);
     if (!parsed) return { issues, proposedRevisions };

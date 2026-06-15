@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { env } from '@/lib/env';
+import { getRpdLimit } from '@/lib/ai-router';
 
 export interface GeminiKey {
   id: string;
@@ -21,12 +22,16 @@ export interface KeyModelSchedulerState {
   lastUsedAt: number;
   requestTimestamps: number[];
   activeRequests: { id: string; timestamp: number }[];
+  requestDates: string[];
+  rpdLimit: number;
 }
 
 export interface KeyModelDiagnostics {
   keyId: string;
   modelId: string;
   requestsMinute: number;
+  requestsToday: number;
+  rpdLimit: number;
   successes: number;
   failures: number;
   consecutiveFailures: number;
@@ -115,6 +120,8 @@ export class GeminiKeyPool {
         lastUsedAt: 0,
         requestTimestamps: [],
         activeRequests: [],
+        requestDates: [],
+        rpdLimit: getRpdLimit(modelId),
       };
       this.schedulerStates.set(mapKey, state);
     }
@@ -129,6 +136,16 @@ export class GeminiKeyPool {
   private cleanAndGetActiveCount(state: KeyModelSchedulerState, now: number): number {
     state.activeRequests = state.activeRequests.filter(req => now - req.timestamp < 60000);
     return state.activeRequests.length;
+  }
+
+  private getTodayStr(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  private cleanAndGetRpd(state: KeyModelSchedulerState): number {
+    const today = this.getTodayStr();
+    state.requestDates = state.requestDates.filter(d => d === today);
+    return state.requestDates.length;
   }
 
   private releaseActiveRequest(state: KeyModelSchedulerState): void {
@@ -209,11 +226,18 @@ export class GeminiKeyPool {
 
   getBestKey(modelId: string): GeminiKey | null {
     const now = Date.now();
+    const today = this.getTodayStr();
     let bestKey: GeminiKey | null = null;
     let bestScore = -Infinity;
 
     for (const key of this.keys) {
       const state = this.getSchedulerState(key.id, modelId);
+
+      // Check RPD (daily quota) — skip if exhausted for today
+      const todayCount = this.cleanAndGetRpd(state);
+      if (todayCount >= state.rpdLimit) {
+        continue;
+      }
 
       // Check circuit breaker transition
       if (state.circuitState === 'OPEN') {
@@ -268,6 +292,7 @@ export class GeminiKeyPool {
       const requestId = Math.random().toString(36).substring(7);
       state.requestTimestamps.push(now);
       state.activeRequests.push({ id: requestId, timestamp: now });
+      state.requestDates.push(today);
       state.lastUsedAt = now;
     }
 
@@ -360,6 +385,7 @@ export class GeminiKeyPool {
       const [keyId, modelId] = mapKey.split(':');
       const currentRpm = this.cleanAndGetRpm(state, now);
       const activeCount = this.cleanAndGetActiveCount(state, now);
+      const todayCount = this.cleanAndGetRpd(state);
       const cooldownRemainingMs = Math.max(0, state.cooldownUntil - now);
       const utilizationPercent = Math.min(100, (currentRpm / state.estimatedRpmLimit) * 100);
 
@@ -367,6 +393,8 @@ export class GeminiKeyPool {
         keyId,
         modelId,
         requestsMinute: currentRpm,
+        requestsToday: todayCount,
+        rpdLimit: state.rpdLimit,
         successes: state.successes,
         failures: state.failures,
         consecutiveFailures: state.consecutiveFailures,

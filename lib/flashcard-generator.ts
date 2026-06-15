@@ -8,6 +8,7 @@ import {
   flashcards,
 } from "@/db/schema";
 import { generateContentWithFallback } from "@/lib/gemini";
+import { USE_CASES } from "@/lib/ai-router";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
@@ -213,6 +214,7 @@ export async function generateFlashcardsForChapter(chapterId: string): Promise<n
     console.log(`[AI Flashcards] Extracting cards from ${activeKOs.length} KOs...`);
     const prompt = buildFlashcardPrompt(courseRecord.title, chapterRecord.title, activeKOs);
     const { response } = await generateContentWithFallback({
+      useCase: USE_CASES.FLASHCARD_GEN,
       contents: prompt,
       config: { responseMimeType: "application/json" },
     });

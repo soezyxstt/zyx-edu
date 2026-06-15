@@ -9,6 +9,7 @@ import { tutorExplainConcept, tutorAnalyzeMistake } from "@/prompts/tutor";
 import { generateQuestionsForKO } from "@/lib/question-generator";
 import { env } from "@/lib/env";
 import { askTutorRag } from "@/lib/tutor-rag";
+import { USE_CASES } from "@/lib/ai-router";
 import { z } from "zod";
 
 // Ephemeral exact-match cache for MVP to avoid database footprint growth
@@ -242,6 +243,7 @@ export class TutorActionService {
       prompt: tutorExplainConcept,
       variables: vars,
       schema: ExplainConceptSchema,
+      useCase: USE_CASES.EXPLAIN_CONCEPT,
     });
 
     if (result.success && result.data) {
@@ -275,6 +277,7 @@ export class TutorActionService {
       prompt: tutorAnalyzeMistake,
       variables: vars,
       schema: AnalyzeMistakeSchema,
+      useCase: USE_CASES.EXPLAIN_CONCEPT,
     });
 
     if (result.success && result.data) {

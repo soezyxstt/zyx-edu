@@ -1,5 +1,6 @@
 import { DiktatStructure } from "./diktat-generator";
 import { generateContentWithFallback } from "./gemini";
+import { USE_CASES } from "@/lib/ai-router";
 
 export interface PDFAuditResult {
   status: "PASS" | "WARN";
@@ -75,7 +76,7 @@ Berikan output JSON:
 Jika tidak ada masalah, berikan status PASS dengan array kosong.`;
 
   try {
-    const { response } = await generateContentWithFallback({ contents: prompt });
+    const { response } = await generateContentWithFallback({ useCase: USE_CASES.DIKTAT_PDF_AUDIT, contents: prompt });
     const text: string = typeof response.text === "function" ? response.text() : response.text;
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return { status: "PASS", warnings: [] };

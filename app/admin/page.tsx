@@ -267,6 +267,16 @@ export default async function AdminHomePage() {
           stat: notifStat,
         },
         {
+          title: "Key Diagnostics",
+          description:
+            "Lihat status, kuota RPD, dan kesehatan tiap API key AI secara real-time.",
+          icon: KeyRound,
+          iconColor: "text-tertiary-1",
+          href: "/admin/ai/keys",
+          label: "Lihat key diagnostics",
+          stat: null,
+        },
+        {
           title: "Ops",
           description:
             "Pantau penggunaan API harian, kuota KV write, serta performa sistem AI.",

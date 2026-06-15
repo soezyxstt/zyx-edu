@@ -61,6 +61,48 @@ export class UsageBudgetService {
   }
 
   /**
+   * Premium (Tier B/C) attempt count for a user on the current day.
+   */
+  static async getPremiumCount(userId: string): Promise<number> {
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    const startOfDay = new Date(`${todayUtc}T00:00:00.000Z`);
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(aiUsageEvents)
+      .where(
+        and(
+          eq(aiUsageEvents.userId, userId),
+          eq(aiUsageEvents.requestType, "premium:tutor"),
+          gte(aiUsageEvents.createdAt, startOfDay)
+        )
+      );
+    return result[0]?.count ?? 0;
+  }
+
+  /**
+   * Returns remaining premium (Tier B/C) attempts (max 5/day).
+   */
+  static async getRemainingPremium(userId: string): Promise<number> {
+    const used = await this.getPremiumCount(userId);
+    return Math.max(0, 5 - used);
+  }
+
+  /**
+   * Records a premium (Tier B/C) tutor attempt.
+   */
+  static async recordPremiumUsage(userId: string): Promise<void> {
+    const id = crypto.randomUUID();
+    await db.insert(aiUsageEvents).values({
+      id,
+      userId,
+      feature: "tutor",
+      model: "premium:tutor",
+      tokens: 0,
+      requestType: "premium:tutor",
+    });
+  }
+
+  /**
    * Deletes all usage events older than 30 days to limit database storage growth.
    */
   static async pruneOldEvents(): Promise<void> {

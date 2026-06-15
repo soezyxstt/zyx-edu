@@ -21,6 +21,7 @@ export class PromptExecutor {
     variables: TVars;
     schema: z.ZodType<TOutput>;
     quotaLimit?: number;
+    useCase?: string;
   }): Promise<{ success: boolean; data?: TOutput; errors: string[] }> {
     // 1. Check Usage Quota Guardrail
     const canUse = await UsageBudgetService.canUseFeature(params.userId, params.quotaLimit ?? 30);
@@ -47,10 +48,11 @@ export class PromptExecutor {
     let rawText = "";
 
     try {
-      // 2. Invoke AI Router via fallback wrapper
+      // 2. Invoke AI Router via fallback wrapper with use case routing
       const result = await generateContentWithFallback({
         contents: userInstruction,
         config: modelConfig,
+        useCase: params.useCase,
       });
 
       modelUsedName = result.modelUsed;
@@ -108,6 +110,7 @@ export class PromptExecutor {
       prompt: SystemPrompt<TVars>;
       variables: TVars;
       schema: z.ZodType<TOutput>;
+      useCase?: string;
     },
     badText: string,
     validationError: string,
@@ -139,6 +142,7 @@ Please output a corrected, fully compliant JSON object matching the requested sc
       const result = await generateContentWithFallback({
         contents: repairPrompt,
         config: modelConfig,
+        useCase: params.useCase,
       });
 
       modelUsedName = result.modelUsed;

@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { courses, chapters, knowledgeObjects } from "@/db/schema";
 import { generateContentWithFallback } from "@/lib/gemini";
+import { USE_CASES } from "@/lib/ai-router";
 import { eq, asc, and } from "drizzle-orm";
 
 // ─── GEMINI PROMPT BUILDER ───────────────────────────────────────────────────
@@ -209,6 +210,7 @@ export async function generateMarkdownForChapter(chapterId: string): Promise<str
   );
 
   const { response } = await generateContentWithFallback({
+    useCase: USE_CASES.MATERIAL_GEN,
     contents: prompt,
   });
 

@@ -7,6 +7,7 @@ import {
   aiQuestionBank,
 } from "@/db/schema";
 import { generateContentWithFallback } from "@/lib/gemini";
+import { USE_CASES } from "@/lib/ai-router";
 import { generateBlueprintForKO } from "@/lib/question-blueprint-engine";
 import { validateQuestion } from "@/lib/question-validator";
 import { buildDistractorMap, type MisconceptionKO } from "@/lib/distractor-mapper";
@@ -424,6 +425,7 @@ export async function generateQuestionsForKOBatch(
       
       try {
         const { response, modelUsed } = await generateContentWithFallback({
+          useCase: USE_CASES.PRACTICE_QUESTION_GEN,
           contents: userPrompt,
           config: {
             responseMimeType: "application/json",
@@ -515,6 +517,7 @@ export async function generateQuestionsForKOBatch(
 
       try {
         const { response } = await generateContentWithFallback({
+          useCase: USE_CASES.QUESTION_REVIEW,
           contents: repairPrompt,
           config: {
             responseMimeType: "application/json",
