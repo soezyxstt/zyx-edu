@@ -30,7 +30,7 @@ export class R2Provider implements StorageProvider {
   }
 
   async upload(
-    file: File | Buffer,
+    file: File | Buffer | Uint8Array,
     filename: string,
     mimeType: string,
     options?: any
@@ -41,8 +41,8 @@ export class R2Provider implements StorageProvider {
     let body: Buffer;
     let size: number;
     
-    if (file instanceof Buffer) {
-      body = file;
+    if (Buffer.isBuffer(file) || file instanceof Uint8Array) {
+      body = Buffer.from(file);
       size = file.byteLength;
     } else {
       const f = file as File;
@@ -84,8 +84,12 @@ export class R2Provider implements StorageProvider {
     if (key.startsWith("http://") || key.startsWith("https://")) {
       return key;
     }
-    // Return full public R2 URL prefix + key
-    return `${this.publicUrl}/${key}`;
+    // Use local proxy API route instead of direct public R2 URL to bypass SSL/cert warnings
+    if (typeof window === "undefined") {
+      const baseUrl = process.env.NEXT_APP_URL || "";
+      return `${baseUrl}/api/storage/file/${key}`;
+    }
+    return `/api/storage/file/${key}`;
   }
 
   async exists(key: string): Promise<boolean> {

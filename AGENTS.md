@@ -7,7 +7,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 # Codebase Preview Reminder
 
 > [!IMPORTANT]
-> **READ BEFORE WRITING CODE**: Before working on any task or editing code, you must read the [AGENT_CONTEXT.md](file:///d:/ZYX/web/zyx-edu/AGENT_CONTEXT.md) file in the root directory. It contains the authoritative current state map, database details, technical architecture decisions, and styling system rules. Reference [ARCHIVE/project_architecture_v1.md](file:///d:/ZYX/web/zyx-edu/ARCHIVE/project_architecture_v1.md) only for historical Postgres/UploadThing structure context.
+> **READ BEFORE WRITING CODE**: Before working on any task or editing code, you must read the [AGENT_CONTEXT.md](file:///d:/ZYX/web/zyx-edu/AGENT_CONTEXT.md) file in the root directory. It contains the authoritative current state map, database details, technical architecture decisions, and styling system rules.
 
 # ZYX design system (agents)
 

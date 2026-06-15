@@ -2,7 +2,7 @@ import { env } from "@/lib/env";
 
 export interface StorageProvider {
   upload(
-    file: File | Buffer,
+    file: File | Buffer | Uint8Array,
     filename: string,
     mimeType: string,
     options?: any

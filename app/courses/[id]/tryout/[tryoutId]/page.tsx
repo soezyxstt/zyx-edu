@@ -8,24 +8,80 @@ import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getExamById } from "@/lib/student-course-fixtures";
+import { db } from "@/db";
+import { exams, questions } from "@/db/schema";
+import { and, eq, asc } from "drizzle-orm";
 
 type Props = { params: Promise<{ id: string; tryoutId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, tryoutId } = await params;
   const course = getCourseById(id);
-  const exam = getExamById(id, tryoutId);
+  
+  let examTitle = "Tryout";
+  const fixtureExam = getExamById(id, tryoutId);
+  if (fixtureExam) {
+    examTitle = fixtureExam.title;
+  } else {
+    const [dbExam] = await db.select({ title: exams.title }).from(exams).where(eq(exams.id, tryoutId)).limit(1);
+    if (dbExam) examTitle = dbExam.title;
+  }
+
   return {
-    title: pageTitle(course && exam ? `${course.title} - ${exam.title}` : "Tryout"),
-    description: exam?.title ?? "Tryout course",
+    title: pageTitle(course ? `${course.title} - ${examTitle}` : "Tryout"),
+    description: examTitle,
   };
 }
 
 export default async function CourseTryoutTakePage({ params }: Props) {
   const { id, tryoutId } = await params;
   const course = getCourseById(id);
-  const exam = getExamById(id, tryoutId);
-  if (!course || !exam || exam.type !== "tryout") notFound();
+  if (!course) notFound();
+
+  let exam = getExamById(id, tryoutId);
+  if (!exam) {
+    const [dbExam] = await db
+      .select()
+      .from(exams)
+      .where(and(eq(exams.id, tryoutId), eq(exams.courseId, id), eq(exams.type, "tryout")))
+      .limit(1);
+
+    if (dbExam) {
+      const dbQuestions = await db
+        .select()
+        .from(questions)
+        .where(eq(questions.examId, tryoutId))
+        .orderBy(asc(questions.order));
+
+      const settings = typeof dbExam.settings === "string" ? JSON.parse(dbExam.settings) : dbExam.settings;
+
+      exam = {
+        id: dbExam.id,
+        courseId: id,
+        title: dbExam.title,
+        type: "tryout",
+        status: dbExam.status,
+        settings: settings || { timeLimitMinutes: 90, maxAttempts: 2 },
+        questions: dbQuestions.map((q) => {
+          const content = typeof q.content === "string" ? JSON.parse(q.content) : q.content;
+          return {
+            id: q.id,
+            order: q.order,
+            type: q.type as any,
+            prompt: content.prompt,
+            options: content.options || [],
+            correctIndex: content.correctIndex,
+            correctIndices: content.correctIndices || [],
+            acceptsImage: content.acceptsImage,
+            acceptsFile: content.acceptsFile,
+            acceptableAnswers: content.acceptableAnswers || [],
+          };
+        }),
+      };
+    }
+  }
+
+  if (!exam || exam.type !== "tryout") notFound();
 
   const isEnrolled = await checkEnrollment(id);
 

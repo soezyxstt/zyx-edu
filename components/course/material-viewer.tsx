@@ -40,6 +40,14 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useScrollProgress } from "@/hooks/useScrollProgress";
+import { getCourseById } from "@/lib/student-course-fixtures";
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { CourseMaterial } from "@/lib/student-course-fixtures";
 import { updateMaterialProgress } from "@/app/dashboard/actions";
@@ -454,6 +462,25 @@ function parseArticleSections(body: string, defaultTitle: string): { chapterTitl
   return { chapterTitle, sections };
 }
 
+function shortenSubbabLabel(title: string): string {
+  return title
+    .replace(/^(?:Konsep|Subbab|Bab)\s+\d+:\s*/i, "")
+    .replace(/^\d+\.\s*/, "");
+}
+
+const getConceptTags = (courseId: string, materialTitle: string) => {
+  if (courseId === "calc-1") {
+    if (materialTitle.toLowerCase().includes("turunan")) {
+      return ["Turunan", "Aturan Rantai", "Diferensial"];
+    }
+    return ["Limit", "Kekontinuan", "Fungsi"];
+  }
+  if (courseId === "physics-1") {
+    return ["Vektor", "Besaran", "Satuan"];
+  }
+  return ["Kalkulus", "Sains"];
+};
+
 export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialViewerProps) {
   const [done, setDone] = useState(material.completed);
   const [viewerType, setViewerType] = useState<"custom" | "chrome">("custom");
@@ -464,6 +491,25 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
   useEffect(() => {
     setActiveSectionIdx(0);
   }, [material.id]);
+
+  useEffect(() => {
+    // Lock viewport scrolling when reader is active to fit content in one screen
+    const mainEl = document.getElementById("main-content");
+    
+    document.documentElement.classList.add("overflow-hidden");
+    document.body.classList.add("overflow-hidden");
+    if (mainEl) {
+      mainEl.classList.add("h-screen", "overflow-hidden", "flex", "flex-col");
+    }
+    
+    return () => {
+      document.documentElement.classList.remove("overflow-hidden");
+      document.body.classList.remove("overflow-hidden");
+      if (mainEl) {
+        mainEl.classList.remove("h-screen", "overflow-hidden", "flex", "flex-col");
+      }
+    };
+  }, []);
 
   const { chapterTitle, sections: articleSections } = useMemo(() => {
     return parseArticleSections(material.body || "", material.title);
@@ -491,6 +537,14 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
 
   const viewerRef = useRef<HTMLDivElement>(null);
   const noteSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const articleScrollRef = useRef<HTMLDivElement>(null);
+  const articleProgress = useScrollProgress(articleScrollRef);
+  const progressPercent = useMemo(() => {
+    if (material.kind === "article") return articleProgress;
+    if (material.kind === "pdf") return readingProgress;
+    return done ? 100 : 0;
+  }, [material.kind, articleProgress, readingProgress, done]);
 
   const { openExplain } = useTutor();
   const [selectedText, setSelectedText] = useState("");
@@ -789,68 +843,152 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
 
   const openUrl = material.url ?? "#";
 
-  return (
-    <div className="space-y-6 font-sans">
-      
-      {/* Top Banner Control bar */}
-      <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
-        
-        {/* Toggle Viewer engine (Custom vs Native Iframe) */}
-        {material.kind === "pdf" && (
-          <div className="flex items-center gap-1.5 bg-muted/60 p-0.5 rounded-xl border border-border">
-            <button
-              onClick={() => setViewerType("custom")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-body-xs font-semibold flex items-center gap-1 transition-all",
-                viewerType === "custom"
-                  ? "bg-card text-brand-primary shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+  if (material.kind === "article" && material.body) {
+    const course = getCourseById(material.courseId);
+    const conceptTags = getConceptTags(material.courseId, material.title);
+    return (
+      <div className="flex flex-col h-full w-full overflow-hidden bg-background">
+        {/* Sticky Topbar */}
+        <div className="sticky top-0 z-20 h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
+          <div className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
+          
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground font-mono font-semibold">
+              {progressPercent}%
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {ragEnabled && chapterId && (
+              <ChapterSummarySheet chapterId={chapterId} chapterTitle={material.title} />
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={markDone}
+              disabled={done}
+              className="h-7 text-[11px] font-semibold flex items-center gap-1.5 rounded-md interactive"
             >
-              <BookOpen className="size-3.5" />
-              Integrated Viewer
-            </button>
-            <button
-              onClick={() => setViewerType("chrome")}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-body-xs font-semibold flex items-center gap-1 transition-all",
-                viewerType === "chrome"
-                  ? "bg-card text-brand-primary shadow-xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+              <CheckCircle2 className={cn("size-3.5", done ? "text-emerald-500 fill-emerald-500/10" : "text-muted-foreground")} />
+              <span>{done ? "Selesai" : "Tandai Selesai"}</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Reading Canvas Container */}
+        <div 
+          ref={articleScrollRef}
+          data-theme={theme}
+          className="flex-1 bg-background text-foreground transition-colors duration-300 w-full overflow-y-auto"
+        >
+          <div className="max-w-2xl mx-auto px-6 py-8">
+            {/* Breadcrumb */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-1 select-none font-medium">
+              <span>{course?.title ?? "Course"}</span>
+              <span>&rarr;</span>
+              <span>{chapterTitle || "Bab"}</span>
+              <span>&rarr;</span>
+              <span className="text-foreground font-semibold">{articleSections[activeSectionIdx]?.title || "Detail"}</span>
+            </div>
+
+            {/* Chapter Title */}
+            <h1 className="text-xl font-bold text-primary font-heading tracking-tight mt-1 mb-2">
+              {chapterTitle}
+            </h1>
+
+            {/* Concept tags row */}
+            <div className="flex flex-wrap gap-1.5 mb-4 mt-2">
+              {conceptTags.map((tag) => (
+                <span key={tag} className="bg-primary/5 text-primary text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <hr className="border-border/80 my-4" />
+
+            {articleSections.length > 0 ? (
+              <>
+                {/* Section heading below divider */}
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                  {articleSections[activeSectionIdx]?.title}
+                </h2>
+
+                {/* Section content */}
+                <div className="w-full">
+                  <MarkdownRenderer content={articleSections[activeSectionIdx]?.content || ""} />
+                </div>
+              </>
+            ) : (
+              <div className="w-full">
+                <MarkdownRenderer content={material.body} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pinned Bottom Navigation */}
+        {articleSections.length > 0 && (
+          <div className="shrink-0 border-t border-border bg-card/60 backdrop-blur-xs px-6 py-3 flex items-center justify-between z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={activeSectionIdx === 0}
+              onClick={() => {
+                setActiveSectionIdx(prev => Math.max(0, prev - 1));
+                articleScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="rounded-md text-[11px] font-semibold interactive h-8"
             >
-              <Monitor className="size-3.5" />
-              Chrome Viewer (Iframe)
-            </button>
+              <ChevronLeft className="mr-1 size-3.5" /> Sebelum
+            </Button>
+            <span className="text-[11px] font-mono text-muted-foreground font-medium">
+              Subbab {activeSectionIdx + 1} dari {articleSections.length}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={activeSectionIdx === articleSections.length - 1}
+              onClick={() => {
+                setActiveSectionIdx(prev => Math.min(articleSections.length - 1, prev + 1));
+                articleScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="rounded-md text-[11px] font-semibold interactive h-8"
+            >
+              Selanjutnya <ChevronRight className="ml-1 size-3.5" />
+            </Button>
           </div>
         )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 font-sans">
+      {/* Sticky Topbar */}
+      <div className="sticky top-0 z-20 h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4">
+        <div className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
+        
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground font-mono font-semibold">
+            {progressPercent}%
+          </span>
+        </div>
 
         <div className="flex items-center gap-2">
           {ragEnabled && chapterId && (
             <ChapterSummarySheet chapterId={chapterId} chapterTitle={material.title} />
           )}
           <Button
-            type="button"
+            variant="outline"
+            size="sm"
             onClick={markDone}
             disabled={done}
-            className={cn(
-              "rounded-md text-body-xs py-1 h-auto transition-all duration-200",
-              done ? "bg-muted text-muted-foreground" : "bg-brand-primary text-white hover:bg-brand-primary/95"
-            )}
+            className="h-7 text-[11px] font-semibold flex items-center gap-1.5 rounded-md interactive"
           >
-            {done ? (
-              <span className="flex items-center gap-1"><CheckCircle2 className="size-3.5 text-emerald-500" /> Selesai Pelajari</span>
-            ) : (
-              "Tandai Selesai"
-            )}
+            <CheckCircle2 className={cn("size-3.5", done ? "text-emerald-500 fill-emerald-500/10" : "text-muted-foreground")} />
+            <span>{done ? "Selesai" : "Tandai Selesai"}</span>
           </Button>
-          {material.url && material.kind !== "article" ? (
-            <Button asChild variant="outline" className="rounded-md text-body-xs py-1 h-auto">
-              <a href={openUrl} target="_blank" rel="noopener noreferrer">
-                Buka Berkas Asli
-              </a>
-            </Button>
-          ) : null}
         </div>
       </div>
 
@@ -859,9 +997,46 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
         
         {/* Render PDF Document (Integrated custom viewer or standard Chrome) */}
         {material.kind === "pdf" ? (
-          viewerType === "custom" ? (
-            
-            /* Custom minimalist integrated PDF reader shell */
+          <div className="flex flex-col w-full relative bg-background">
+            {/* Viewer Engine Toggle (rendered at the top of PDF viewer container) */}
+            <div className="flex items-center justify-between gap-4 p-3 border-b border-border bg-card">
+              <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border">
+                <button
+                  type="button"
+                  onClick={() => setViewerType("custom")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all",
+                    viewerType === "custom"
+                      ? "bg-card text-brand-primary shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Integrated Viewer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewerType("chrome")}
+                  className={cn(
+                    "px-2.5 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all",
+                    viewerType === "chrome"
+                      ? "bg-card text-brand-primary shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Chrome Viewer
+                </button>
+              </div>
+
+              {material.url && (
+                <Button asChild variant="outline" size="xs" className="rounded-md text-[10px] font-semibold h-7">
+                  <a href={openUrl} target="_blank" rel="noopener noreferrer">
+                    Buka Berkas Asli
+                  </a>
+                </Button>
+              )}
+            </div>
+
+            {viewerType === "custom" ? (
             <div
               ref={viewerRef}
               className={cn(
@@ -869,6 +1044,7 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
                 isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen" : "min-h-[580px] rounded-2xl"
               )}
             >
+              {/* Custom minimalist integrated PDF reader shell */}
               {/* Sleek Reading Progress bar (topmost border) */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-border/20 z-20 overflow-hidden">
                 <div 
@@ -968,36 +1144,44 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
                         <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block mb-2 px-1">
                           Struktur Materi
                         </span>
-                        {MOCK_PAGES_META.map((p) => {
-                          const IconComp = p.icon;
-                          const hasNote = notes[p.pageNum];
-                          const hasBookmark = bookmarks.includes(p.pageNum);
+                        <TooltipProvider>
+                          {MOCK_PAGES_META.map((p) => {
+                            const IconComp = p.icon;
+                            const hasNote = notes[p.pageNum];
+                            const hasBookmark = bookmarks.includes(p.pageNum);
 
-                          return (
-                            <button
-                              key={p.pageNum}
-                              onClick={() => setPage(p.pageNum)}
-                              className={cn(
-                                "w-full text-left p-2.5 rounded-xl text-body-xs font-medium flex items-center justify-between border transition-all duration-200",
-                                page === p.pageNum
-                                  ? "bg-brand-primary/5 border-brand-primary/20 text-brand-primary font-semibold"
-                                  : "border-transparent text-foreground hover:bg-muted/60"
-                              )}
-                            >
-                              <div className="flex items-center gap-2 truncate pr-1">
-                                <IconComp className={cn("size-3.5 shrink-0", page === p.pageNum ? "text-brand-primary" : "text-muted-foreground")} />
-                                <span className="truncate">{p.title}</span>
-                              </div>
-                              <div className="flex items-center gap-1 text-[9px] shrink-0">
-                                {hasBookmark && <Bookmark className="size-3 text-brand-secondary fill-brand-secondary shrink-0" />}
-                                {hasNote && <NotebookPen className="size-3 text-sky-500 shrink-0" />}
-                                <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-semibold">
-                                  H{p.pageNum}
-                                </span>
-                              </div>
-                            </button>
-                          );
-                        })}
+                            return (
+                              <Tooltip key={p.pageNum}>
+                                <TooltipTrigger asChild>
+                                  <button
+                                    onClick={() => setPage(p.pageNum)}
+                                    className={cn(
+                                      "w-full text-left p-2.5 rounded-md text-sm font-medium flex items-center justify-between border transition-all duration-200",
+                                      page === p.pageNum
+                                        ? "bg-accent text-accent-foreground font-medium border-border"
+                                        : "border-transparent text-muted-foreground hover:bg-accent/50"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 truncate pr-1">
+                                      <IconComp className={cn("size-3.5 shrink-0", page === p.pageNum ? "text-accent-foreground" : "text-muted-foreground")} />
+                                      <span className="truncate">{shortenSubbabLabel(p.title)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-[9px] shrink-0">
+                                      {hasBookmark && <Bookmark className="size-3 text-brand-secondary fill-brand-secondary shrink-0" />}
+                                      {hasNote && <NotebookPen className="size-3 text-sky-500 shrink-0" />}
+                                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-semibold">
+                                        H{p.pageNum}
+                                      </span>
+                                    </div>
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent side="right">
+                                  <p>{p.title}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
                       </div>
                     )}
 
@@ -1273,29 +1457,30 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
 
                   {/* Bookmark Button directly overlaying the page canvas */}
                   <div className="w-full max-w-[620px] flex justify-end mb-2">
-                    <button
-                      onClick={() => toggleBookmark(page)}
-                      className={cn(
-                        "p-1.5 rounded-md border shadow-2xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 text-body-xs font-semibold px-3.5",
-                        bookmarks.includes(page)
-                          ? "bg-brand-secondary text-white border-brand-secondary"
-                          : "bg-card text-muted-foreground border-border hover:text-foreground"
-                      )}
-                      title={bookmarks.includes(page) ? "Hapus Penanda" : "Tandai Halaman Ini"}
-                    >
-                      {bookmarks.includes(page) ? (
-                        <>
-                          <BookmarkCheck className="size-3.5 text-white" />
-                          <span>Ditandai</span>
-                        </>
-                      ) : (
-                        <>
-                          <Bookmark className="size-3.5" />
-                          <span>Tandai Halaman</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleBookmark(page)}
+                        className={cn(
+                          "p-1.5 rounded-md border shadow-2xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 text-body-xs font-semibold px-3.5 h-7",
+                          bookmarks.includes(page)
+                            ? "bg-brand-secondary text-white border-brand-secondary"
+                            : "bg-card text-muted-foreground border-border hover:text-foreground"
+                        )}
+                        title={bookmarks.includes(page) ? "Hapus Penanda" : "Tandai Halaman Ini"}
+                      >
+                        {bookmarks.includes(page) ? (
+                          <>
+                            <BookmarkCheck className="size-3.5 text-white" />
+                            <span>Ditandai</span>
+                          </>
+                        ) : (
+                          <>
+                            <Bookmark className="size-3.5" />
+                            <span>Tandai Halaman</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
 
                   {/* Dynamic Scaling viewport container */}
                   <div className="flex-1 flex items-center justify-center w-full min-h-[480px]">
@@ -1396,37 +1581,6 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
 
                     <span className="w-px h-4 bg-border" />
 
-                    {/* Personal Theme Switcher */}
-                    <div className="flex items-center gap-1">
-                      {(["light", "sepia", "cream", "dark"] as ThemeMode[]).map((tMode) => {
-                        const bgClass = {
-                          light: "bg-white border-zinc-300",
-                          sepia: "bg-[#fbf0d9] border-[#e8dfc7]",
-                          cream: "bg-[#f7f4eb] border-[#eae6da]",
-                          dark: "bg-zinc-950 border-zinc-800"
-                        }[tMode];
-                        
-                        return (
-                          <button
-                            key={tMode}
-                            onClick={() => handleThemeChange(tMode)}
-                            className={cn(
-                              "size-5 rounded-full border transition-all hover:scale-110 active:scale-95 flex items-center justify-center shrink-0",
-                              bgClass,
-                              theme === tMode ? "ring-2 ring-brand-primary ring-offset-1 border-transparent scale-105" : "opacity-80"
-                            )}
-                            title={`Tema ${tMode.toUpperCase()}`}
-                          >
-                            {theme === tMode && (
-                              <span className={cn("size-1.5 rounded-full", tMode === "dark" ? "bg-white" : "bg-brand-primary")} />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <span className="w-px h-4 bg-border hidden sm:block" />
-
                     {/* Actions */}
                     <div className="flex items-center gap-1.5">
                       <button
@@ -1456,8 +1610,8 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
 
             </div>
           ) : (
-            /* Chrome Native Browser PDF Viewer (iframe fallback) */
             <div className="space-y-4 font-sans p-4">
+              {/* Chrome Native Browser PDF Viewer (iframe fallback) */}
               <p className="text-body-sm text-muted-foreground">
                 Pratinjau PDF bawaan browser di bawah ini. Gunakan tombol unduh jika tidak termuat.
               </p>
@@ -1475,137 +1629,10 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
                 </a>
               </Button>
             </div>
-          )
-        ) : null}
-
-        {/* Article Reader (Upgraded with theme customization support!) */}
-        {material.kind === "article" && material.body ? (
-          <div className={cn(
-            "transition-colors duration-300 p-6 md:p-12 relative flex flex-col items-center",
-            currentThemeStyle.deskBg
-          )}>
-            {/* Reading settings overlay for articles */}
-            <div className="w-full max-w-6xl flex items-center justify-between mb-6 pb-4 border-b border-border/80">
-              <span className="text-body-xs font-mono text-muted-foreground uppercase tracking-wider">
-                Mode Membaca Artikel
-              </span>
-              <div className="flex items-center gap-1.5 bg-card/80 p-1 rounded-md border border-border shadow-2xs">
-                {(["light", "sepia", "cream", "dark"] as ThemeMode[]).map((tMode) => (
-                  <button
-                    key={tMode}
-                    onClick={() => handleThemeChange(tMode)}
-                    className={cn(
-                      "text-[10px] font-semibold px-2.5 py-1 rounded-md transition-all",
-                      theme === tMode 
-                        ? "bg-brand-primary text-white shadow-xs" 
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {tMode.charAt(0).toUpperCase() + tMode.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {articleSections.length > 0 ? (
-              <div className="w-full max-w-6xl flex flex-col gap-6">
-                {/* Chapter Title Banner */}
-                <div className="w-full text-center md:text-left">
-                  <h1 className="font-heading text-h3 md:text-h2 font-bold tracking-tight text-foreground">
-                    {chapterTitle}
-                  </h1>
-                </div>
-
-                <div className="w-full grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-8 items-start">
-                  {/* Left Navigation Sidebar */}
-                  <div className="lg:sticky lg:top-4 space-y-1.5 bg-card border border-border p-4 rounded-2xl max-h-[80vh] overflow-y-auto shadow-sm">
-                    <div className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground mb-3 px-1">
-                      Daftar Subbab
-                    </div>
-                    <div className="space-y-1">
-                      {articleSections.map((sec, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => {
-                            setActiveSectionIdx(idx);
-                            document.getElementById("article-paper-content")?.scrollIntoView({ behavior: "smooth" });
-                          }}
-                          className={cn(
-                            "w-full text-left p-2.5 rounded-xl text-body-xs font-medium border transition-all duration-200 block truncate",
-                            activeSectionIdx === idx
-                              ? "bg-brand-primary/5 border-brand-primary/20 text-brand-primary font-semibold"
-                              : "border-transparent text-foreground hover:bg-muted/60"
-                          )}
-                          title={sec.title}
-                        >
-                          {sec.title}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Right Styled Article Paper */}
-                  <div id="article-paper-content" className={cn(
-                    "rounded-2xl border p-8 md:p-12 shadow-sm leading-relaxed w-full transition-colors duration-300 font-sans min-h-[500px] flex flex-col justify-between",
-                    currentThemeStyle.paperBg,
-                    currentThemeStyle.text,
-                    currentThemeStyle.border
-                  )}>
-                    <div>
-                      {/* Active Section Title inside the paper */}
-                      <h2 className="font-heading text-h3 font-bold border-b border-border/80 pb-3 mb-6">
-                        {articleSections[activeSectionIdx]?.title}
-                      </h2>
-                      
-                      {/* Render active section content */}
-                      <MarkdownRenderer content={articleSections[activeSectionIdx]?.content || ""} />
-                    </div>
-                    
-                    {/* Previous & Next Navigation at the bottom */}
-                    <div className="border-t border-border/80 pt-6 mt-12 flex items-center justify-between">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={activeSectionIdx === 0}
-                        onClick={() => {
-                          setActiveSectionIdx(prev => Math.max(0, prev - 1));
-                          document.getElementById("article-paper-content")?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className="rounded-md text-body-xs interactive"
-                      >
-                        <ChevronLeft className="mr-1 size-4" /> Sebelum
-                      </Button>
-                      <span className="text-[11px] font-mono text-muted-foreground">
-                        Subbab {activeSectionIdx + 1} dari {articleSections.length}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={activeSectionIdx === articleSections.length - 1}
-                        onClick={() => {
-                          setActiveSectionIdx(prev => Math.min(articleSections.length - 1, prev + 1));
-                          document.getElementById("article-paper-content")?.scrollIntoView({ behavior: "smooth" });
-                        }}
-                        className="rounded-md text-body-xs interactive"
-                      >
-                        Selanjutnya <ChevronRight className="ml-1 size-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div id="article-paper-content" className={cn(
-                "rounded-2xl border p-8 md:p-12 shadow-sm leading-relaxed max-w-4xl w-full transition-colors duration-300 font-sans",
-                currentThemeStyle.paperBg,
-                currentThemeStyle.text,
-                currentThemeStyle.border
-              )}>
-                <MarkdownRenderer content={material.body} />
-              </div>
             )}
           </div>
         ) : null}
+
 
         {/* Image Reader */}
         {material.kind === "image" && material.url ? (

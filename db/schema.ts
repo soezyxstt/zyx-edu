@@ -203,6 +203,8 @@ export const submissions = sqliteTable("submissions", {
   status: text("status").$type<"completed" | "pending_review" | "graded" | "late">().default("completed").notNull(), // Uses "pending_review" for essays
   score: integer("score"), // Stores calculated score
   teacherNotes: text("teacher_notes"), // Allows teacher to manually input feedback/notes
+  answersSnapshot: text("answers_snapshot", { mode: "json" }),
+  questionsSnapshot: text("questions_snapshot", { mode: "json" }),
   submittedAt: integer("submitted_at", { mode: "timestamp" }).defaultNow(),
 });
 
@@ -677,6 +679,45 @@ export const masterTeachingDocuments = sqliteTable(
   }
 );
 
+// 3.5. concepts & concept_localizations
+export const concepts = sqliteTable(
+  "concepts",
+  {
+    id: text("id").primaryKey(),
+    canonicalSlug: text("canonical_slug").notNull().unique(),
+    isVerified: integer("is_verified", { mode: "boolean" }).default(false).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }
+);
+
+export const conceptLocalizations = sqliteTable(
+  "concept_localizations",
+  {
+    id: text("id").primaryKey(),
+    conceptId: text("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+    lang: text("lang").$type<"id" | "en">().notNull(),
+    displayName: text("display_name").notNull(),
+    aliases: text("aliases", { mode: "json" }).$defaultFn(() => []).notNull(),
+    technicalStandardTerm: text("technical_standard_term").$type<"id" | "en">().default("id").notNull(),
+    embedding: text("embedding", { mode: "json" }).$type<number[]>(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("idx_concept_loc_concept").on(table.conceptId),
+    unique("uq_concept_loc_concept_lang").on(table.conceptId, table.lang),
+  ]
+);
+
 // 4. knowledge_objects
 export const knowledgeObjects = sqliteTable(
   "knowledge_objects",
@@ -691,7 +732,9 @@ export const knowledgeObjects = sqliteTable(
     chapterId: text("chapter_id")
       .notNull()
       .references(() => chapters.id, { onDelete: "cascade" }),
-    conceptId: text("concept_id").notNull(), // Stable machine-readable identifier
+    conceptId: text("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
     learningOrder: integer("learning_order").notNull(),
     title: text("title").notNull(),
     conceptName: text("concept_name").notNull(),
@@ -1029,7 +1072,23 @@ export const masterTeachingDocumentsRelations = relations(masterTeachingDocument
   questions: many(aiQuestionBank),
 }));
 
+export const conceptsRelations = relations(concepts, ({ many }) => ({
+  localizations: many(conceptLocalizations),
+  knowledgeObjects: many(knowledgeObjects),
+}));
+
+export const conceptLocalizationsRelations = relations(conceptLocalizations, ({ one }) => ({
+  concept: one(concepts, {
+    fields: [conceptLocalizations.conceptId],
+    references: [concepts.id],
+  }),
+}));
+
 export const knowledgeObjectsRelations = relations(knowledgeObjects, ({ one, many }) => ({
+  concept: one(concepts, {
+    fields: [knowledgeObjects.conceptId],
+    references: [concepts.id],
+  }),
   course: one(courses, {
     fields: [knowledgeObjects.courseId],
     references: [courses.id],
@@ -1632,5 +1691,35 @@ export const weeklyReflectionsRelations = relations(weeklyReflections, ({ one })
   student: one(user, {
     fields: [weeklyReflections.studentId],
     references: [user.id],
+  }),
+}));
+
+export const aiExtractionFailures = sqliteTable(
+  "ai_extraction_failures",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .references(() => courses.id, { onDelete: "cascade" }),
+    chapterId: text("chapter_id")
+      .references(() => chapters.id, { onDelete: "cascade" }),
+    step: text("step").$type<"extraction" | "canonicalization" | "validation">().notNull(),
+    rawOutput: text("raw_output").notNull(),
+    errorMessage: text("error_message").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_ai_fail_course").on(table.courseId),
+    index("idx_ai_fail_chapter").on(table.chapterId),
+  ]
+);
+
+export const aiExtractionFailuresRelations = relations(aiExtractionFailures, ({ one }) => ({
+  course: one(courses, {
+    fields: [aiExtractionFailures.courseId],
+    references: [courses.id],
+  }),
+  chapter: one(chapters, {
+    fields: [aiExtractionFailures.chapterId],
+    references: [chapters.id],
   }),
 }));

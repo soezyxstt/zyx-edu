@@ -1,6 +1,7 @@
 import { generateContentWithFallback } from "@/lib/gemini";
 import { UsageBudgetService } from "@/lib/usage-budget-service";
 import { z } from "zod";
+import { repairJsonString } from "./ko-utils";
 
 export interface SystemPrompt<TVars> {
   version: string;
@@ -71,7 +72,7 @@ export class PromptExecutor {
     // 3. Attempt JSON parse and Zod validation
     let candidateJSON: any = null;
     try {
-      const cleanJSON = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+      const cleanJSON = repairJsonString(rawText);
       candidateJSON = JSON.parse(cleanJSON);
     } catch (err: any) {
       return await this.repair(params, rawText, `JSON parse error: ${err.message}`, modelUsedName);

@@ -38,7 +38,7 @@ export function LandingHero() {
           </SectionHeading>
           <p className="mt-4 max-w-prose text-body-md text-muted-foreground">
             ZYX memetakan apa yang sudah dan belum kamu kuasai, lalu menyusun rencana belajar
-            harian — kuis, flashcard, dan materi yang selaras dengan kuliah ITB.
+            harian; kuis, flashcard, dan materi yang selaras dengan kuliah ITB.
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">
@@ -49,11 +49,6 @@ export function LandingHero() {
               <Link href="/plans">Lihat paket</Link>
             </Button>
           </div>
-
-          <p className="mt-6 text-xs text-muted-foreground">
-            <span className="sr-only">Bukti sosial: </span>
-            200+ mahasiswa TPB · 15 tutor ITB · ★ 4,8
-          </p>
         </div>
 
         <HeroGraphCard />

@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getExamsForCourse } from "@/lib/student-course-fixtures";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { TryoutListClient } from "./tryout-list-client";
 import { Reveal } from "@/components/ui/reveal";
+import { db } from "@/db";
+import { exams } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -25,23 +27,32 @@ export default async function CourseTryoutListPage({ params }: Props) {
   if (!course) return null;
 
   const isEnrolled = await checkEnrollment(id);
-  const tryouts = getExamsForCourse(id, "tryout");
+
+  // Retrieve db tryouts
+  const dbTryouts = await db
+    .select()
+    .from(exams)
+    .where(and(eq(exams.courseId, id), eq(exams.type, "tryout"), eq(exams.status, "published")));
+
+  const mappedDb = dbTryouts.map((t) => {
+    const settings = typeof t.settings === "string" ? JSON.parse(t.settings) : t.settings;
+    return {
+      id: t.id,
+      courseId: id,
+      title: t.title,
+      type: "tryout" as const,
+      status: t.status,
+      settings: settings || { timeLimitMinutes: 90, maxAttempts: 2 },
+      questions: [],
+    };
+  });
+
+  const allTryouts = [...getExamsForCourse(id, "tryout"), ...mappedDb];
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-        </div>
-      }
-      title="Simulasi Tryout"
-      description="Ujian simulasi terstruktur untuk melatih kesiapan menghadapi ujian utama."
-      hideHeader
-    >
+    <CoursePageShell>
       <Reveal>
-        <TryoutListClient courseId={id} isEnrolled={isEnrolled} tryouts={tryouts} />
+        <TryoutListClient courseId={id} isEnrolled={isEnrolled} tryouts={allTryouts} />
       </Reveal>
     </CoursePageShell>
   );

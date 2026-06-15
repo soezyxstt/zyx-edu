@@ -1,9 +1,12 @@
 import { db } from "@/db";
-import { diktats, masterTeachingDocuments, knowledgeObjects } from "@/db/schema";
-import { generateDiktatStructure } from "./diktat-generator";
+import { diktats, masterTeachingDocuments, knowledgeObjects, knowledgeRelationships } from "@/db/schema";
+import { generateDiktatStructure, DiktatStructure } from "./diktat-generator";
 import { validateDiktat } from "./diktat-validator";
 import { renderDiktatToHTML } from "./diktat-renderer";
-import { eq, and } from "drizzle-orm";
+import { auditDiktatStructure, applyDiktatRevisions } from "./diktat-auditor";
+import { generateExamIntelligence } from "./diktat-exam-intelligence";
+import { auditRenderedPDF } from "./diktat-pdf-auditor";
+import { eq, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { storage } from "@/lib/storage";
 
@@ -136,8 +139,59 @@ export async function executeDiktatPDFGeneration(
     return { success: false, errors: ["Missing compiled JSON structure inside Diktat settings."] };
   }
 
-  // 1. Run Quality Gates validation
-  const validation = await validateDiktat(structure);
+  // 1. Fetch source KOs for audit + enhanced validation
+  const sourceKOs = await db
+    .select()
+    .from(knowledgeObjects)
+    .where(
+      and(
+        inArray(knowledgeObjects.chapterId, structure.chapterIds),
+        eq(knowledgeObjects.status, "active")
+      )
+    );
+
+  // Build relationships map
+  const relationshipRows = sourceKOs.length > 0
+    ? await db
+        .select()
+        .from(knowledgeRelationships)
+        .where(inArray(knowledgeRelationships.sourceKoId, sourceKOs.map(k => k.id)))
+    : [];
+  const relationshipsMap = new Map<string, string[]>();
+  for (const rel of relationshipRows) {
+    const list = relationshipsMap.get(rel.sourceKoId) || [];
+    list.push(rel.targetKoId);
+    relationshipsMap.set(rel.sourceKoId, list);
+  }
+
+  // 2. Academic Audit (deterministic always; AI if FEATURE_DIKTAT_AI=1)
+  let auditedStructure: DiktatStructure = structure;
+  const auditResult = await auditDiktatStructure(structure, sourceKOs);
+  if (auditResult.issues.length > 0) {
+    console.warn("[diktat-actions] Audit issues:", auditResult.issues.map(i => `[${i.severity}] ${i.description}`));
+  }
+
+  // 3. Apply safe AI revisions (gated)
+  let revisionsApplied = 0;
+  if (process.env.FEATURE_DIKTAT_AI === "1" && auditResult.proposedRevisions.length > 0) {
+    auditedStructure = await applyDiktatRevisions(structure, auditResult.proposedRevisions, sourceKOs);
+    revisionsApplied = auditResult.proposedRevisions.length;
+  }
+
+  // 4. Generate exam intelligence and attach to structure
+  const examIntelligence = await generateExamIntelligence(auditedStructure, sourceKOs, relationshipsMap);
+  const enrichedStructure: DiktatStructure = {
+    ...auditedStructure,
+    examIntelligence,
+    auditResult: {
+      status: auditResult.status,
+      issueCount: auditResult.issues.length,
+      revisionsApplied,
+    },
+  };
+
+  // 5. Enhanced Quality Gates validation (now with semantic formula check)
+  const validation = await validateDiktat(enrichedStructure, { sourceKOs });
   if (!validation.success) {
     return {
       success: false,
@@ -145,8 +199,8 @@ export async function executeDiktatPDFGeneration(
     };
   }
 
-  // 2. Render structured layout to HTML
-  const compiledHTML = renderDiktatToHTML(structure, overrides);
+  // 6. Render structured layout to HTML
+  const compiledHTML = renderDiktatToHTML(enrichedStructure, overrides);
 
   let pdfBuffer: Buffer;
   const isMock = process.env.MOCK_GEMINI === "true";
@@ -192,7 +246,18 @@ export async function executeDiktatPDFGeneration(
     }
   }
 
-  // 3. Long-Term PDF Storage Strategy: Upload new and clean up old CDN files
+  // 7. PDF Audit (non-blocking, AI only)
+  if (process.env.FEATURE_DIKTAT_AI === "1") {
+    auditRenderedPDF(pdfBuffer, enrichedStructure).then(pdfAudit => {
+      if (pdfAudit.warnings.length > 0) {
+        console.warn("[diktat-pdf-audit]", pdfAudit.warnings);
+      }
+    }).catch(err => {
+      console.warn("[diktat-pdf-audit] failed:", err);
+    });
+  }
+
+  // 8. Long-Term PDF Storage Strategy: Upload new and clean up old CDN files
   try {
     const oldUrl = diktat.fileUrl;
 

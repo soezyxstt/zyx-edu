@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { EnrollmentForm } from "@/components/enrollment-form";
@@ -35,18 +34,7 @@ export default async function CoursePathPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell
-        eyebrow={
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-            <ChevronRight className="size-3" />
-            <span>{course.category}</span>
-          </div>
-        }
-        headingTier="primary"
-        title={course.title}
-        description="Alur Belajar Personal"
-      >
+      <CoursePageShell>
         <Reveal>
           <div className="mx-auto max-w-xl text-center py-12">
             <h3 className="font-heading text-body-lg font-bold text-foreground">Alur Belajar Terkunci</h3>
@@ -63,18 +51,7 @@ export default async function CoursePathPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <span>{course.category}</span>
-        </div>
-      }
-      headingTier="primary"
-      title={course.title}
-      description="Rencana alur belajar personal berbasis penguasaan materi Anda."
-    >
+    <CoursePageShell>
       <StudyPathTimeline courseId={id} />
     </CoursePageShell>
   );

@@ -5,14 +5,14 @@ export class UploadThingProvider implements StorageProvider {
   private utapi = new UTApi();
 
   async upload(
-    file: File | Buffer,
+    file: File | Buffer | Uint8Array,
     filename: string,
     mimeType: string,
     options?: any
   ): Promise<{ url: string; key: string; size: number }> {
     let uploadFile: File;
     
-    if (file instanceof Buffer) {
+    if (Buffer.isBuffer(file) || file instanceof Uint8Array) {
       uploadFile = new File([new Uint8Array(file)], filename, { type: mimeType });
     } else {
       uploadFile = file as File;

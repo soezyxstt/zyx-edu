@@ -23,7 +23,7 @@ export async function createDiktatDraftAction(courseId: string, chapterIds: stri
       };
     }
     
-    return { success: true, diktatId: res.diktatId, url: pubRes.fileUrl };
+    return { success: true, diktatId: res.diktatId, url: pubRes.fileUrl ? storage.getUrl(pubRes.fileUrl) : undefined };
   } catch (error: any) {
     console.error("Error creating diktat:", error);
     return { success: false, error: error.message || "Terjadi kesalahan sistem." };
@@ -36,7 +36,7 @@ export async function compileDiktatAction(diktatId: string) {
     if (!res.success) {
       return { success: false, error: res.errors?.join(", ") || "Gagal mengompilasi PDF." };
     }
-    return { success: true, url: res.fileUrl };
+    return { success: true, url: res.fileUrl ? storage.getUrl(res.fileUrl) : undefined };
   } catch (error: any) {
     console.error("Error compiling diktat:", error);
     return { success: false, error: error.message || "Terjadi kesalahan sistem." };

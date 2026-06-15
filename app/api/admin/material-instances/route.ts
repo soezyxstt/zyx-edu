@@ -11,6 +11,8 @@ import {
   chapters,
   knowledgeObjects,
   websiteMaterials,
+  concepts,
+  conceptLocalizations,
 } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -152,24 +154,58 @@ export async function POST(req: NextRequest) {
         );
       } catch (err) {
         console.error(`Failed to extract KOs for section ${section.title}:`, err);
-        // Fallback: Insert a single dummy concept_overview KO
-        await db.insert(knowledgeObjects).values({
-          id: randomUUID(),
-          courseId,
-          mtdId,
-          chapterId,
-          conceptId: `ko-${courseId}-${section.orderIndex + 1}`,
-          learningOrder: 1,
-          title: `Konsep Utama: ${section.title || `Bagian ${section.orderIndex + 1}`}`,
-          conceptName: section.title || `Bagian ${section.orderIndex + 1}`,
-          content: sectionContent.slice(0, 800),
-          type: 'concept_overview',
-          difficulty: 'medium',
-          bloomLevel: 'understand',
-          tags: keywords,
-          importance: 'high',
-          status: 'active',
-        });
+        // Fallback: Register the concept and insert a single dummy concept_overview KO
+        try {
+          const fallbackConceptId = randomUUID();
+          const conceptName = section.title || `Bagian ${section.orderIndex + 1}`;
+          const fallbackSlug = conceptName
+            .toLowerCase()
+            .trim()
+            .replace(/[^\w\s-]/g, "")
+            .replace(/[\s_-]+/g, "-")
+            .replace(/^-+|-+$/g, "");
+
+          await db.transaction(async (tx) => {
+            // Register concept
+            await tx.insert(concepts).values({
+              id: fallbackConceptId,
+              canonicalSlug: `${fallbackSlug}-${fallbackConceptId.slice(0, 8)}`,
+              isVerified: false,
+            });
+
+            // Register localization
+            await tx.insert(conceptLocalizations).values({
+              id: randomUUID(),
+              conceptId: fallbackConceptId,
+              lang: "id",
+              displayName: conceptName,
+              aliases: [],
+              technicalStandardTerm: "id",
+              embedding: null,
+            });
+
+            // Insert fallback KO
+            await tx.insert(knowledgeObjects).values({
+              id: randomUUID(),
+              courseId,
+              mtdId,
+              chapterId,
+              conceptId: fallbackConceptId,
+              learningOrder: 1,
+              title: `Konsep Utama: ${conceptName}`,
+              conceptName: conceptName,
+              content: sectionContent.slice(0, 800) || `Ringkasan materi untuk ${conceptName}`,
+              type: 'concept_overview',
+              difficulty: 'medium',
+              bloomLevel: 'understand',
+              tags: keywords && keywords.length > 0 ? keywords : ["fallback"],
+              importance: 'high',
+              status: 'active',
+            });
+          });
+        } catch (fallbackErr) {
+          console.error(`Double fault: Fallback insertion also failed for section ${section.title}:`, fallbackErr);
+        }
       }
     })();
     chapterExtractions.push(extractionPromise);

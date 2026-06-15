@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
 import { getStudentEnrollments } from "@/app/dashboard/actions";
-import { getOrUpdateStreak } from "@/lib/streak-service";
+import { getOrUpdateStreak, getWeeklyActivity } from "@/lib/streak-service";
 import { getOrBuildTodayRecommendation } from "@/lib/recommendation-service";
 
 export async function GET() {
@@ -18,9 +18,10 @@ export async function GET() {
 
   const studentId = session.user.id;
 
-  const [streak, enrollments] = await Promise.all([
+  const [streak, enrollments, weeklyActivity] = await Promise.all([
     getOrUpdateStreak(studentId),
     getStudentEnrollments(),
+    getWeeklyActivity(studentId),
   ]);
 
   const enrolledCourseIds = enrollments.map((e) => e.id);
@@ -29,5 +30,7 @@ export async function GET() {
   return NextResponse.json({
     streak: { current: streak.current, longest: streak.longest },
     items: recommendation.items,
+    weeklyActivity,
   });
 }
+

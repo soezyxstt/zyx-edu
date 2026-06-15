@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { checkEnrollment } from "@/app/dashboard/actions";
@@ -58,18 +57,7 @@ export default async function CourseFlashcardPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-        </div>
-      }
-      title="Flashcard Review"
-      description="Gunakan kartu pengulangan berjeda (spaced repetition) untuk mematangkan ingatan konsep inti Anda."
-      hideHeader
-    >
+    <CoursePageShell>
       <Reveal>
         {!isEnrolled ? (
           <div className="mx-auto max-w-2xl rounded-2xl border border-border/60 bg-card p-6 shadow-sm text-center">

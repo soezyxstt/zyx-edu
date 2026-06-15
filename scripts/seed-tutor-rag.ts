@@ -23,6 +23,8 @@ import {
   flashcardSets,
   flashcards,
   studentFlashcardProgress,
+  concepts,
+  conceptLocalizations,
 } from "@/db/schema";
 import { embedText, withGeminiRetry } from "@/lib/gemini";
 import { getNs } from "@/lib/pinecone";
@@ -233,6 +235,42 @@ async function main() {
     });
   }
 
+  // Register concepts first to prevent foreign key constraint violations
+  const slugify = (text: string) => text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const conceptIdMap = new Map<string, string>();
+
+  for (const ko of KOS) {
+    const slug = slugify(ko.conceptName);
+    
+    // Check if concept already exists
+    const [existingConcept] = await db
+      .select()
+      .from(concepts)
+      .where(eq(concepts.canonicalSlug, slug));
+
+    if (existingConcept) {
+      conceptIdMap.set(ko.conceptName, existingConcept.id);
+    } else {
+      await db.insert(concepts).values({
+        id: ko.conceptId,
+        canonicalSlug: slug,
+        isVerified: false,
+      }).onConflictDoNothing();
+
+      await db.insert(conceptLocalizations).values({
+        id: randomUUID(),
+        conceptId: ko.conceptId,
+        lang: "id",
+        displayName: ko.conceptName,
+        aliases: [],
+        technicalStandardTerm: "id",
+        embedding: null,
+      }).onConflictDoNothing();
+
+      conceptIdMap.set(ko.conceptName, ko.conceptId);
+    }
+  }
+
   // Knowledge objects (fresh)
   await db.delete(knowledgeObjects).where(eq(knowledgeObjects.courseId, COURSE_ID));
   const koIdByConcept = new Map<string, string>();
@@ -240,12 +278,13 @@ async function main() {
   for (const ko of KOS) {
     const id = `ko-rag-${ko.conceptId}`;
     koIdByConcept.set(ko.conceptName, id);
+    const dbConceptId = conceptIdMap.get(ko.conceptName) || ko.conceptId;
     await db.insert(knowledgeObjects).values({
       id,
       courseId: COURSE_ID,
       mtdId: MTD_ID,
       chapterId: CHAPTER_ID,
-      conceptId: ko.conceptId,
+      conceptId: dbConceptId,
       learningOrder: order++,
       title: ko.title,
       conceptName: ko.conceptName,

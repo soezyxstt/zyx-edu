@@ -11,6 +11,7 @@ import { generateContentWithFallback } from "@/lib/gemini";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { z } from "zod";
+import { repairJsonString } from "./ko-utils";
 
 // ==========================================
 // ZOD SCHEMAS FOR GEMINI VALIDATION
@@ -211,11 +212,7 @@ export async function generateFlashcardsForChapter(chapterId: string): Promise<n
     }
 
     // Clean potential markdown enclosing fences
-    const cleanJSONText = outputText
-      .replace(/^```json\s*/i, "")
-      .replace(/```\s*$/, "")
-      .trim();
-
+    const cleanJSONText = repairJsonString(outputText);
     const parsedJSON = JSON.parse(cleanJSONText);
     
     // Explicit Zod schema validation before database insertion

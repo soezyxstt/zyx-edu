@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { aiQuestionBank, knowledgeObjects } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { exams } from "@/lib/student-course-fixtures";
+import { askTutorRag } from "@/lib/tutor-rag";
 
 async function requireUser() {
   const h = await headers();
@@ -154,4 +155,18 @@ export async function findKoForMaterialSectionAction(courseId: string, selectedT
   }
 
   return { success: false, error: "No KOs found for this course" };
+}
+
+export async function askTutorRagAction(
+  courseId: string,
+  chapterId: string | null,
+  question: string
+) {
+  const user = await requireUser();
+  return askTutorRag({
+    studentId: user.id,
+    courseId,
+    chapterId,
+    question,
+  });
 }

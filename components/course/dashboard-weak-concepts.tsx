@@ -15,6 +15,7 @@ interface MasteryConcept {
 
 interface DashboardWeakConceptsProps {
   concepts: MasteryConcept[];
+  courseTitle?: string;
 }
 
 function barTone(score: number) {
@@ -26,58 +27,72 @@ function barTone(score: number) {
 function TrendIcon({ trend }: { trend?: "improving" | "stable" | "declining" | null }) {
   if (trend === "improving") return <TrendingUp className="size-3.5 text-status-success" />;
   if (trend === "declining") return <TrendingDown className="size-3.5 text-status-error" />;
-  if (trend === "stable") return <Minus className="size-3.5 text-muted-foreground" />;
-  return null; // P1A: trend slot reserved, filled by P1B
+  return <Minus className="size-3.5 text-muted-foreground" />;
 }
 
-export function DashboardWeakConcepts({ concepts }: DashboardWeakConceptsProps) {
-  const weak = concepts.filter((c) => c.evidenceCount >= 3 && c.masteryScore < 70).slice(0, 5);
+export function DashboardWeakConcepts({ concepts, courseTitle = "Kuliah" }: DashboardWeakConceptsProps) {
+  // Show top 4 concepts sorted by learning order (or simply the slice of first 4 concepts)
+  const displayConcepts = concepts.slice(0, 4);
 
   return (
-    <div>
-      <h2 className="text-h6 font-heading border-b border-border pb-2 mb-3">Weak concepts</h2>
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/65 p-5 shadow-sm backdrop-blur-md text-left">
+      {/* Mock Browser Header */}
+      <div className="mb-4 flex items-center justify-between border-b border-border/40 pb-3 font-mono text-[10px] font-semibold text-muted-foreground select-none">
+        <div className="flex items-center gap-1.5">
+          <span className="flex gap-1.5">
+            <span className="size-2 rounded-full bg-border" />
+            <span className="size-2 rounded-full bg-border" />
+            <span className="size-2 rounded-full bg-border" />
+          </span>
+          <span className="ml-1.5 uppercase tracking-wider">Peta Penguasaan · {courseTitle}</span>
+        </div>
+      </div>
 
-      {weak.length === 0 ? (
-        <p className="text-body-sm text-muted-foreground">
-          No weak concepts yet. Take a quiz to start tracking.
+      {displayConcepts.length === 0 ? (
+        <p className="text-body-sm text-muted-foreground py-4">
+          Belum ada data penguasaan. Kerjakan kuis untuk mulai melacak progress Anda.
         </p>
       ) : (
-        <div className="divide-y divide-border">
-          {weak.map((c, index) => (
+        <div className="space-y-4">
+          {displayConcepts.map((c, index) => (
             <div
               key={c.conceptName}
-              className="py-3 flex items-center gap-4 animate-in fade-in slide-in-from-bottom-2 duration-300"
+              className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300"
               style={{ animationDelay: `${index * 50}ms` }}
             >
-              {/* Concept name + trend icon */}
-              <div className="flex-1 min-w-0">
-                <span className="flex items-center gap-1.5 text-body-base font-medium text-foreground truncate">
+              {/* Concept name + trend icon + score */}
+              <div className="flex items-center justify-between text-body-sm">
+                <span className="flex items-center gap-1.5 font-medium text-foreground truncate max-w-[80%]">
                   {c.conceptName}
                   <TrendIcon trend={c.trend} />
                 </span>
-                {c.blockedBy && c.blockedBy.length > 0 && (
-                  <Badge variant="outline" className="text-muted-foreground mt-1 gap-1 text-[11px] rounded-md">
-                    <Lock className="size-3" />
-                    needs {c.blockedBy[0]}
-                  </Badge>
-                )}
-              </div>
-
-              {/* Score + bar */}
-              <div className="w-40 flex items-center gap-2 shrink-0">
-                <div className="flex-1 h-2 overflow-hidden rounded-md bg-muted">
-                  <div
-                    className={cn("landing-bar h-full rounded-md", barTone(c.masteryScore))}
-                    style={{ width: `${c.masteryScore}%`, animationDelay: `${index * 120}ms` }}
-                  />
-                </div>
-                {/* P1B trend icon slot — filled in P1B */}
-                <span className="text-body-sm text-muted-foreground tabular-nums w-6 text-right">
+                <span className="font-mono text-xs font-semibold text-muted-foreground">
                   {c.masteryScore}
                 </span>
               </div>
+
+              {/* Progress bar */}
+              <div className="h-2 overflow-hidden rounded-md bg-muted w-full">
+                <div
+                  className={cn("h-full rounded-md transition-all duration-500 ease-out", barTone(c.masteryScore))}
+                  style={{ width: `${c.masteryScore}%` }}
+                />
+              </div>
+
+              {c.blockedBy && c.blockedBy.length > 0 && (
+                <div className="mt-0.5">
+                  <Badge variant="outline" className="text-muted-foreground gap-1 text-[10px] rounded-md py-0.5">
+                    <Lock className="size-3" />
+                    butuh {c.blockedBy[0]}
+                  </Badge>
+                </div>
+              )}
             </div>
           ))}
+          
+          <p className="mt-4 pt-2 border-t border-border/30 text-[10px] text-muted-foreground select-none">
+            Diperbarui otomatis dari kuis dan sesi flashcard terakhir.
+          </p>
         </div>
       )}
     </div>

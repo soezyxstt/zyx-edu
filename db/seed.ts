@@ -6,12 +6,19 @@ import {
   aiQuestionBank,
   quizTemplates,
   studentQuizAttempts,
+  tutorCourses,
 } from "./schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 async function main() {
   console.log("=== Seeding Database for Local Development ===");
+
+  // Clear existing question bank, templates and attempts to ensure new formatting is applied
+  console.log("Clearing existing questions, templates, and attempts...");
+  await db.delete(studentQuizAttempts);
+  await db.delete(quizTemplates);
+  await db.delete(aiQuestionBank);
 
   // 1. Seed Users
   console.log("Seeding users...");
@@ -126,6 +133,35 @@ async function main() {
     }
   }
 
+  // 3.5 Seed Tutor Courses
+  console.log("Seeding tutor course assignments...");
+  const devTutorCourses = [
+    {
+      id: "tc-calc",
+      tutorId: "teacher-1",
+      courseId: "calc-1",
+      createdAt: new Date(),
+    },
+    {
+      id: "tc-physics",
+      tutorId: "teacher-1",
+      courseId: "physics-1",
+      createdAt: new Date(),
+    },
+  ];
+
+  for (const tc of devTutorCourses) {
+    const existing = await db.query.tutorCourses.findFirst({
+      where: eq(tutorCourses.id, tc.id),
+    });
+    if (!existing) {
+      await db.insert(tutorCourses).values(tc);
+      console.log(`Tutor Course assignment seeded for ${tc.tutorId} on ${tc.courseId}.`);
+    } else {
+      console.log(`Tutor Course assignment ${tc.id} already exists.`);
+    }
+  }
+
   // 4. Seed Questions (at least 10 in aiQuestionBank for calc-1 with various difficulties)
   console.log("Seeding questions in AI Question Bank...");
   const devQuestions = [
@@ -136,10 +172,10 @@ async function main() {
       difficulty: "easy" as const,
       questionType: "multiple_choice" as const,
       tags: ["limit", "aljabar"],
-      prompt: "Berapakah nilai dari lim_{x -> 3} (2x + 1)?",
+      prompt: "Berapakah nilai dari $\\lim_{x \\to 3} (2x + 1)$?",
       options: ["5", "6", "7", "8"],
       correctIndices: [2], // "7"
-      explanation: "Substitusi langsung x = 3 menghasilkan 2(3) + 1 = 7.",
+      explanation: "Substitusi langsung $x = 3$ menghasilkan $2(3) + 1 = 7$.",
       reviewStatus: "published" as const,
       qualityScore: 1.0,
       useCount: 0,
@@ -151,10 +187,10 @@ async function main() {
       difficulty: "easy" as const,
       questionType: "multiple_choice" as const,
       tags: ["turunan", "aljabar"],
-      prompt: "Turunan pertama dari f(x) = x^2 adalah...",
-      options: ["x", "2x", "2x^2", "x/2"],
+      prompt: "Turunan pertama dari $f(x) = x^2$ adalah...",
+      options: ["$x$", "$2x$", "$2x^2$", "$x/2$"],
       correctIndices: [1], // "2x"
-      explanation: "Menggunakan aturan pangkat turunan d/dx(x^n) = n*x^(n-1), maka turunan dari x^2 adalah 2x.",
+      explanation: "Menggunakan aturan pangkat turunan $\\frac{d}{dx}(x^n) = n x^{n-1}$, maka turunan dari $x^2$ adalah $2x$.",
       reviewStatus: "published" as const,
       qualityScore: 1.0,
       useCount: 0,
@@ -166,10 +202,10 @@ async function main() {
       difficulty: "easy" as const,
       questionType: "multiple_choice" as const,
       tags: ["integral", "dasar"],
-      prompt: "Berapakah hasil dari integral \u222b dx?",
-      options: ["x + C", "1 + C", "0", "x"],
+      prompt: "Berapakah hasil dari integral $\\int dx$?",
+      options: ["$x + C$", "$1 + C$", "$0$", "$x$"],
       correctIndices: [0], // "x + C"
-      explanation: "Integral dari konstanta 1 terhadap x adalah x + C.",
+      explanation: "Integral dari konstanta 1 terhadap $x$ adalah $x + C$.",
       reviewStatus: "published" as const,
       qualityScore: 1.0,
       useCount: 0,
@@ -183,10 +219,10 @@ async function main() {
       difficulty: "medium" as const,
       questionType: "multiple_choice" as const,
       tags: ["limit", "trigonometri"],
-      prompt: "Berapakah nilai dari lim_{x -> 0} (sin(x) / x)?",
-      options: ["0", "1", "Tidak terdefinisi", "\u221e"],
+      prompt: "Berapakah nilai dari $\\lim_{x \\to 0} \\frac{\\sin(x)}{x}$?",
+      options: ["0", "1", "Tidak terdefinisi", "$\\infty$"],
       correctIndices: [1], // "1"
-      explanation: "Berdasarkan teorema limit trigonometri khusus dasar, lim_{x -> 0} sin(x)/x = 1.",
+      explanation: "Berdasarkan teorema limit trigonometri khusus dasar, $\\lim_{x \\to 0} \\frac{\\sin(x)}{x} = 1$.",
       reviewStatus: "published" as const,
       qualityScore: 0.95,
       useCount: 0,
@@ -198,10 +234,10 @@ async function main() {
       difficulty: "medium" as const,
       questionType: "multiple_choice" as const,
       tags: ["turunan", "aturan-rantai"],
-      prompt: "Turunan pertama dari f(x) = sin(x^2) adalah...",
-      options: ["cos(x^2)", "2x * cos(x^2)", "2x * sin(x^2)", "cos(2x)"],
+      prompt: "Turunan pertama dari $f(x) = \\sin(x^2)$ adalah...",
+      options: ["$\\cos(x^2)$", "$2x \\cos(x^2)$", "$2x \\sin(x^2)$", "$\\cos(2x)$"],
       correctIndices: [1], // "2x * cos(x^2)"
-      explanation: "Dengan aturan rantai: d/dx(sin(u)) = cos(u) * du/dx. Di sini u = x^2, sehingga du/dx = 2x. Hasilnya adalah 2x * cos(x^2).",
+      explanation: "Dengan aturan rantai: $\\frac{d}{dx}(\\sin(u)) = \\cos(u) \\frac{du}{dx}$. Di sini $u = x^2$, sehingga $\\frac{du}{dx} = 2x$. Hasilnya adalah $2x \\cos(x^2)$.",
       reviewStatus: "published" as const,
       qualityScore: 1.0,
       useCount: 0,
@@ -213,10 +249,10 @@ async function main() {
       difficulty: "medium" as const,
       questionType: "multiple_choice" as const,
       tags: ["integral", "substitusi"],
-      prompt: "Berapakah hasil dari \u222b 2x * e^(x^2) dx?",
-      options: ["e^(x^2) + C", "2 * e^(x^2) + C", "e^x + C", "x^2 * e^x + C"],
+      prompt: "Berapakah hasil dari $\\int 2x e^{x^2} dx$?",
+      options: ["$e^{x^2} + C$", "$2e^{x^2} + C$", "$e^x + C$", "$x^2 e^x + C$"],
       correctIndices: [0], // "e^(x^2) + C"
-      explanation: "Misalkan u = x^2, maka du = 2x dx. Integral menjadi \u222b e^u du = e^u + C = e^(x^2) + C.",
+      explanation: "Misalkan $u = x^2$, maka $du = 2x dx$. Integral menjadi $\\int e^u du = e^u + C = e^{x^2} + C$.",
       reviewStatus: "published" as const,
       qualityScore: 0.98,
       useCount: 0,
@@ -228,10 +264,10 @@ async function main() {
       difficulty: "medium" as const,
       questionType: "multiple_choice" as const,
       tags: ["fungsi", "kontinuitas"],
-      prompt: "Fungsi f(x) = 1/x tidak kontinu di x sama dengan...",
-      options: ["-1", "0", "1", "Semua x real"],
+      prompt: "Fungsi $f(x) = \\frac{1}{x}$ tidak kontinu di $x$ sama dengan...",
+      options: ["-1", "0", "1", "Semua $x$ real"],
       correctIndices: [1], // "0"
-      explanation: "Fungsi f(x) = 1/x memiliki asimtot tegak di x = 0 di mana nilai limit kiri dan kanan tidak berhingga, sehingga tidak kontinu di x = 0.",
+      explanation: "Fungsi $f(x) = \\frac{1}{x}$ memiliki asimtot tegak di $x = 0$ di mana nilai limit kiri dan kanan tidak berhingga, sehingga tidak kontinu di $x = 0$.",
       reviewStatus: "published" as const,
       qualityScore: 0.9,
       useCount: 0,
@@ -245,10 +281,10 @@ async function main() {
       difficulty: "hard" as const,
       questionType: "multiple_choice" as const,
       tags: ["limit", "lhospital"],
-      prompt: "Berapakah nilai dari lim_{x -> 0} (e^x - 1 - x) / x^2?",
-      options: ["0", "1/2", "1", "\u221e"],
+      prompt: "Berapakah nilai dari $\\lim_{x \\to 0} \\frac{e^x - 1 - x}{x^2}$?",
+      options: ["0", "1/2", "1", "$\\infty$"],
       correctIndices: [1], // "1/2"
-      explanation: "Limit berbentuk 0/0. Menggunakan Aturan L'Hopital dua kali: lim (e^x - 1) / 2x = lim e^x / 2 = 1/2.",
+      explanation: "Limit berbentuk 0/0. Menggunakan Aturan L'Hopital dua kali: $\\lim_{x \\to 0} \\frac{e^x - 1}{2x} = \\lim_{x \\to 0} \\frac{e^x}{2} = \\frac{1}{2}$.",
       reviewStatus: "published" as const,
       qualityScore: 1.0,
       useCount: 0,
@@ -260,10 +296,10 @@ async function main() {
       difficulty: "hard" as const,
       questionType: "multiple_choice" as const,
       tags: ["turunan", "aplikasi"],
-      prompt: "Tentukan nilai maksimum lokal dari f(x) = x^3 - 3x + 2.",
+      prompt: "Tentukan nilai maksimum lokal dari $f(x) = x^3 - 3x + 2$.",
       options: ["0", "2", "4", "6"],
       correctIndices: [2], // "4"
-      explanation: "Turunan f'(x) = 3x^2 - 3 = 0 menghasilkan titik kritis x = \u00b11. f''(x) = 6x. Di x = -1, f''(-1) = -6 < 0 (maksimum lokal). Nilai maksimum f(-1) = (-1)^3 - 3(-1) + 2 = -1 + 3 + 2 = 4.",
+      explanation: "Turunan $f'(x) = 3x^2 - 3 = 0$ menghasilkan titik kritis $x = \\pm 1$. $f''(x) = 6x$. Di $x = -1$, $f''(-1) = -6 < 0$ (maksimum lokal). Nilai maksimum $f(-1) = (-1)^3 - 3(-1) + 2 = -1 + 3 + 2 = 4$.",
       reviewStatus: "published" as const,
       qualityScore: 0.95,
       useCount: 0,
@@ -275,15 +311,15 @@ async function main() {
       difficulty: "hard" as const,
       questionType: "multiple_choice" as const,
       tags: ["integral", "parsial"],
-      prompt: "Hasil dari \u222b x * ln(x) dx adalah...",
+      prompt: "Hasil dari $\\int x \\ln(x) dx$ adalah...",
       options: [
-        "(x^2/2) * ln(x) - x^2/4 + C",
-        "x^2 * ln(x) - x^2 + C",
-        "(x^2/2) * ln(x) + C",
-        "ln(x)/2 - x^2 + C"
+        "$\\frac{x^2}{2} \\ln(x) - \\frac{x^2}{4} + C$",
+        "$x^2 \\ln(x) - x^2 + C$",
+        "$\\frac{x^2}{2} \\ln(x) + C$",
+        "$\\frac{\\ln(x)}{2} - x^2 + C$"
       ],
       correctIndices: [0], // "(x^2/2) * ln(x) - x^2/4 + C"
-      explanation: "Menggunakan integral parsial: u = ln(x) => du = 1/x dx dan dv = x dx => v = x^2/2. Hasilnya uv - \u222b v du = (x^2/2)*ln(x) - \u222b (x/2) dx = (x^2/2)*ln(x) - x^2/4 + C.",
+      explanation: "Menggunakan integral parsial: $u = \\ln(x) \\Rightarrow du = \\frac{1}{x} dx$ dan $dv = x dx \\Rightarrow v = \\frac{x^2}{2}$. Hasilnya $uv - \\int v du = \\frac{x^2}{2} \\ln(x) - \\int \\frac{x}{2} dx = \\frac{x^2}{2} \\ln(x) - \\frac{x^2}{4} + C$.",
       reviewStatus: "published" as const,
       qualityScore: 1.0,
       useCount: 0,
@@ -364,11 +400,11 @@ async function main() {
   
   // Snapshot of questions corresponding to template questions
   const questionsSnapshot = [
-    { id: "q-1", prompt: "Berapakah nilai dari lim_{x -> 3} (2x + 1)?", options: ["5", "6", "7", "8"], correct_indices: [2], explanation: "Substitusi langsung x = 3 menghasilkan 2(3) + 1 = 7." },
-    { id: "q-2", prompt: "Turunan pertama dari f(x) = x^2 adalah...", options: ["x", "2x", "2x^2", "x/2"], correct_indices: [1], explanation: "Menggunakan aturan pangkat turunan d/dx(x^n) = n*x^(n-1), maka turunan dari x^2 adalah 2x." },
-    { id: "q-4", prompt: "Berapakah nilai dari lim_{x -> 0} (sin(x) / x)?", options: ["0", "1", "Tidak terdefinisi", "\u221e"], correct_indices: [1], explanation: "Berdasarkan teorema limit trigonometri khusus dasar, lim_{x -> 0} sin(x)/x = 1." },
-    { id: "q-5", prompt: "Turunan pertama dari f(x) = sin(x^2) adalah...", options: ["cos(x^2)", "2x * cos(x^2)", "2x * sin(x^2)", "cos(2x)"], correct_indices: [1], explanation: "Dengan aturan rantai..." },
-    { id: "q-8", prompt: "Berapakah nilai dari lim_{x -> 0} (e^x - 1 - x) / x^2?", options: ["0", "1/2", "1", "\u221e"], correct_indices: [1], explanation: "Limit berbentuk 0/0. Menggunakan Aturan L'Hopital..." },
+    { id: "q-1", prompt: "Berapakah nilai dari $\\lim_{x \\to 3} (2x + 1)$?", options: ["5", "6", "7", "8"], correct_indices: [2], explanation: "Substitusi langsung $x = 3$ menghasilkan $2(3) + 1 = 7$." },
+    { id: "q-2", prompt: "Turunan pertama dari $f(x) = x^2$ adalah...", options: ["$x$", "$2x$", "$2x^2$", "$x/2$"], correct_indices: [1], explanation: "Menggunakan aturan pangkat turunan $\\frac{d}{dx}(x^n) = n x^{n-1}$, maka turunan dari $x^2$ adalah $2x$." },
+    { id: "q-4", prompt: "Berapakah nilai dari $\\lim_{x \\to 0} \\frac{\\sin(x)}{x}$?", options: ["0", "1", "Tidak terdefinisi", "$\\infty$"], correct_indices: [1], explanation: "Berdasarkan teorema limit trigonometri khusus dasar, $\\lim_{x \\to 0} \\frac{\\sin(x)}{x} = 1$." },
+    { id: "q-5", prompt: "Turunan pertama dari $f(x) = \\sin(x^2)$ adalah...", options: ["$\\cos(x^2)$", "$2x \\cos(x^2)$", "$2x \\sin(x^2)$", "$\\cos(2x)$"], correct_indices: [1], explanation: "Dengan aturan rantai: $\\frac{d}{dx}(\\sin(u)) = \\cos(u) \\frac{du}{dx}$. Di sini $u = x^2$, sehingga $\\frac{du}{dx} = 2x$. Hasilnya adalah $2x \\cos(x^2)$." },
+    { id: "q-8", prompt: "Berapakah nilai dari $\\lim_{x \\to 0} \\frac{e^x - 1 - x}{x^2}$?", options: ["0", "1/2", "1", "$\\infty$"], correct_indices: [1], explanation: "Limit berbentuk 0/0. Menggunakan Aturan L'Hopital dua kali: $\\lim_{x \\to 0} \\frac{e^x - 1}{2x} = \\lim_{x \\to 0} \\frac{e^x}{2} = \\frac{1}{2}$." },
   ];
 
   const devAttempts = [

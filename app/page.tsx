@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import {
-  LandingClosingCta,
+  // LandingClosingCta,
   LandingCoursePreview,
   LandingDemoFlashcards,
   LandingDemoPath,
@@ -32,7 +32,7 @@ export default function Home() {
       <LandingCoursePreview />
       <LandingTestimonials />
       <LandingPricingPreview />
-      <LandingClosingCta />
+      {/* <LandingClosingCta /> */}
     </div>
   );
 }

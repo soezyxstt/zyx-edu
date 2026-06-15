@@ -263,3 +263,67 @@ export async function checkEnrollment(courseId: string): Promise<boolean> {
   });
   return !!activeEnrollment;
 }
+
+/**
+ * Get today's trivia question for a course from the AI Question Bank
+ */
+export async function getDailyTrivia(courseId: string) {
+  try {
+    const { aiQuestionBank } = await import("@/db/schema");
+    const activeQuestions = await db
+      .select()
+      .from(aiQuestionBank)
+      .where(
+        and(
+          eq(aiQuestionBank.courseId, courseId),
+          eq(aiQuestionBank.status, "active"),
+          eq(aiQuestionBank.reviewStatus, "published")
+        )
+      );
+
+    if (activeQuestions.length === 0) {
+      return null;
+    }
+
+    // Deterministic selection based on today's date
+    const today = new Date();
+    const dayOfYear = Math.floor(
+      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000
+    );
+    const index = dayOfYear % activeQuestions.length;
+    const q = activeQuestions[index];
+
+    let options: string[] = [];
+    if (typeof q.options === "string") {
+      try {
+        options = JSON.parse(q.options);
+      } catch {
+        options = [];
+      }
+    } else if (Array.isArray(q.options)) {
+      options = q.options as string[];
+    }
+
+    let correctIndex = 0;
+    if (typeof q.correctIndices === "string") {
+      try {
+        const arr = JSON.parse(q.correctIndices);
+        correctIndex = arr[0] ?? 0;
+      } catch {}
+    } else if (Array.isArray(q.correctIndices)) {
+      correctIndex = (q.correctIndices as number[])[0] ?? 0;
+    }
+
+    return {
+      id: q.id,
+      question: q.prompt,
+      options,
+      correctIndex,
+      explanation: q.explanation,
+    };
+  } catch (error) {
+    console.error("Failed to get daily trivia:", error);
+    return null;
+  }
+}
+

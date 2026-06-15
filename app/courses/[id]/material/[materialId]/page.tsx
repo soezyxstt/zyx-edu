@@ -9,7 +9,7 @@ import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getMaterial, type CourseMaterial } from "@/lib/student-course-fixtures";
 import { db } from "@/db";
-import { aiMaterialInstances } from "@/db/schema";
+import { aiMaterialInstances, diktats } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 
@@ -18,6 +18,31 @@ type Props = { params: Promise<{ id: string; materialId: string }> };
 async function fetchMaterial(courseId: string, materialId: string): Promise<CourseMaterial | undefined> {
   const staticMat = getMaterial(courseId, materialId);
   if (staticMat) return staticMat;
+
+  // First check if it is a compiled diktat in the diktats table
+  try {
+    const [diktatRecord] = await db
+      .select()
+      .from(diktats)
+      .where(eq(diktats.id, materialId));
+
+    if (diktatRecord) {
+      return {
+        id: diktatRecord.id,
+        courseId,
+        title: diktatRecord.title,
+        kind: "pdf",
+        docCategory: "diktat",
+        fileSize: "PDF File",
+        url: diktatRecord.fileUrl || undefined,
+        completed: false,
+        isPastYear: false,
+        isPreview: true,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching diktat record:", error);
+  }
 
   try {
     const dbMaterial = await db.query.aiMaterialInstances.findFirst({
@@ -48,12 +73,12 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         courseId,
         title: dbMaterial.title.replace(/^\[DRAF\]\s*/, ""),
         kind: "article",
-        docCategory: dbMaterial.title.toLowerCase().includes("diktat") ? "diktat" : "materi",
+        docCategory: "materi",
         fileSize: "AI Generated",
         body,
         completed: false,
         isPastYear: false,
-        isPreview: true, // Allow preview for simplicity
+        isPreview: true, // Allow review without enrolling for simplicity
       };
     }
   } catch (error) {
@@ -108,8 +133,8 @@ export default async function CourseMaterialDetailPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell title={material.title} description={`${course.title} · materi`} hideHeader>
-      <Reveal>
+    <CoursePageShell title={material.title} description={`${course.title} · materi`} hideHeader fullWidth className="h-full">
+      <Reveal className="flex-1 flex flex-col min-h-0 w-full h-full">
         <MaterialViewer
           material={material}
           chapterId={material.chapterId}

@@ -28,7 +28,10 @@ const founders = [
     role: "Co-Founder & Hardware Systems Lead",
     image: "/founders/dawam.jpeg",
     fullBio: "Mahasiswa Teknik Elektro yang berfokus pada spesialisasi FPGA, mikrokontroler, dan desain semikonduktor. Memiliki latar belakang yang kuat dalam desain sistem digital, bahasa deskripsi perangkat keras (VHDL, Verilog), serta sistem tertanam (embedded systems). Berpengalaman dalam pembelajaran berbasis proyek, kepemimpinan, dan komunikasi teknis.",
-    socials: {},
+    socials: {
+      linkedin: "https://www.linkedin.com/in/mawadrun/",
+      instagram: "https://www.instagram.com/mawadrun/",
+    },
   },
   {
     id: "heidi",
@@ -36,7 +39,10 @@ const founders = [
     role: "Co-Founder & Robotics Specialist",
     image: "/founders/heidi.jpeg",
     fullBio: "Mahasiswa Teknik Elektro dengan spesialisasi di bidang robotika dan sistem otonom, memiliki pengalaman dalam pengembangan UAV (Unmanned Aerial Vehicle) dan ROV (Remotely Operated Vehicle), integrasi ROS (Robotics Operating System), serta kontrol berbasis visi (vision-based control). Memiliki ketertarikan besar dalam merancang sistem robotika otonom yang andal untuk aplikasi dunia nyata di udara maupun laut.",
-    socials: {},
+    socials: {
+      linkedin: "https://www.linkedin.com/in/heidischan/",
+      instagram: "https://www.instagram.com/heidischan/",
+    },
   },
   {
     id: "raihan",
@@ -44,7 +50,10 @@ const founders = [
     role: "Co-Founder & Fullstack Tech Lead",
     image: "/founders/raihan.png",
     fullBio: "Mahasiswa Teknik Informatika yang berfokus pada spesialisasi Blockchain Development, Smart Contracts, dan Fullstack Web Development. Memiliki latar belakang yang kuat dalam arsitektur sistem terdesentralisasi, analisis performa algoritma kriptografi, serta pengembangan aplikasi modern menggunakan framework terbaru. Berpengalaman dalam membangun dan memimpin bisnis di sektor event organizing dan startup edukasi teknologi, serta memiliki kemampuan komunikasi teknis dan kepemimpinan yang teruji.",
-    socials: {},
+    socials: {
+      linkedin: "https://www.linkedin.com/in/raihanmian/",
+      instagram: "https://www.instagram.com/raihan_mianz/",
+    },
   },
 ];
 
@@ -175,69 +184,75 @@ export function AboutClient() {
       </SectionContainer>
       </Reveal>
 
-      {/* Section E: Pilar Penggagas (Light, Cardless, and Informative Grid, text-center, max-w-5xl) */}
+      {/* Section E: Pilar Penggagas (Grid Layout, non-sticky) */}
       <Reveal>
       <SectionContainer className="relative z-10 bg-background/50 backdrop-blur-xs py-20 md:py-28">
-        <div className="max-w-5xl mx-auto space-y-16">
-          <div className="space-y-4 max-w-3xl mx-auto text-center">
-            <SectionHeading as="h2" tier="primary" className="text-foreground font-extrabold tracking-tight text-center">
+        <div className="max-w-5xl mx-auto space-y-12">
+          {/* Header block */}
+          <div className="space-y-4 max-w-3xl text-left">
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">Tim Kami</span>
+            <SectionHeading as="h2" tier="primary" className="text-foreground font-extrabold tracking-tight mt-2 text-left">
               Pilar Penggagas Zyx
             </SectionHeading>
-            <p className="text-body-md text-muted-foreground leading-relaxed font-normal text-center">
+            <p className="text-body-md text-muted-foreground leading-relaxed font-normal text-left">
               Zyx digerakkan oleh mahasiswa yang telah menaklukkan kurikulum ketat ITB, berkomitmen menyalurkan
               pemahaman taktis mereka untuk kesuksesan akademik Anda.
             </p>
           </div>
 
-          {/* 2-column grid layout, completely cardless and flat, text-center */}
-          <div className="grid gap-x-12 gap-y-16 lg:grid-cols-2">
+          {/* Profiles Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
             {founders.map((founder) => (
               <article
                 key={founder.id}
-                className="flex flex-col items-center text-center gap-6"
+                className="group flex flex-col sm:flex-row gap-6 p-6 md:p-8 bg-card border border-border shadow-xs hover:shadow-md hover:border-primary/20 dark:hover:border-primary/10 transition-all duration-300 rounded-2xl items-start"
               >
-                {/* Founder Photo - 3:4 Aspect ratio, colorful, border/shadow details */}
-                <div className="relative w-40 aspect-[3/4] rounded-2xl overflow-hidden shrink-0 border border-border/85 shadow-xs hover:shadow-md transition-shadow duration-300">
+                {/* Founder Photo - 3:4 Aspect ratio, styled borders/shadows */}
+                <div className="relative w-32 sm:w-40 aspect-[3/4] rounded-xl overflow-hidden shrink-0 border border-border/50 self-start">
                   <Image
                     src={founder.image}
                     alt={`Foto ${founder.name}`}
                     fill
-                    sizes="(max-width: 640px) 100vw, 160px"
-                    className="object-cover transition-transform duration-500 hover:scale-103"
+                    sizes="(max-width: 768px) 100vw, 160px"
+                    className="object-cover transition-transform duration-500 group-hover:scale-103"
                     priority
                   />
                 </div>
 
-                {/* Founder details (Exposed, Informative, text-center) */}
-                <div className="flex-1 flex flex-col justify-between h-full pt-1 text-center items-center">
-                  <div className="space-y-3 text-center">
-                    <div>
-                      <h3 className="font-heading text-lg font-bold text-foreground leading-tight text-center">
+                {/* Founder details (Left-aligned, informative) */}
+                <div className="flex-1 flex flex-col justify-between pt-1 w-full self-stretch">
+                  <div>
+                    {/* Editorial left-border accent badge */}
+                    <div className="border-l-2 border-[var(--zx-accent)] pl-3">
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-primary">
+                        {founder.role}
+                      </span>
+                      <h3 className="font-heading text-xl font-bold text-foreground leading-tight mt-0.5">
                         {founder.name}
                       </h3>
-                      <p className="text-body-sm font-semibold text-[var(--zx-accent)] mt-0.5 text-center">
-                        {founder.role}
-                      </p>
                     </div>
-                    {/* Fully exposed biography details directly on the page */}
-                    <p className="text-body-sm text-muted-foreground leading-relaxed text-center">
+                    
+                    {/* Biography details */}
+                    <p className="text-body-sm text-muted-foreground leading-relaxed mt-4">
                       {founder.fullBio}
                     </p>
                   </div>
 
                   {/* Highlighted Social Accounts - Minimalist but clearly visible links with text */}
                   {Object.keys(founder.socials).length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-border/50 flex flex-wrap justify-center gap-x-4 gap-y-2 text-center w-full">
+                    <div className="mt-6 pt-4 border-t border-border/50 flex flex-wrap gap-x-5 gap-y-2 w-full">
                       {founder.socials.website && (
                         <Link
                           href={founder.socials.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-all duration-200 group/link text-center"
+                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-all duration-200 group/link"
                           title="Website Pribadi"
                         >
                           <Globe className="size-3.5 text-muted-foreground group-hover/link:text-primary transition-colors" />
-                          <span className="font-medium underline underline-offset-2">adihnursyam.com</span>
+                          <span className="font-medium underline underline-offset-2">
+                            {founder.socials.website.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+                          </span>
                         </Link>
                       )}
                       {founder.socials.linkedin && (
@@ -245,7 +260,7 @@ export function AboutClient() {
                           href={founder.socials.linkedin}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-[#0077B5] transition-all duration-200 group/link text-center"
+                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-[#0077B5] transition-all duration-200 group/link"
                           title="LinkedIn Profile"
                         >
                           <FaLinkedin className="size-3.5 text-muted-foreground group-hover/link:text-[#0077B5] transition-colors" />
@@ -257,11 +272,13 @@ export function AboutClient() {
                           href={founder.socials.instagram}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-[#E1306C] transition-all duration-200 group/link text-center"
+                          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-[#E1306C] transition-all duration-200 group/link"
                           title="Instagram Profile"
                         >
                           <FaInstagram className="size-3.5 text-muted-foreground group-hover/link:text-[#E1306C] transition-colors" />
-                          <span className="font-medium underline underline-offset-2">@adihnursyam</span>
+                          <span className="font-medium underline underline-offset-2">
+                            @{founder.socials.instagram.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")}
+                          </span>
                         </Link>
                       )}
                     </div>

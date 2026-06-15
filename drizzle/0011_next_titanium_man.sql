@@ -1,0 +1,1 @@
+ALTER TABLE `knowledge_objects` ALTER COLUMN "concept_id" TO "concept_id" text NOT NULL REFERENCES concepts(id) ON DELETE cascade ON UPDATE no action;

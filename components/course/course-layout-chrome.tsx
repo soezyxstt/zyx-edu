@@ -11,6 +11,7 @@ type CourseLayoutChromeProps = {
 export function CourseLayoutChrome({ courseId, courseTitle }: CourseLayoutChromeProps) {
   const showStudyPath = env.FEATURE_STUDY_PATH === "1";
   const showMastery = env.FEATURE_MASTERY === "1";
+  const showLive = env.FEATURE_LIVE === "1";
 
   return (
     <div 
@@ -32,9 +33,16 @@ export function CourseLayoutChrome({ courseId, courseTitle }: CourseLayoutChrome
           <span className="truncate font-medium text-foreground">{courseTitle}</span>
         </nav>
         <div className="w-full md:w-auto md:flex-1 md:flex md:justify-end">
-          <CourseSubNav courseId={courseId} courseTitle={courseTitle} showStudyPath={showStudyPath} showMastery={showMastery} />
+          <CourseSubNav
+            courseId={courseId}
+            courseTitle={courseTitle}
+            showStudyPath={showStudyPath}
+            showMastery={showMastery}
+            showLive={showLive}
+          />
         </div>
       </div>
     </div>
   );
 }
+

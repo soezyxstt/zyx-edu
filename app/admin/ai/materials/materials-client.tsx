@@ -101,8 +101,20 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
     headings: 0,
     formulas: 0,
     chapters: 0,
+    conceptsCount: 0,
+    formulasCount: 0,
+    definitionsCount: 0,
+    misconceptionsCount: 0,
   });
 
+  interface ExtractedKO {
+    id: string;
+    title: string;
+    type: string;
+    bloomLevel: string;
+  }
+
+  const [extractedKOs, setExtractedKOs] = useState<ExtractedKO[]>([]);
   const [warnings, setWarnings] = useState<Warning[]>([]);
 
   // Simulated parse analysis process
@@ -117,8 +129,62 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
     // Parse raw text for statistics
     const words = form.rawText.split(/\s+/).filter(Boolean).length;
     const headings = (form.rawText.match(/^#+\s+.+$/gm) || []).length;
-    const formulas = (form.rawText.match(/\$\$[\s\S]*?\$\$/g) || []).length + (form.rawText.match(/\$[^\$]+?\$/g) || []).length;
+    
+    // Non-overlapping LaTeX formulas calculation
+    const doubleDollarMatches = form.rawText.match(/\$\$[\s\S]*?\$\$/g) || [];
+    const blockFormulasCount = doubleDollarMatches.length;
+    const textWithoutBlocks = form.rawText.replace(/\$\$[\s\S]*?\$\$/g, "");
+    const inlineFormulaMatches = textWithoutBlocks.match(/\$[^\$\n]+?\$/g) || [];
+    const inlineFormulasCount = inlineFormulaMatches.length;
+    const formulas = blockFormulasCount + inlineFormulasCount;
+
     const chapters = (form.rawText.match(/^##\s+.+$/gm) || []).length || 1;
+
+    // Parse Knowledge Objects (container blocks)
+    const blockRegex = /:::(concept|formula|definition|misconception|example|exercise|summary|objective)(?:\s+({[^}]+}))?/g;
+    const extractedKOsList: ExtractedKO[] = [];
+    const blockMatches = Array.from(form.rawText.matchAll(blockRegex));
+    
+    const getBloomLevel = (type: string) => {
+      switch (type) {
+        case "definition": return "remember";
+        case "concept":
+        case "concept_overview":
+        case "summary":
+          return "understand";
+        case "formula":
+        case "example":
+        case "exercise":
+          return "apply";
+        case "misconception":
+          return "analyze";
+        case "objective":
+          return "remember";
+        default:
+          return "understand";
+      }
+    };
+
+    blockMatches.forEach((m, idx) => {
+      const type = m[1];
+      const attrStr = m[2] || "";
+      const titleMatch = attrStr.match(/title=["']([^"']+)["']/);
+      const title = titleMatch ? titleMatch[1] : `${type.charAt(0).toUpperCase() + type.slice(1)} ${idx + 1}`;
+      
+      const normalizedType = type === "concept" ? "concept_overview" : type;
+      
+      extractedKOsList.push({
+        id: `ko-extracted-${idx}`,
+        title,
+        type: normalizedType,
+        bloomLevel: getBloomLevel(normalizedType),
+      });
+    });
+
+    const conceptsCount = extractedKOsList.filter(k => k.type === "concept_overview").length;
+    const formulasCount = extractedKOsList.filter(k => k.type === "formula").length;
+    const definitionsCount = extractedKOsList.filter(k => k.type === "definition").length;
+    const misconceptionsCount = extractedKOsList.filter(k => k.type === "misconception").length;
     
     // Check for LaTeX validation issues (unmatched dollar signs)
     const singleDollars = (form.rawText.match(/(?<!\$)\$(?!\$)/g) || []).length;
@@ -188,8 +254,13 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
         words,
         headings,
         formulas,
-        chapters
+        chapters,
+        conceptsCount,
+        formulasCount,
+        definitionsCount,
+        misconceptionsCount,
       });
+      setExtractedKOs(extractedKOsList);
       setWarnings(parsedWarnings);
       setIngestionState("reviewing");
       toast.success("Analisis dokumen selesai. Objek pengetahuan dan metrik berhasil dihitung.");
@@ -229,7 +300,17 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
 
   const handleCancelWorkspace = () => {
     setIngestionState("source");
-    setStats({ words: 0, headings: 0, formulas: 0, chapters: 0 });
+    setStats({
+      words: 0,
+      headings: 0,
+      formulas: 0,
+      chapters: 0,
+      conceptsCount: 0,
+      formulasCount: 0,
+      definitionsCount: 0,
+      misconceptionsCount: 0,
+    });
+    setExtractedKOs([]);
     setWarnings([]);
     setShowForm(false);
   };
@@ -327,7 +408,7 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
 
   const hasLatexWarning = warnings.some((w) => w.type === "latex");
   const latexAccuracy = stats.formulas === 0 
-    ? 98 
+    ? 100 
     : Math.max(30, 100 - (hasLatexWarning ? 35 : 0));
 
   const glossaryWarningCount = warnings.filter((w) => w.type === "glossary").length;
@@ -336,8 +417,8 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
     100 - glossaryWarningCount * 12 - (!form.keywords ? 10 : 0)
   );
 
-  const unrecognized = Math.min(25, 1 + warnings.length * 2);
-  const ignored = Math.min(10, Math.max(1, Math.round(stats.words / 4000)));
+  const unrecognized = warnings.length === 0 ? 0 : Math.min(25, Math.max(1, warnings.length * 2));
+  const ignored = Math.min(10, Math.max(0, Math.round(stats.words / 8000)));
   const parsedSuccessfully = 100 - unrecognized - ignored;
 
   return (
@@ -623,10 +704,10 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
                     Ekstraksi Objek Pengetahuan (KO)
                   </p>
                   <div className="flex flex-wrap gap-2 text-xs">
-                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Concept: {stats.headings * 2 || 8}</span>
-                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Formula: {stats.formulas}</span>
-                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Definition: {Math.max(1, Math.round(stats.words / 300))}</span>
-                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Misconception: {Math.max(1, Math.round(stats.headings / 3))}</span>
+                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Concept: {stats.conceptsCount}</span>
+                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Formula: {stats.formulasCount}</span>
+                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Definition: {stats.definitionsCount}</span>
+                    <span className="bg-card px-2.5 py-1 rounded-md border border-border font-medium">Misconception: {stats.misconceptionsCount}</span>
                   </div>
                   <Button 
                     type="button" 
@@ -922,31 +1003,38 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
                 <div>Taksonomi Bloom</div>
               </div>
               <div className="divide-y divide-border max-h-[300px] overflow-y-auto">
-                <div className="grid grid-cols-3 px-4 py-2 bg-card">
-                  <div className="font-medium text-foreground">Definisi Limit Intuisi</div>
-                  <div>definition</div>
-                  <div className="font-mono text-xs">remember</div>
-                </div>
-                <div className="grid grid-cols-3 px-4 py-2">
-                  <div className="font-medium text-foreground">Limit Kiri dan Kanan</div>
-                  <div>concept_overview</div>
-                  <div className="font-mono text-xs">understand</div>
-                </div>
-                <div className="grid grid-cols-3 px-4 py-2 bg-card">
-                  <div className="font-medium text-foreground">Teorema Apit Limit</div>
-                  <div>formula</div>
-                  <div className="font-mono text-xs">apply</div>
-                </div>
-                <div className="grid grid-cols-3 px-4 py-2">
-                  <div className="font-medium text-foreground">Contoh Penerapan Kecepatan</div>
-                  <div>example</div>
-                  <div className="font-mono text-xs">apply</div>
-                </div>
-                <div className="grid grid-cols-3 px-4 py-2 bg-card">
-                  <div className="font-medium text-foreground">Kesalahan Asimtot Vertikal</div>
-                  <div>misconception</div>
-                  <div className="font-mono text-xs">analyze</div>
-                </div>
+                {extractedKOs.length > 0 ? (
+                  extractedKOs.map((ko, index) => (
+                    <div 
+                      key={ko.id} 
+                      className={cn(
+                        "grid grid-cols-3 px-4 py-2 text-body-sm",
+                        index % 2 === 0 ? "bg-card" : "bg-muted/10"
+                      )}
+                    >
+                      <div className="font-medium text-foreground">{ko.title}</div>
+                      <div>{ko.type}</div>
+                      <div className="font-mono text-xs">{ko.bloomLevel}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-muted-foreground space-y-2">
+                    <p className="font-semibold text-body-sm">Tidak ada kontainer KO kustom terdeteksi.</p>
+                    <p className="text-xs max-w-md mx-auto leading-relaxed">
+                      Sistem akan menggunakan AI untuk mengekstrak objek secara otomatis saat materi diterbitkan. 
+                      Anda juga dapat menambahkannya secara manual di dalam dokumen menggunakan kontainer seperti:
+                    </p>
+                    <pre className="text-left bg-muted/50 p-3 rounded-md text-[10px] font-mono max-w-sm mx-auto overflow-x-auto border border-border/60">
+{`:::concept {title="Konsep Limit"}
+Definisi dan konten...
+:::
+
+:::formula {title="Rumus Limit"}
+Limit fungsi f(x)...
+:::`}
+                    </pre>
+                  </div>
+                )}
               </div>
             </div>
             

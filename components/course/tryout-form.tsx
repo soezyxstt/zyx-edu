@@ -9,6 +9,8 @@ import { Flag, Timer, BookOpen, AlertCircle, FileText, CheckCircle2, Trash2, Arr
 import { MathText } from "@/components/course/math-text";
 import type { ExamFixture, QuestionSpec } from "@/lib/student-course-fixtures";
 
+import { submitTryoutAction } from "@/app/actions/tutor-management";
+
 type AnswerState =
   | { type: "short_answer"; text: string; fileName: string | null }
   | { type: "multiple_choice"; index: number | null }
@@ -46,13 +48,28 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
   const [uploadingFile, setUploadingFile] = useState<Record<string, string>>({});
 
-  const handleSubmit = useCallback(() => {
-    const currentAttempts = parseInt(localStorage.getItem(`zyx-tryout-attempts-${exam.id}`) || "0", 10);
-    localStorage.setItem(`zyx-tryout-attempts-${exam.id}`, (currentAttempts + 1).toString());
+  const handleSubmit = useCallback(async () => {
+    const isMock = ["tryout-calc-mid"].includes(exam.id);
+    
+    try {
+      if (!isMock) {
+        // Save to Database
+        const res = await submitTryoutAction(courseId, exam.id, answers);
+        if (res.success) {
+          toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar.");
+        }
+      } else {
+        const currentAttempts = parseInt(localStorage.getItem(`zyx-tryout-attempts-${exam.id}`) || "0", 10);
+        localStorage.setItem(`zyx-tryout-attempts-${exam.id}`, (currentAttempts + 1).toString());
+        toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar untuk soal esai.");
+      }
+    } catch (err: any) {
+      console.error("Error submitting tryout:", err);
+      toast.error(err.message || "Gagal mengumpulkan lembar jawaban.");
+    }
 
-    toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar untuk soal esai.");
     router.push(`/courses/${courseId}/my-results`);
-  }, [courseId, exam.id, router]);
+  }, [courseId, exam.id, answers, router]);
 
   useEffect(() => {
     const timer = setInterval(() => {

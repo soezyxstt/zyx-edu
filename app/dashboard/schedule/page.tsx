@@ -246,11 +246,11 @@ export default function SchedulePage() {
         
         {/* Welcome Header */}
         <Reveal duration="duration-500">
-          <header className="mb-8">
-            <h1 className="font-heading text-h4 font-bold text-foreground md:text-h3">
+          <header className="mb-8 pb-6 border-b border-border">
+            <h1 className="font-heading text-h3 font-bold text-foreground">
               Jadwal Kelas & Bimbingan
             </h1>
-            <p className="mt-1 text-body-base text-muted-foreground">
+            <p className="mt-1.5 text-body-sm text-muted-foreground">
               {userRole === "teacher"
                 ? "Kelola ketersediaan jadwal tutorial Anda dan pantau sesi bimbingan mingguan bersama murid."
                 : "Lihat dan pesan jadwal kosong tutor kelompok bimbingan Anda dengan sistem First Come First Served (FCFS)."}
@@ -260,24 +260,11 @@ export default function SchedulePage() {
 
         {/* Calendar Timetable Section (Full Width) */}
         <Reveal duration="duration-700" className="mb-8">
-          <Card className="rounded-3xl border border-border/60 bg-card/65 shadow-md backdrop-blur-md overflow-hidden">
-            <CardHeader className="border-b border-border/40 bg-muted/20 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle className="font-heading text-body-lg font-bold text-foreground flex items-center gap-2">
-                  <CalendarRange className="size-5 text-brand-primary" />
-                  Kalender Jadwal Mingguan
-                </CardTitle>
-                <p className="text-body-xs text-muted-foreground mt-0.5">
-                  {userRole === "teacher" 
-                    ? "Daftar seluruh slot waktu bimbingan Anda (tersedia maupun dipesan)." 
-                    : "Jadwal terpadu kelompok bimbingan belajar Anda untuk pekan ini."}
-                </p>
-              </div>
-            </CardHeader>
+          <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md overflow-hidden">
             <CardContent className="p-4 md:p-6">
               
               {/* MOBILE DAY SELECTOR BUTTONS */}
-              <div className="flex border-b border-border/40 pb-2 mb-4 md:hidden overflow-x-auto scrollbar-none gap-1">
+              <div className="flex border-b border-border/40 pb-2 mb-4 md:hidden overflow-x-auto scrollbar-none gap-2">
                 {DAYS.map((day) => {
                   const count = slotsByDay[day]?.length || 0;
                   const isSelected = activeMobileDay === day;
@@ -285,38 +272,38 @@ export default function SchedulePage() {
                     <button
                       key={day}
                       onClick={() => setActiveMobileDay(day)}
-                      className={`px-4 py-2 border-b-2 text-body-xs font-semibold whitespace-nowrap transition-all rounded-t-lg ${
+                      className={`px-4 py-2 border-b-2 text-body-xs font-semibold whitespace-nowrap transition-all rounded-t-lg cursor-pointer ${
                         isSelected
                           ? "border-brand-primary text-brand-primary bg-brand-primary/5 font-bold"
                           : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/30"
                       }`}
                     >
-                      {day} {count > 0 && <span className="ml-1 px-1.5 py-0.2 text-[10px] rounded-md bg-brand-primary text-white">{count}</span>}
+                      {day} {count > 0 && <span className="ml-1.5 px-2 py-0.2 text-[9px] font-bold rounded bg-brand-primary text-white">{count}</span>}
                     </button>
                   );
                 })}
               </div>
 
               {/* DESKTOP 7-COLUMN CALENDAR TIMETABLE GRID */}
-              <div className="hidden md:grid grid-cols-7 gap-4 divide-x divide-border/30">
+              <div className="hidden md:grid grid-cols-7 gap-3">
                 {DAYS.map((day) => {
                   const daySlots = slotsByDay[day] || [];
                   const count = daySlots.length;
                   return (
-                    <div key={day} className="flex flex-col gap-4 px-2 first:pl-0">
+                    <div key={day} className="flex flex-col gap-3 p-2.5 rounded-xl bg-muted/10 border border-border/30">
                       
                       {/* Day Header */}
                       <div className="flex items-center justify-between pb-2 border-b border-border/50">
                         <div>
                           <h3 className="font-heading text-body-xs font-bold text-foreground">{day}</h3>
-                          <span className="text-[10px] text-muted-foreground">{count} jadwal</span>
+                          <span className="text-[10px] font-medium text-muted-foreground">{count} slot</span>
                         </div>
                         {userRole === "teacher" && (
                           <button
                             type="button"
                             onClick={() => handleQuickAddSlot(day)}
                             title={`Tambah slot untuk hari ${day}`}
-                            className="flex size-6 items-center justify-center rounded-full hover:bg-brand-primary/10 text-muted-foreground hover:text-brand-primary transition-all border border-border/40"
+                            className="flex size-6 items-center justify-center rounded-lg hover:bg-brand-primary/10 text-muted-foreground hover:text-brand-primary transition-all border border-border/40 cursor-pointer"
                           >
                             <Plus className="size-3.5" />
                           </button>
@@ -324,7 +311,7 @@ export default function SchedulePage() {
                       </div>
 
                       {/* Day Slots List */}
-                      <div className="flex flex-col gap-3 min-h-[300px]">
+                      <div className="flex flex-col gap-2.5 min-h-[350px]">
                         {daySlots.length > 0 ? (
                           daySlots.map((slot) => {
                             const isBooked = !!slot.booking;
@@ -335,36 +322,36 @@ export default function SchedulePage() {
                             return (
                               <div
                                 key={slot.id}
-                                className={`flex flex-col rounded-xl border p-3 transition-all text-left ${
+                                className={`flex flex-col rounded-xl border p-3.5 transition-all text-left ${
                                   isBooked 
                                     ? `${cStyles?.bg} shadow-2xs` 
-                                    : "border-dashed border-brand-primary/20 bg-brand-primary/5 hover:border-brand-primary/40"
+                                    : "border-dashed border-brand-primary/25 bg-brand-primary/5 hover:bg-brand-primary/10 hover:border-brand-primary/40"
                                 }`}
                               >
                                 {/* Slot Time */}
-                                <div className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-                                  <Clock className="size-3" />
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-muted-foreground">
+                                  <Clock className="size-3.5" />
                                   <span>{slot.startTime} - {slot.endTime}</span>
                                 </div>
 
                                 {isBooked ? (
                                   /* Booked state representation */
-                                  <div className="mt-2.5 space-y-2 flex-1 flex flex-col justify-between">
+                                  <div className="mt-3 space-y-2.5 flex-1 flex flex-col justify-between">
                                     <div>
-                                      <span className={`inline-block rounded-md border px-2 py-0.2 text-[8px] font-semibold uppercase ${cStyles?.badge}`}>
+                                      <Badge variant="outline" className={`text-[8px] font-bold uppercase tracking-wider ${cStyles?.badge}`}>
                                         {b.course?.title}
-                                      </span>
+                                      </Badge>
                                       
-                                      <div className="mt-1.5 flex flex-col gap-0.5 text-body-3xs text-muted-foreground">
+                                      <div className="mt-2 flex flex-col gap-1 text-[10px] text-muted-foreground leading-tight">
                                         <div className="flex items-center gap-1.5">
-                                          <User className="size-2.5 shrink-0" />
+                                          <User className="size-3 shrink-0" />
                                           <span className="truncate">
                                             {userRole === "teacher" ? `Siswa: ${b.student?.name}` : `Tutor: ${slot.tutor?.name}`}
                                           </span>
                                         </div>
                                         {userRole === "student" && (
                                           <div className="flex items-center gap-1.5">
-                                            <Users className="size-2.5 shrink-0" />
+                                            <Users className="size-3 shrink-0" />
                                             <span className="truncate">
                                               {isMine ? "Dipesan Anda" : `Siswa: ${b.student?.name}`}
                                             </span>
@@ -379,21 +366,21 @@ export default function SchedulePage() {
                                         type="button"
                                         onClick={() => handleCancelBooking(b.id)}
                                         disabled={actionLoading}
-                                        className="mt-2 text-[9px] font-bold text-status-error hover:underline text-left"
+                                        className="mt-2 text-[10px] font-bold text-status-error hover:underline text-left cursor-pointer"
                                       >
-                                        Batalkan
+                                        Batalkan bimbingan
                                       </button>
                                     )}
                                   </div>
                                 ) : (
                                   /* Available state representation */
-                                  <div className="mt-2 flex-1 flex flex-col justify-between">
-                                    <span className="text-[10px] text-brand-primary/80 font-semibold">Tersedia</span>
+                                  <div className="mt-3 flex-1 flex flex-col justify-between">
+                                    <span className="text-[10px] text-brand-primary/80 font-bold">Tersedia</span>
                                     
                                     {userRole === "student" ? (
                                       <Button
                                         size="xs"
-                                        className="mt-3.5 w-full rounded-lg font-semibold text-[10px] py-1 h-7"
+                                        className="mt-3 w-full rounded-lg font-bold text-[10px] py-1 h-7 bg-brand-primary hover:bg-brand-primary/95 text-white"
                                         onClick={() => {
                                           const tutor = data.relevantTutors?.find((t: any) => t.user.id === slot.tutorId);
                                           setBookingSlot({ ...slot, tutorGroups: tutor?.groups });
@@ -401,16 +388,16 @@ export default function SchedulePage() {
                                         }}
                                         disabled={actionLoading}
                                       >
-                                        Booking
+                                        Pesan
                                       </Button>
                                     ) : (
                                       <button
                                         type="button"
                                         onClick={() => handleDeleteSlot(slot.id)}
                                         disabled={actionLoading}
-                                        className="mt-3.5 text-[9px] font-bold text-status-error hover:underline text-left flex items-center gap-1"
+                                        className="mt-3 text-[10px] font-bold text-status-error hover:underline text-left flex items-center gap-1 cursor-pointer"
                                       >
-                                        <Trash2 className="size-2.5" /> Hapus
+                                        <Trash2 className="size-3" /> Hapus slot
                                       </button>
                                     )}
                                   </div>
@@ -419,8 +406,8 @@ export default function SchedulePage() {
                             );
                           })
                         ) : (
-                          <div className="flex flex-col items-center justify-center flex-1 rounded-xl border border-dashed border-border/40 py-10 bg-muted/5">
-                            <span className="text-body-3xs text-muted-foreground italic">Kosong</span>
+                          <div className="flex flex-col items-center justify-center flex-1 rounded-xl border border-dashed border-border/30 py-10 bg-muted/5">
+                            <span className="text-[10px] text-muted-foreground font-medium italic">Kosong</span>
                           </div>
                         )}
                       </div>
@@ -441,29 +428,31 @@ export default function SchedulePage() {
                     return (
                       <div
                         key={slot.id}
-                        className={`flex items-center justify-between p-4 rounded-2xl border transition-all ${
+                        className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
                           isBooked 
                             ? `${cStyles?.bg}` 
-                            : "border-dashed border-brand-primary/20 bg-brand-primary/5"
+                            : "border-dashed border-brand-primary/25 bg-brand-primary/5"
                         }`}
                       >
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-3 min-w-0">
                           <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${
-                            isBooked ? "bg-card text-foreground" : "bg-brand-primary/10 text-brand-primary"
+                            isBooked ? "bg-card text-foreground border border-border" : "bg-brand-primary/10 text-brand-primary"
                           }`}>
                             <Clock className="size-5" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <h4 className="font-heading text-body-xs font-bold text-foreground">
                               {slot.startTime} - {slot.endTime}
                             </h4>
-                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                            <div className="flex flex-col gap-1 mt-1">
                               {isBooked ? (
                                 <>
-                                  <Badge className={`text-[8px] uppercase tracking-wider ${cStyles?.badge}`}>
-                                    {b.course?.title}
-                                  </Badge>
-                                  <span className="text-[10px] text-muted-foreground">
+                                  <div>
+                                    <Badge variant="outline" className={`text-[8px] uppercase tracking-wider ${cStyles?.badge}`}>
+                                      {b.course?.title}
+                                    </Badge>
+                                  </div>
+                                  <span className="text-[10px] text-muted-foreground truncate">
                                     {userRole === "teacher" 
                                       ? `Siswa: ${b.student?.name}` 
                                       : isMine ? "Dipesan Anda" : `Siswa: ${b.student?.name}`}
@@ -476,7 +465,7 @@ export default function SchedulePage() {
                           </div>
                         </div>
 
-                        <div className="shrink-0">
+                        <div className="shrink-0 ml-2">
                           {isBooked ? (
                             (userRole === "teacher" || isMine) && (
                               <Button
@@ -492,7 +481,7 @@ export default function SchedulePage() {
                           ) : userRole === "student" ? (
                             <Button
                               size="xs"
-                              className="rounded-md"
+                              className="rounded-md bg-brand-primary hover:bg-brand-primary/95 text-white"
                               onClick={() => {
                                 const tutor = data.relevantTutors?.find((t: any) => t.user.id === slot.tutorId);
                                 setBookingSlot({ ...slot, tutorGroups: tutor?.groups });
@@ -500,7 +489,7 @@ export default function SchedulePage() {
                               }}
                               disabled={actionLoading}
                             >
-                              Booking
+                              Pesan
                             </Button>
                           ) : (
                             <Button
@@ -510,7 +499,7 @@ export default function SchedulePage() {
                               onClick={() => handleDeleteSlot(slot.id)}
                               disabled={actionLoading}
                             >
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-4" />
                             </Button>
                           )}
                         </div>
@@ -518,7 +507,7 @@ export default function SchedulePage() {
                     );
                   })
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl border border-dashed border-border/50 bg-muted/10">
+                  <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border/50 bg-muted/10">
                     <CalendarRange className="size-6 text-muted-foreground/30 mb-2" />
                     <p className="text-body-xs text-muted-foreground">Tidak ada jadwal pada hari {activeMobileDay}</p>
                   </div>
@@ -539,7 +528,7 @@ export default function SchedulePage() {
               <Reveal duration="duration-700">
                 <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
                   <CardHeader className="pb-3">
-                    <CardTitle className="font-heading text-body-base font-semibold flex items-center gap-2">
+                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
                       <BookOpen className="size-4 text-brand-primary" />
                       Mata Kuliah Bimbingan Anda
                     </CardTitle>
@@ -558,9 +547,9 @@ export default function SchedulePage() {
                             type="button"
                             onClick={() => handleToggleCertification(course.id, isCertified)}
                             disabled={actionLoading}
-                            className={`flex items-center justify-between rounded-xl border p-3 text-left transition-all ${
+                            className={`flex items-center justify-between rounded-xl border p-3.5 text-left transition-all cursor-pointer ${
                               isCertified
-                                ? `${cStyles.bg} ring-1 ring-border/20`
+                                ? `${cStyles.bg} ring-1 ring-border/25`
                                 : "border-border/40 bg-muted/10 hover:bg-muted/30"
                             }`}
                           >
@@ -568,7 +557,7 @@ export default function SchedulePage() {
                               <span className="text-[10px] uppercase font-bold tracking-wider opacity-60">
                                 {course.category}
                               </span>
-                              <h4 className="font-heading text-body-xs font-semibold text-foreground mt-0.5">
+                              <h4 className="font-heading text-body-xs font-bold text-foreground mt-0.5">
                                 {course.title}
                               </h4>
                             </div>
@@ -593,7 +582,7 @@ export default function SchedulePage() {
               <Reveal duration="duration-700">
                 <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
                   <CardHeader className="pb-3">
-                    <CardTitle className="font-heading text-body-base font-semibold flex items-center gap-2">
+                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
                       <Clock className="size-4 text-brand-secondary" />
                       Tambah Ketersediaan Jadwal Baru
                     </CardTitle>
@@ -605,11 +594,11 @@ export default function SchedulePage() {
                     <form onSubmit={handleAddSlot} className="flex flex-col gap-4">
                       <div className="grid gap-4 sm:grid-cols-3">
                         <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-muted-foreground uppercase">Hari</label>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Hari</label>
                           <select
                             value={newSlotDay}
                             onChange={(e) => setNewSlotDay(e.target.value)}
-                            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
+                            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
                           >
                             {DAYS.map((d) => (
                               <option key={d} value={d}>{d}</option>
@@ -618,29 +607,29 @@ export default function SchedulePage() {
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-muted-foreground uppercase">Jam Mulai</label>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Jam Mulai</label>
                           <input
                             type="text"
                             value={newSlotStart}
                             onChange={(e) => setNewSlotStart(e.target.value)}
                             placeholder="09:00"
-                            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
+                            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
                           />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-[11px] font-bold text-muted-foreground uppercase">Jam Selesai</label>
+                          <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Jam Selesai</label>
                           <input
                             type="text"
                             value={newSlotEnd}
                             onChange={(e) => setNewSlotEnd(e.target.value)}
                             placeholder="10:30"
-                            className="w-full rounded-xl border border-input bg-background px-3 py-2 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
+                            className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
                           />
                         </div>
                       </div>
 
-                      <Button type="submit" disabled={actionLoading} className="rounded-xl flex items-center justify-center gap-1.5 w-full mt-2">
+                      <Button type="submit" disabled={actionLoading} className="rounded-xl flex items-center justify-center gap-1.5 w-full mt-2 bg-brand-primary hover:bg-brand-primary/95 text-white">
                         <CalendarPlus className="size-4" /> Simpan Slot Waktu
                       </Button>
                     </form>
@@ -661,7 +650,7 @@ export default function SchedulePage() {
               <Reveal duration="duration-700">
                 <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
                   <CardHeader>
-                    <CardTitle className="font-heading text-body-base font-semibold flex items-center gap-2">
+                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
                       <GraduationCap className="size-4 text-brand-primary" />
                       Tutor Bimbingan Kelompok Anda
                     </CardTitle>
@@ -690,7 +679,7 @@ export default function SchedulePage() {
                                 const course = data.enrollments.find((e: any) => e.id === cid);
                                 const cStyles = getCourseStyles(cid);
                                 return (
-                                  <Badge key={cid} variant="outline" className={`text-[8px] px-1.5 py-0 ${cStyles.badge}`}>
+                                  <Badge key={cid} variant="outline" className={`text-[8px] px-1.5 py-0 rounded ${cStyles.badge}`}>
                                     {course?.title || cid}
                                   </Badge>
                                 );
@@ -701,7 +690,7 @@ export default function SchedulePage() {
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border/60">
-                        <AlertCircle className="size-6 text-amber-500/60 mb-2" />
+                        <AlertCircle className="size-6 text-status-warning/60 mb-2" />
                         <p className="text-body-xs text-muted-foreground">
                           Belum ada tutor yang relevan dengan mata kuliah aktif Anda di grup ini.
                         </p>
@@ -717,12 +706,12 @@ export default function SchedulePage() {
               <Reveal duration="duration-700">
                 <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
                   <CardHeader>
-                    <CardTitle className="font-heading text-body-base font-semibold flex items-center gap-2">
-                      <CalendarCheck className="size-4 text-green-600" />
+                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
+                      <CalendarCheck className="size-4 text-status-success" />
                       Daftar Pemesanan Bimbingan Saya
                     </CardTitle>
                     <p className="text-body-xs text-muted-foreground">
-                      Jadwal privat mingguan yang berhasil Anda pesan. Harap hadir tepat waktu!
+                      Jadwal privat bimbingan mingguan yang berhasil Anda pesan. Harap hadir tepat waktu!
                     </p>
                   </CardHeader>
                   <CardContent>
@@ -796,11 +785,11 @@ export default function SchedulePage() {
               </div>
 
               <div className="mt-4 space-y-1.5">
-                <label className="text-[11px] font-bold text-muted-foreground uppercase">Mata Kuliah Bimbingan</label>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Mata Kuliah Bimbingan</label>
                 <select
                   value={selectedCourseId}
                   onChange={(e) => setSelectedCourseId(e.target.value)}
-                  className="w-full rounded-xl border border-input bg-background px-3 py-2 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
+                  className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-body-sm text-foreground focus:ring-1 focus:ring-brand-primary"
                 >
                   <option value="" disabled>-- Pilih Mata Kuliah --</option>
                   {bookingSlot.startTime && (
@@ -823,7 +812,7 @@ export default function SchedulePage() {
                 <Button variant="outline" size="sm" className="rounded-md" onClick={() => setBookingSlot(null)}>
                   Batal
                 </Button>
-                <Button size="sm" className="rounded-md" onClick={handleBookSlot} disabled={actionLoading}>
+                <Button size="sm" className="rounded-md bg-brand-primary hover:bg-brand-primary/95 text-white" onClick={handleBookSlot} disabled={actionLoading}>
                   {actionLoading ? "Memproses..." : "Konfirmasi Booking"}
                 </Button>
               </div>

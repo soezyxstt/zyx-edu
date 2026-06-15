@@ -12,6 +12,7 @@ import {
   Check 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 // --- Types ---
 
@@ -304,10 +305,12 @@ function parseMarkdown(text: string): Block[] {
 
     // 6. Tables
     if (trimmed.startsWith("|") && trimmed.endsWith("|") && trimmed.length > 2) {
-      const headers = trimmed
-        .split("|")
-        .map((s) => s.trim())
-        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+const headers = trimmed
+          .replace(/\\mid/g, ':')
+          .replace(/\\\|/g, ':')
+          .split("|")
+          .map((s) => s.trim())
+          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
       i++;
 
       let alignments: ("left" | "center" | "right")[] = [];
@@ -335,6 +338,8 @@ function parseMarkdown(text: string): Block[] {
       const rows: string[][] = [];
       while (i < lines.length && lines[i].trim().startsWith("|") && lines[i].trim().endsWith("|")) {
         const rowParts = lines[i]
+          .replace(/\\mid/g, ':')
+          .replace(/\\\|/g, ':')
           .split("|")
           .map((s) => s.trim())
           .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
@@ -478,6 +483,174 @@ function AlertCallout({
   );
 }
 
+function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) {
+  const [formula, setFormula] = useState(initialFormula || "x^2 - 2");
+  
+  const padL = 46;
+  const padR = 18;
+  const padT = 16;
+  const padB = 36;
+  const svgW = 600;
+  const svgH = 312;
+  const plotW = svgW - padL - padR;
+  const plotH = svgH - padT - padB;
+  
+  const xMin = -10;
+  const xMax = 10;
+  const yMin = -8;
+  const yMax = 8;
+
+  const mapX = (x: number) => padL + ((x - xMin) / (xMax - xMin)) * plotW;
+  const mapY = (y: number) => padT + ((yMax - y) / (yMax - yMin)) * plotH;
+
+  const evalFormula = (xVal: number) => {
+    let expr = formula
+      .toLowerCase()
+      .replace(/\^/g, "**")
+      .replace(/sin/g, "Math.sin")
+      .replace(/cos/g, "Math.cos")
+      .replace(/tan/g, "Math.tan")
+      .replace(/sqrt/g, "Math.sqrt")
+      .replace(/exp/g, "Math.exp")
+      .replace(/log/g, "Math.log")
+      .replace(/pi/g, "Math.PI")
+      .replace(/e/g, "Math.E");
+
+    // Allow only safe characters
+    const sanitized = expr.replace(/[^0-9x+\-*/().\sMath.sincostanqrexplgPIE]/g, "");
+
+    try {
+      const fn = new Function("x", `return ${sanitized};`);
+      const val = fn(xVal);
+      return isNaN(val) ? 0 : val;
+    } catch {
+      return NaN;
+    }
+  };
+
+  const graphPath = React.useMemo(() => {
+    const steps = 200;
+    let path = "";
+    let started = false;
+
+    for (let i = 0; i <= steps; i++) {
+      const xVal = xMin + (i / steps) * (xMax - xMin);
+      const yVal = evalFormula(xVal);
+
+      if (isNaN(yVal)) continue;
+
+      const px = mapX(xVal);
+      const py = mapY(Math.min(yMax + 2, Math.max(yMin - 2, yVal)));
+
+      if (!started) {
+        path += `M ${px} ${py}`;
+        started = true;
+      } else {
+        path += ` L ${px} ${py}`;
+      }
+    }
+    return path;
+  }, [formula]);
+
+  const xTicks = React.useMemo(() => {
+    const ticks = [];
+    for (let x = -10; x <= 10; x += 2) ticks.push(x);
+    return ticks;
+  }, []);
+
+  const yTicks = React.useMemo(() => {
+    const ticks = [];
+    for (let y = -8; y <= 8; y += 2) ticks.push(y);
+    return ticks;
+  }, []);
+
+  const showXAxis = yMin < 0 && yMax > 0;
+  const showYAxis = xMin < 0 && xMax > 0;
+  const y0 = mapY(0);
+  const x0 = mapX(0);
+
+  const gridLines: React.ReactNode[] = [];
+
+  for (let gx = -10; gx <= 10; gx++) {
+    const major = gx % 5 === 0;
+    gridLines.push(
+      <line
+        key={`vx-${gx}`}
+        x1={mapX(gx)}
+        y1={padT}
+        x2={mapX(gx)}
+        y2={padT + plotH}
+        stroke={major ? "#d6d6d6" : "#ececec"}
+        strokeWidth={major ? 1 : 0.65}
+      />
+    );
+  }
+
+  for (let gy = -8; gy <= 8; gy++) {
+    const major = gy % 4 === 0;
+    gridLines.push(
+      <line
+        key={`hy-${gy}`}
+        x1={padL}
+        y1={mapY(gy)}
+        x2={padL + plotW}
+        y2={mapY(gy)}
+        stroke={major ? "#d6d6d6" : "#ececec"}
+        strokeWidth={major ? 1 : 0.65}
+      />
+    );
+  }
+
+  return (
+    <div className="my-6 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-md">
+      <div className="flex items-center gap-3 border-b bg-muted/20 px-4 py-2 font-sans select-none">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white text-[10px] font-bold font-mono">f</span>
+        <span className="text-body-sm font-mono text-muted-foreground">y =</span>
+        <Input
+          value={formula}
+          onChange={(e) => setFormula(e.target.value)}
+          placeholder="e.g. x^2 - 4"
+          className="h-8 font-mono text-body-sm rounded-lg bg-background border-border/80 focus-visible:ring-brand-primary py-1"
+        />
+      </div>
+      <div className="relative bg-white">
+        <svg viewBox="0 0 600 312" className="h-[240px] w-full max-w-full md:h-[278px]">
+          <g aria-hidden>{gridLines}</g>
+          {showXAxis && <line x1={padL} y1={y0} x2={padL + plotW} y2={y0} stroke="#1f2937" strokeWidth={1.75} />}
+          {showYAxis && <line x1={x0} y1={padT} x2={x0} y2={padT + plotH} stroke="#1f2937" strokeWidth={1.75} />}
+          
+          {xTicks.map((xv) => (
+            <text key={`xt-${xv}`} x={mapX(xv)} y={padT + plotH + 22} textAnchor="middle" fill="#6b7280" fontSize={11} fontFamily="system-ui">
+              {xv}
+            </text>
+          ))}
+          {yTicks.map((yv) => (
+            <text key={`yt-${yv}`} x={padL - 10} y={mapY(yv)} textAnchor="end" dominantBaseline="middle" fill="#6b7280" fontSize={11} fontFamily="system-ui">
+              {yv}
+            </text>
+          ))}
+
+          <clipPath id="plot-clip-embed">
+            <rect x={padL} y={padT} width={plotW} height={plotH} />
+          </clipPath>
+
+          {graphPath && (
+            <path
+              d={graphPath}
+              fill="none"
+              stroke="#2464b8"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              clipPath="url(#plot-clip-embed)"
+            />
+          )}
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 // --- Main Component ---
 
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
@@ -489,7 +662,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         switch (block.type) {
           case "p":
             return (
-              <p key={idx} className="text-body-base leading-relaxed mt-4 first:mt-0">
+              <p key={idx} className="text-body-base leading-relaxed">
                 {parseInline(block.content || "")}
               </p>
             );
@@ -516,6 +689,14 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
           }
 
           case "code":
+            if (block.language === "desmos" || block.language === "desmos-graph") {
+              return (
+                <InteractiveGraphWidget
+                  key={idx}
+                  initialFormula={block.content || ""}
+                />
+              );
+            }
             return (
               <CodeBlock
                 key={idx}

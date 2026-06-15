@@ -15,6 +15,7 @@ import {
   Brain,
   Compass,
   Target,
+  Play,
   LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -76,9 +77,16 @@ type CourseSubNavProps = {
   courseTitle: string;
   showStudyPath?: boolean;
   showMastery?: boolean;
+  showLive?: boolean;
 };
 
-export function CourseSubNav({ courseId, courseTitle, showStudyPath = false, showMastery = false }: CourseSubNavProps) {
+export function CourseSubNav({
+  courseId,
+  courseTitle,
+  showStudyPath = false,
+  showMastery = false,
+  showLive = false,
+}: CourseSubNavProps) {
   const pathname = usePathname();
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
@@ -100,6 +108,18 @@ export function CourseSubNav({ courseId, courseTitle, showStudyPath = false, sho
         label: "Penguasaan",
         match: (path: string, id: string) => path.startsWith(`/courses/${id}/mastery`),
         icon: Target,
+      });
+    }
+  }
+
+  if (showLive) {
+    const quizIdx = activeSegments.findIndex((seg) => seg.href(courseId).endsWith("/quiz"));
+    if (quizIdx !== -1) {
+      activeSegments.splice(quizIdx + 1, 0, {
+        href: (id: string) => `/courses/${id}/live`,
+        label: "Kuis Langsung",
+        match: (path: string, id: string) => path.startsWith(`/courses/${id}/live`),
+        icon: Play,
       });
     }
   }

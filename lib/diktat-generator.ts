@@ -113,15 +113,20 @@ export interface DiktatStructure {
   title: string;
   generationHash: string;
   sections: {
-    learningObjectives: string[]; // Optional
+    learningObjectives: string[];
     formulaHandbook: FormulaHandbookEntry[];
     conceptSummaries: ConceptSummaryEntry[];
     engineeringNotes: EngineeringNoteEntry[];
     commonMistakes: CommonMistakeEntry[];
     glossary: GlossaryEntry[];
   };
-  // Structured student-facing textbook data
   chapters: DiktatChapter[];
+  examIntelligence?: import("./diktat-exam-intelligence").ExamIntelligenceData;
+  auditResult?: {
+    status: "PASS" | "WARN" | "FAIL";
+    issueCount: number;
+    revisionsApplied: number;
+  };
 }
 
 /**

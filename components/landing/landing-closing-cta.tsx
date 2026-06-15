@@ -33,9 +33,6 @@ export function LandingClosingCta() {
             <Link href="/sign-in">Masuk dengan Google</Link>
           </Button>
         </div>
-        <p className="mt-8 text-xs text-muted-foreground">
-          200+ mahasiswa TPB · 15 tutor ITB · ★ 4,8
-        </p>
       </div>
     </SectionContainer>
   );

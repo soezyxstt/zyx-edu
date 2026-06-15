@@ -7,9 +7,12 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-/**
- * Runs KaTeX compilations to test display or inline mathematical strings.
- */
+type SourceKO = {
+  id: string;
+  metadata: any;
+  parameters?: any[];
+};
+
 function testLaTeXString(latex: string): string | null {
   if (!latex) return null;
   try {
@@ -20,11 +23,79 @@ function testLaTeXString(latex: string): string | null {
   }
 }
 
-/**
- * Runs Quality Control checks on a compiled DiktatStructure.
- */
+function detectFractionInversion(compiled: string, source: string): boolean {
+  const extract = (latex: string): [string, string][] => {
+    const pairs: [string, string][] = [];
+    let m: RegExpExecArray | null;
+    const re = /\\frac\{([^}]+)\}\{([^}]+)\}/g;
+    while ((m = re.exec(latex)) !== null) pairs.push([m[1].trim(), m[2].trim()]);
+    return pairs;
+  };
+  const compiledF = extract(compiled);
+  const sourceF = extract(source);
+  for (const [sN, sD] of sourceF) {
+    if (compiledF.some(([cN, cD]) => cN === sD && cD === sN)) return true;
+  }
+  // Delta notation
+  const extractDeltas = (latex: string): [string, string][] => {
+    const pairs: [string, string][] = [];
+    let m: RegExpExecArray | null;
+    const re = /Delta\s*([a-zA-Z]+)\s*\/\s*Delta\s*([a-zA-Z]+)/g;
+    const clean = latex.replace(/\\/g, "");
+    while ((m = re.exec(clean)) !== null) pairs.push([m[1], m[2]]);
+    return pairs;
+  };
+  const compiledD = extractDeltas(compiled);
+  const sourceD = extractDeltas(source);
+  for (const [sN, sD] of sourceD) {
+    if (compiledD.some(([cN, cD]) => cN === sD && cD === sN)) return true;
+  }
+  return false;
+}
+
+function validateSemanticFormulas(
+  formulas: FormulaHandbookEntry[],
+  sourceKOs: SourceKO[]
+): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const koMap = new Map(sourceKOs.map(k => [k.id, k]));
+
+  for (const entry of formulas) {
+    const sourceKO = koMap.get(entry.koId);
+    if (!sourceKO) continue;
+
+    const sourceMeta = (sourceKO.metadata as any) || {};
+    const sourceLatex: string = sourceMeta.latex || "";
+
+    if (!sourceLatex || !entry.latex) continue;
+
+    if (detectFractionInversion(entry.latex, sourceLatex)) {
+      errors.push(
+        `[Formula Integrity - ${entry.title}]: numerator/denominator inverted vs source KO. Source: "${sourceLatex}" | Compiled: "${entry.latex}"`
+      );
+    }
+
+    if (sourceLatex.includes("\\sqrt") && !entry.latex.includes("\\sqrt")) {
+      errors.push(
+        `[Formula Integrity - ${entry.title}]: \\sqrt present in source KO but missing in compiled formula.`
+      );
+    }
+
+    const sourceParams: any[] = sourceMeta.parameters || [];
+    if (sourceParams.length > 0 && entry.parameters.length === 0) {
+      warnings.push(
+        `[Formula Integrity - ${entry.title}]: source KO has ${sourceParams.length} parameters but compiled entry has none.`
+      );
+    }
+  }
+
+  return { errors, warnings };
+}
+
 export async function validateDiktat(
-  diktat: DiktatStructure
+  diktat: DiktatStructure,
+  options?: { sourceKOs?: SourceKO[] }
 ): Promise<ValidationResult> {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -77,6 +148,13 @@ export async function validateDiktat(
       warnings.push(`${pathPrefix}: No parameters declared for formula. Highly recommended for engineering references.`);
     }
   });
+
+  // 1b. Semantic formula integrity (runs only when sourceKOs provided)
+  if (options?.sourceKOs && options.sourceKOs.length > 0) {
+    const semantic = validateSemanticFormulas(diktat.sections.formulaHandbook, options.sourceKOs);
+    errors.push(...semantic.errors);
+    warnings.push(...semantic.warnings);
+  }
 
   // 2. Validate Glossary references
   const searchTexts: string[] = [];

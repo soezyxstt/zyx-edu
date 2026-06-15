@@ -77,6 +77,13 @@ type DailyQuizPopupProps = {
   courseTitle: string;
   triggerManual?: boolean;
   onCloseManual?: () => void;
+  dailyTrivia?: {
+    id: string;
+    question: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  } | null;
 };
 
 export function DailyQuizPopup({
@@ -84,13 +91,14 @@ export function DailyQuizPopup({
   courseTitle,
   triggerManual = false,
   onCloseManual,
+  dailyTrivia,
 }: DailyQuizPopupProps) {
   const [show, setShow] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
 
-  const trivia = TRIVIA_DATA[courseId] || TRIVIA_DATA["calc-1"];
+  const trivia = dailyTrivia || TRIVIA_DATA[courseId] || TRIVIA_DATA["calc-1"];
 
   useEffect(() => {
     const quizCompleted = hasCompletedDailyQuizToday(courseId);
@@ -202,13 +210,13 @@ export function DailyQuizPopup({
             </ul>
 
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="ghost" onClick={handleClose}>
+              <Button variant="ghost" onClick={handleClose} className="rounded-md">
                 Nanti saja
               </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={selectedIdx === null}
-                className="bg-brand-primary px-6"
+                className="rounded-md bg-brand-primary px-6"
               >
                 Kirim Jawaban
               </Button>
@@ -257,7 +265,7 @@ export function DailyQuizPopup({
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button onClick={handleClose} className="bg-foreground text-background hover:bg-foreground/90 px-6">
+              <Button onClick={handleClose} className="rounded-md bg-foreground text-background hover:bg-foreground/90 px-6">
                 Selesai & Tutup
               </Button>
             </div>

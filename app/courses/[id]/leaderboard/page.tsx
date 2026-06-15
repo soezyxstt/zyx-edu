@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Lock, ChevronRight } from "lucide-react";
+import { Lock } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -39,18 +38,7 @@ export default async function CourseLeaderboardPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell
-        eyebrow={
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-            <ChevronRight className="size-3" />
-            <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-          </div>
-        }
-        title="Papan Peringkat (Terkunci)"
-        description={LEADERBOARD_SCORE_HINT}
-        hideHeader
-      >
+      <CoursePageShell>
         <Reveal>
           <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
             <div className="flex items-start gap-3">
@@ -96,18 +84,7 @@ export default async function CourseLeaderboardPage({ params }: Props) {
   const rankedRows = aiRows.map((r, i) => ({ ...r, rank: i + 1 }));
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-        </div>
-      }
-      title="Papan Peringkat"
-      description={LEADERBOARD_SCORE_HINT}
-      hideHeader
-    >
+    <CoursePageShell>
       <Reveal>
         <div className="overflow-hidden rounded-lg border border-border/70 bg-card/75 backdrop-blur-sm">
           <div className="overflow-x-auto">

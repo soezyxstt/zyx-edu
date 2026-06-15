@@ -55,18 +55,7 @@ export default async function CourseMyResultsPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell
-        eyebrow={
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-            <ChevronRight className="size-3" />
-            <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-          </div>
-        }
-        title="Hasil Saya (Terkunci)"
-        description="Riwayat pengerjaan kuis dan tryout."
-        hideHeader
-      >
+      <CoursePageShell>
         <Reveal>
           <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
             <div className="flex items-start gap-3">
@@ -163,18 +152,7 @@ export default async function CourseMyResultsPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-        </div>
-      }
-      title="Hasil Saya"
-      description="Skor kuis, status tryout, dan pembahasan jawaban."
-      hideHeader
-    >
+    <CoursePageShell>
       <Reveal>
         <ul className="space-y-2">
           {allSubmissions.map((submission) => (

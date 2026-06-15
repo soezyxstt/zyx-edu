@@ -1,4 +1,5 @@
 import { DiktatStructure, FormulaHandbookEntry, FormulaParameter } from "./diktat-generator";
+import type { ConceptImportanceScore, ExamPattern, QuickMethod, ExamTrap, ReviewChecklist } from "./diktat-exam-intelligence";
 import katex from "katex";
 
 /**
@@ -126,15 +127,39 @@ export function preRenderMathInText(text: string): string {
   return output;
 }
 
-/**
- * Converts a structured JSON Diktat payload into a print-ready HTML page.
- * Implements strict A4 textbook styling, box-free compact layout, and natural breaks.
- */
+function renderImportanceStars(score: ConceptImportanceScore | undefined): string {
+  if (!score) return "";
+  const filled = "★".repeat(score.stars);
+  const empty = "☆".repeat(5 - score.stars);
+  return `<span class="importance-badge">${filled}${empty} ${score.label}</span>`;
+}
+
 export function renderDiktatToHTML(
   diktat: DiktatStructure,
   tutorOverrides?: any
 ): string {
   const overrides = tutorOverrides || {};
+  const ei = diktat.examIntelligence;
+
+  // Build exam intelligence lookup maps
+  const importanceMap = new Map<string, ConceptImportanceScore>(
+    (ei?.importanceScores ?? []).map(s => [s.conceptName, s])
+  );
+  const patternMap = new Map<string, ExamPattern>(
+    (ei?.examPatterns ?? []).map(p => [p.conceptName, p])
+  );
+  const quickMethodMap = new Map<string, QuickMethod>(
+    (ei?.quickMethods ?? []).map(m => [m.conceptName, m])
+  );
+  const trapsByConceptMap = new Map<string, ExamTrap[]>();
+  for (const trap of (ei?.examTraps ?? [])) {
+    const list = trapsByConceptMap.get(trap.conceptName) ?? [];
+    list.push(trap);
+    trapsByConceptMap.set(trap.conceptName, list);
+  }
+  const checklistByChapter = new Map<string, ReviewChecklist>(
+    (ei?.reviewChecklists ?? []).map(c => [c.chapterId, c])
+  );
 
   // Cover Page
   const coverHtml = `
@@ -152,152 +177,247 @@ export function renderDiktatToHTML(
     </div>
   `;
 
-  // Section 1 — Learning Roadmap (Max 1 page)
+  // Section 1 — Exam Roadmap Page
+  const top10Concepts = (ei?.importanceScores ?? [])
+    .slice()
+    .sort((a, b) => b.stars - a.stars)
+    .slice(0, 10);
+
+  const priorityTableRows = top10Concepts.length > 0
+    ? top10Concepts.map((s, idx) => {
+        const chapter = diktat.chapters.find(ch => ch.concepts.some(c => c.conceptName === s.conceptName));
+        return `
+          <tr>
+            <td style="text-align: center; font-weight: 700; color: #FF6B35;">${idx + 1}</td>
+            <td style="font-weight: 600;">${s.conceptName}</td>
+            <td style="text-align: center; color: #d97706; letter-spacing: 1px;">${"★".repeat(s.stars)}${"☆".repeat(5 - s.stars)}</td>
+            <td style="font-size: 9pt; color: #555555;">${chapter?.title ?? ""}</td>
+          </tr>
+        `;
+      }).join("")
+    : `<tr><td colspan="4" style="text-align:center; color:#888; font-size:9pt;">Proses analisis prioritas belum tersedia untuk diktat ini.</td></tr>`;
+
+  const studyOrderItems = ei?.studyOrder && ei.studyOrder.length > 0
+    ? ei.studyOrder.slice(0, 15).map((name, i) => `<li style="margin-bottom: 3px; font-size: 10pt;"><span style="color: #FF6B35; font-weight: 700;">${i + 1}.</span> ${name}</li>`).join("")
+    : diktat.chapters.flatMap(ch => ch.concepts).map((c, i) => `<li style="margin-bottom: 3px; font-size: 10pt;"><span style="color: #FF6B35; font-weight: 700;">${i + 1}.</span> ${c.conceptName}</li>`).join("");
+
   const roadmapHtml = `
     <div class="roadmap-page">
-      <h1 style="font-size: 20pt; margin-top: 5mm; margin-bottom: 20px; font-family: 'Lexend', sans-serif;">Apa yang Akan Dipelajari</h1>
-      <p style="color: #333333; font-size: 10.5pt; margin-bottom: 15px; text-align: justify;">
-        Diktat ini dirancang khusus untuk membantu mahasiswa memahami konsep secara cepat dan mempersiapkan ujian dengan optimal. Berikut bab-bab materi yang akan kita bahas:
-      </p>
-      
-      <ol style="margin-left: 20px; font-size: 10.5pt; line-height: 1.6; margin-bottom: 25px;">
-        ${diktat.chapters.map(c => `<li style="font-weight: 600; margin-bottom: 4px; color: #000000;">${c.title}</li>`).join("")}
-      </ol>
+      <h1 style="font-size: 20pt; margin-top: 5mm; margin-bottom: 16px; font-family: 'Lexend', sans-serif;">Panduan Belajar Ujian</h1>
 
-      <h2 style="font-size: 13pt; border-bottom: 1.5px solid #000000; padding-bottom: 3px; margin-top: 25px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Capaian Belajar Utama</h2>
-      <p style="color: #333333; font-size: 10.5pt; margin-bottom: 12px;">Setelah menuntaskan diktat ini, Anda diharapkan mampu menguasai:</p>
-      <ul style="padding-left: 20px; font-size: 10.5pt; line-height: 1.6;">
-        ${diktat.sections.learningObjectives.slice(0, 5).map(obj => `<li style="margin-bottom: 6px; text-align: justify; color: #333333;">${preRenderMathInText(obj)}</li>`).join("")}
+      <h2 style="font-size: 12pt; border-bottom: 1.5px solid #000000; padding-bottom: 3px; margin-top: 0; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Capaian Belajar</h2>
+      <ul style="padding-left: 20px; font-size: 10pt; line-height: 1.5; margin-bottom: 18px;">
+        ${diktat.sections.learningObjectives.slice(0, 5).map(obj => `<li style="margin-bottom: 4px; color: #333333;">${preRenderMathInText(obj)}</li>`).join("")}
       </ul>
+
+      <h2 style="font-size: 12pt; border-bottom: 1.5px solid #000000; padding-bottom: 3px; margin-top: 0; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Top 10 Konsep Paling Penting</h2>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 9.5pt;">
+        <thead>
+          <tr style="background-color: #f5f5f5;">
+            <th style="border: 1px solid #dddddd; padding: 5pt 6pt; width: 6%; text-align: center;">#</th>
+            <th style="border: 1px solid #dddddd; padding: 5pt 6pt; text-align: left;">Konsep</th>
+            <th style="border: 1px solid #dddddd; padding: 5pt 6pt; width: 18%; text-align: center;">Prioritas</th>
+            <th style="border: 1px solid #dddddd; padding: 5pt 6pt; width: 28%; text-align: left;">Bab</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${priorityTableRows}
+        </tbody>
+      </table>
+
+      <h2 style="font-size: 12pt; border-bottom: 1.5px solid #000000; padding-bottom: 3px; margin-top: 0; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">Urutan Belajar Optimal</h2>
+      <ol style="margin-left: 0; padding-left: 0; list-style: none; columns: 2; column-gap: 20px;">
+        ${studyOrderItems}
+      </ol>
     </div>
   `;
 
-  // Section 2 — Concept Chapters (Continuous Flow)
+  // Section 2 — Exam-Oriented Concept Chapters
   const chaptersHtml = diktat.chapters.map((ch, chIdx) => {
+    const checklist = checklistByChapter.get(ch.id);
+
     const conceptsHtml = ch.concepts.map(concept => {
-      // 1. Render definitions & summaries
-      const definitionsHtml = concept.definitions.map(d => {
-        // If marked as high importance, wrap in an Exam Focus Box
-        if (d.importance === "high") {
-          return `
-            <div class="exam-focus-box" style="background-color: #fffbeb; border-left: 4px solid #d97706; padding: 10px; margin-bottom: 10pt; border-radius: 0 4px 4px 0; page-break-inside: avoid; break-inside: avoid;">
-              <div style="font-weight: 700; color: #b45309; font-size: 8pt; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center;">
-                <span style="margin-right: 5px;">⚠️</span> Konsep Kunci / Sering Keluar Ujian
-              </div>
-              <div style="font-size: 10pt; color: #78350f; line-height: 1.4;">${preRenderMathInText(d.content)}</div>
-            </div>
-          `;
-        }
-        return `<p class="text-gray-700" style="text-align: justify;">${preRenderMathInText(d.content)}</p>`;
-      }).join("");
+      const importanceScore = importanceMap.get(concept.conceptName);
+      const examPattern = patternMap.get(concept.conceptName);
+      const quickMethod = quickMethodMap.get(concept.conceptName);
+      const conceptTraps = trapsByConceptMap.get(concept.conceptName) ?? [];
 
-      // 2. Render concept overviews
-      const overviewsHtml = concept.overviews.map(o => {
-        return `<p class="text-gray-700" style="text-align: justify;">${preRenderMathInText(o.content)}</p>`;
-      }).join("");
+      // 1. Concept header with importance stars
+      const headerHtml = `
+        <div class="concept-header" style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #dddddd; padding-bottom: 3px; margin-top: 15pt; margin-bottom: 8pt;">
+          <h3 style="font-size: 12pt; margin: 0; color: #000000; font-family: 'Lexend', sans-serif;">${concept.conceptName}</h3>
+          ${renderImportanceStars(importanceScore)}
+        </div>
+      `;
 
-      // 3. Render formulas
-      const formulasHtml = concept.formulas.map(f => {
-        let renderedKatex = "";
-        try {
-          renderedKatex = katex.renderToString(f.latex.trim(), {
-            displayMode: true,
-            throwOnError: false,
-          });
-        } catch {
-          renderedKatex = `<span style="color: #dc2626; font-family: monospace;">$$${f.latex}$$</span>`;
-        }
+      // 2. Concept summary (first definition or overview, trimmed)
+      const summarySource = concept.definitions[0]?.content || concept.overviews[0]?.content || "";
+      const summaryText = summarySource
+        ? summarySource.split(/\n\n/).slice(0, 2).join("\n\n")
+        : "";
+      const summaryHtml = summaryText
+        ? `<div class="concept-summary" style="font-size: 10pt; color: #333333; text-align: justify; margin-bottom: 8pt; line-height: 1.45;">${preRenderMathInText(summaryText)}</div>`
+        : "";
 
-        const paramList = f.parameters.length > 0
-          ? `
-          <div style="margin-left: 10px; margin-bottom: 8pt; margin-top: 4pt;">
-            <ul class="parameter-list">
-              ${f.parameters.map(p => `
-                <li class="parameter-item">
-                  <span class="parameter-symbol">${p.symbol}</span>: ${p.name}${p.unit ? ` (${p.unit})` : ""}${p.description && p.description !== p.name ? ` &mdash; ${p.description}` : ""}
-                </li>
-              `).join("")}
+      // 3. Quick method (AI-generated or empty)
+      const quickMethodHtml = quickMethod && quickMethod.rules.length > 0
+        ? `
+          <div class="quick-method" style="background-color: #f0f7ff; border-left: 3px solid #2563eb; padding: 8px 10px; margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid; border-radius: 0 4px 4px 0;">
+            <div style="font-weight: 700; color: #1e40af; font-size: 8pt; text-transform: uppercase; margin-bottom: 4px;">Cara Cepat: ${quickMethod.title}</div>
+            <ul style="margin: 0; padding-left: 16px; font-size: 9.5pt; color: #1e3a5f; line-height: 1.5;">
+              ${quickMethod.rules.map(r => `<li style="margin-bottom: 2px;">${preRenderMathInText(r)}</li>`).join("")}
             </ul>
           </div>
-          `
-          : "";
+        `
+        : "";
 
-        const formulaBox = f.importance === "high"
-          ? `
-          <div class="exam-focus-box" style="background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 10px; margin-bottom: 10pt; border-radius: 0 4px 4px 0; margin-top: 8pt; page-break-inside: avoid; break-inside: avoid;">
-            <div style="font-weight: 700; color: #1d4ed8; font-size: 8pt; text-transform: uppercase; margin-bottom: 3px; display: flex; align-items: center;">
-              <span style="margin-right: 5px;">⚠️</span> Hafalkan Rumus Penting Ini
+      // 4. Formula section
+      const formulasHtml = concept.formulas.length > 0
+        ? `
+          <div style="margin-bottom: 10pt;">
+            ${concept.formulas.map(f => {
+              let renderedKatex = "";
+              try {
+                renderedKatex = katex.renderToString(f.latex.trim(), { displayMode: true, throwOnError: false });
+              } catch {
+                renderedKatex = `<span style="color: #dc2626; font-family: monospace;">$$${f.latex}$$</span>`;
+              }
+
+              const paramList = f.parameters.length > 0
+                ? `<ul class="parameter-list">${f.parameters.map(p =>
+                    `<li class="parameter-item"><span class="parameter-symbol">${p.symbol}</span>: ${p.name}${p.unit ? ` (${p.unit})` : ""}${p.description && p.description !== p.name ? `, ${p.description}` : ""}</li>`
+                  ).join("")}</ul>`
+                : "";
+
+              const wrapClass = f.importance === "high"
+                ? `background-color: #eff6ff; border-left: 4px solid #2563eb; padding: 8px 10px; margin-top: 6pt; border-radius: 0 4px 4px 0;`
+                : `margin-top: 6pt;`;
+
+              return `
+                <div style="margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid;">
+                  <div class="meta-label">${f.title}</div>
+                  <div style="${wrapClass}">
+                    <div class="formula-display">${renderedKatex}</div>
+                    ${paramList ? `<div style="margin-left: 10px; margin-top: 4pt;">${paramList}</div>` : ""}
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+        `
+        : "";
+
+      // 5. Exam pattern (AI-generated or empty)
+      const examPatternHtml = examPattern && examPattern.steps.length > 0
+        ? `
+          <div style="margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid;">
+            <div class="meta-label">Pola Soal Ujian</div>
+            <div style="background-color: #fafafa; border: 1px solid #e5e7eb; padding: 8px 10px; border-radius: 4px; margin-top: 4pt;">
+              <ol style="margin: 0; padding-left: 20px; font-size: 9.5pt; color: #111111; line-height: 1.6;">
+                ${examPattern.steps.map(s => `<li style="margin-bottom: 2px;">${preRenderMathInText(s)}</li>`).join("")}
+              </ol>
             </div>
-            <div class="formula-display" style="margin: 5pt 0;">${renderedKatex}</div>
-            ${paramList}
           </div>
-          `
-          : `
-          <div style="margin-top: 8pt; margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid;">
-            <div class="formula-display">${renderedKatex}</div>
-            ${paramList}
-          </div>
-          `;
+        `
+        : "";
 
-        return `
-          <div style="margin-top: 10pt; margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid;">
-            <div class="meta-label">Definisi Matematis / Persamaan &mdash; ${f.title}</div>
-            ${formulaBox}
-          </div>
-        `;
-      }).join("");
+      // 6. Exam traps (from misconception KOs + exam intelligence traps)
+      const allTraps = [
+        ...concept.misconceptions.map(m => ({
+          wrong: m.myth || m.title,
+          correct: m.correction,
+          why: m.rationale,
+          title: m.title,
+        })),
+        ...conceptTraps.filter(t => !concept.misconceptions.some(m => m.koId === t.sourceKoId)).map(t => ({
+          wrong: t.wrong,
+          correct: t.correct,
+          why: t.why,
+          title: "",
+        })),
+      ];
 
-      // 4. Render examples
-      const examplesHtml = concept.examples.map(ex => {
-        return `
-          <div style="margin-top: 12pt; margin-bottom: 12pt; page-break-inside: avoid; break-inside: avoid;">
-            <h4 style="margin-top: 0; margin-bottom: 4pt; color: #002B49; font-size: 10pt;">Contoh Soal & Pembahasan &mdash; ${ex.title}</h4>
-            <div class="example-content" style="padding-left: 10px; border-left: 2px solid #002B49; color: #333333; font-size: 9.5pt; text-align: justify; line-height: 1.5;">
-              ${preRenderMathInText(ex.content)}
-            </div>
-          </div>
-        `;
-      }).join("");
-
-      // 5. Render misconceptions (inline warnings)
-      const misconceptionsHtml = concept.misconceptions.map(m => {
-        return `
-          <div class="pitfall-block" style="margin-top: 14pt; margin-bottom: 14pt; border-left: 3px solid #dc2626; padding-left: 10pt; page-break-inside: avoid; break-inside: avoid;">
-            <div class="pitfall-title" style="color: #991b1b; font-weight: 700; margin-bottom: 5px; font-size: 10pt;">⚠️ Mahasiswa Sering Salah &mdash; ${m.title}</div>
-            <div style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-top: 6pt;">
-              <div style="background-color: #fef2f2; border: 1px solid #fee2e2; padding: 8px; border-radius: 4px; font-size: 9pt;">
-                <strong style="color: #991b1b; text-transform: uppercase; font-size: 7.5pt;">❌ Salah (Myth):</strong>
-                <div style="margin-top: 2px; line-height: 1.4;">${preRenderMathInText(m.myth)}</div>
+      const trapsHtml = allTraps.length > 0
+        ? `
+          <div style="margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid;">
+            <div class="meta-label">Jebakan Ujian Umum</div>
+            ${allTraps.map(trap => `
+              <div class="pitfall-block" style="margin-top: 6pt;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 4pt;">
+                  <div style="background-color: #fef2f2; border: 1px solid #fee2e2; padding: 7px; border-radius: 4px; font-size: 9pt;">
+                    <strong style="color: #991b1b; font-size: 7.5pt; text-transform: uppercase; display: block; margin-bottom: 2px;">Salah:</strong>
+                    <div>${preRenderMathInText(trap.wrong)}</div>
+                  </div>
+                  <div style="background-color: #f0fdf4; border: 1px solid #dcfce7; padding: 7px; border-radius: 4px; font-size: 9pt;">
+                    <strong style="color: #166534; font-size: 7.5pt; text-transform: uppercase; display: block; margin-bottom: 2px;">Benar:</strong>
+                    <div>${preRenderMathInText(trap.correct)}</div>
+                  </div>
+                </div>
+                <div style="font-size: 8.5pt; color: #555555; line-height: 1.4;"><strong>Mengapa:</strong> ${preRenderMathInText(trap.why)}</div>
               </div>
-              <div style="background-color: #f0fdf4; border: 1px solid #dcfce7; padding: 8px; border-radius: 4px; font-size: 9pt;">
-                <strong style="color: #166534; text-transform: uppercase; font-size: 7.5pt;">✅ Benar (Koreksi):</strong>
-                <div style="margin-top: 2px; line-height: 1.4;">${preRenderMathInText(m.correction)}</div>
-              </div>
-            </div>
-            <div style="font-size: 9pt; color: #555555; margin-top: 6pt; line-height: 1.4;">
-              <strong>Rasional Pembahasan:</strong> ${preRenderMathInText(m.rationale)}
+            `).join("")}
+          </div>
+        `
+        : "";
+
+      // 7. Worked example (first example only)
+      const firstExample = concept.examples[0];
+      const exampleHtml = firstExample
+        ? `
+          <div style="margin-bottom: 10pt; page-break-inside: avoid; break-inside: avoid;">
+            <div class="meta-label">Contoh Soal: ${firstExample.title}</div>
+            <div style="padding-left: 10px; border-left: 2px solid #002B49; color: #333333; font-size: 9.5pt; text-align: justify; line-height: 1.5; margin-top: 4pt;">
+              ${preRenderMathInText(firstExample.content)}
             </div>
           </div>
-        `;
-      }).join("");
+        `
+        : "";
+
+      // 8. Self-check checklist (per-concept items from chapter checklist)
+      const conceptCheckItems = checklist?.items.filter(item =>
+        item.toLowerCase().includes(concept.conceptName.toLowerCase())
+      ) ?? [];
+      const selfCheckHtml = conceptCheckItems.length > 0
+        ? `
+          <div style="margin-bottom: 8pt;">
+            <div style="font-size: 8.5pt; color: #666666; font-weight: 700; text-transform: uppercase; margin-bottom: 3px;">Cek Diri</div>
+            ${conceptCheckItems.map(item => `
+              <div style="font-size: 9pt; color: #333333; margin-bottom: 2px;">[ ] ${preRenderMathInText(item)}</div>
+            `).join("")}
+          </div>
+        `
+        : "";
 
       return `
-        <div class="entry-block" style="margin-bottom: 25pt;">
-          <h3 style="font-size: 12pt; border-bottom: 1px solid #dddddd; padding-bottom: 2px; margin-top: 15pt; margin-bottom: 8pt; color: #000000; font-family: 'Lexend', sans-serif;">${concept.conceptName}</h3>
-          ${definitionsHtml}
-          ${overviewsHtml}
+        <div class="entry-block" style="margin-bottom: 20pt;">
+          ${headerHtml}
+          ${summaryHtml}
+          ${quickMethodHtml}
           ${formulasHtml}
-          ${examplesHtml}
-          ${misconceptionsHtml}
+          ${examPatternHtml}
+          ${trapsHtml}
+          ${exampleHtml}
+          ${selfCheckHtml}
         </div>
       `;
     }).join("");
+
+    // Chapter-level review checklist (all items)
+    const chapterChecklistHtml = checklist && checklist.items.length > 0
+      ? `
+        <div style="margin-top: 20pt; background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 10px 14px; border-radius: 4px; page-break-inside: avoid; break-inside: avoid;">
+          <div style="font-weight: 700; color: #002B49; font-size: 9pt; text-transform: uppercase; margin-bottom: 6px;">Checklist Review Bab: ${ch.title}</div>
+          ${checklist.items.map(item => `<div style="font-size: 9.5pt; color: #333333; margin-bottom: 3px;">[ ] ${preRenderMathInText(item)}</div>`).join("")}
+        </div>
+      `
+      : "";
 
     return `
       <div class="chapter-block" style="page-break-before: always; break-before: page;">
         <div style="font-size: 9pt; color: #FF6B35; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">BAB 0${chIdx + 1}</div>
         <h1 style="font-size: 20pt; border-bottom: 2px solid #000000; padding-bottom: 4px; margin-top: 2px; margin-bottom: 15pt; text-transform: uppercase; font-family: 'Lexend', sans-serif;">${ch.title}</h1>
         ${conceptsHtml}
+        ${chapterChecklistHtml}
       </div>
     `;
   }).join("");
@@ -655,6 +775,26 @@ export function renderDiktatToHTML(
             line-height: 1.4;
           }
           
+          /* Exam Intelligence: Importance Stars Badge */
+          .importance-badge {
+            display: inline-block;
+            font-size: 8pt;
+            font-weight: 600;
+            color: #d97706;
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
+            border-radius: 4px;
+            padding: 2px 6px;
+            white-space: nowrap;
+            margin-top: 2px;
+          }
+
+          /* Exam Intelligence: Quick Method */
+          .quick-method {
+            border-left: 3px solid #2563eb;
+            background-color: #f0f7ff;
+          }
+
           /* General Classes */
           .italic { font-style: italic; }
           .font-semibold { font-weight: 600; }

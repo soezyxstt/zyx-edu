@@ -2,23 +2,30 @@
 
 /* eslint-disable react-hooks/static-components */
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BookOpen,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   LayoutDashboard,
   LogOut,
+  PanelLeftClose,
   PanelLeftOpen,
-  Settings,
   User,
-  X,
   Search,
   CalendarRange,
   Trophy,
+  ArrowLeft,
+  Compass,
+  FileText,
+  Brain,
+  ClipboardList,
+  GraduationCap,
+  Play,
+  Target,
+  History,
 } from "lucide-react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getStudentEnrollments } from "@/app/dashboard/actions";
@@ -26,24 +33,67 @@ import { getCourseById } from "@/lib/student-course-fixtures";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { useCommandMenu } from "@/components/command-menu";
-import { StreakTag } from "@/components/dashboard/streak-tag";
+import { StreakCalendarStrip } from "@/components/dashboard/streak-calendar-strip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 /* ─────────────────────────────────────────────────────────────────
    Types
    ───────────────────────────────────────────────────────────────── */
 interface NavOptions {
   collapsed?: boolean;
-  onLink?: () => void;
 }
 
 type StudentEnrollment = Awaited<ReturnType<typeof getStudentEnrollments>>[number];
 
+interface StudentSidebarProps {
+  showStudyPath?: boolean;
+  showMastery?: boolean;
+  showLive?: boolean;
+}
+
 /* ─────────────────────────────────────────────────────────────────
-   StudentSidebar — self-contained component
-   Desktop : sticky left panel (position: sticky, height: 100svh)
-   Mobile  : hamburger topbar + <dialog> slide-over (browser top-layer)
+   SidebarTooltip — powered by Shadcn UI tooltip component
+   when the sidebar is collapsed
+   ───────────────────────────────────────────────────────────────── */
+function SidebarTooltip({
+  label,
+  children,
+  collapsed,
+}: {
+  label: string;
+  children: React.ReactNode;
+  collapsed: boolean;
+}) {
+  if (!collapsed) return <>{children}</>;
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          {children}
+        </TooltipTrigger>
+        <TooltipContent side="right">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   StudentSidebar — always-visible persistent sidebar
+   Collapsed  : 64px icon rail with tooltip popovers
+   Expanded   : 248px with labels — main view shrinks via flex
  ───────────────────────────────────────────────────────────────── */
-export function StudentSidebar() {
+export function StudentSidebar({
+  showStudyPath = false,
+  showMastery = false,
+  showLive = false,
+}: StudentSidebarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
@@ -53,12 +103,20 @@ export function StudentSidebar() {
     : undefined;
   const activeCourse = courseIdFromPath ? getCourseById(courseIdFromPath) : undefined;
 
-  const [collapsed, setCollapsed] = useState(false);
+  // Default to collapsed on mobile (small screens), expanded on desktop
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem("sidebar-collapsed");
+    if (stored !== null) return stored === "true";
+    return window.innerWidth < 768;
+  });
+
   const [coursesOpen, setCoursesOpen] = useState(true);
   const [enrolledCourses, setEnrolledCourses] = useState<StudentEnrollment[]>([]);
   const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
   const [mounted, setMounted] = useState(false);
   const [streakCurrent, setStreakCurrent] = useState<number | null>(null);
+  const [weeklyActivity, setWeeklyActivity] = useState<boolean[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -66,8 +124,14 @@ export function StudentSidebar() {
     setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
   }, []);
 
-  /* dialog ref for mobile drawer */
-  const dialogRef = useRef<HTMLDialogElement>(null);
+  // Persist collapse state
+  const toggleCollapsed = useCallback(() => {
+    setCollapsed((v) => {
+      const next = !v;
+      localStorage.setItem("sidebar-collapsed", String(next));
+      return next;
+    });
+  }, []);
 
   /* ── Data ─────────────────────────────────────────── */
   useEffect(() => {
@@ -75,26 +139,13 @@ export function StudentSidebar() {
       getStudentEnrollments().then(setEnrolledCourses).catch(console.error);
       fetch("/api/student/today")
         .then((r) => (r.ok ? r.json() : null))
-        .then((d) => { if (d?.streak?.current != null) setStreakCurrent(d.streak.current); })
+        .then((d) => {
+          if (d?.streak?.current != null) setStreakCurrent(d.streak.current);
+          if (d?.weeklyActivity != null) setWeeklyActivity(d.weeklyActivity);
+        })
         .catch(() => {});
     }
   }, [session?.user?.id]);
-
-  /* ── Mobile drawer helpers ────────────────────────── */
-  const openDrawer = useCallback(() => {
-    dialogRef.current?.showModal();
-  }, []);
-
-  const closeDrawer = useCallback(() => {
-    dialogRef.current?.close();
-  }, []);
-
-  /* Close drawer on route change */
-  useEffect(() => {
-    closeDrawer();
-  }, [pathname, closeDrawer]);
-
-  /* Close on Escape is built-in for <dialog> */
 
   /* ── Handlers ─────────────────────────────────────── */
   const handleLogout = async () => {
@@ -111,293 +162,354 @@ export function StudentSidebar() {
     }
   };
 
+  /* ── Nav item helper ──────────────────────────────── */
+  const NavItem = ({
+    href,
+    icon: Icon,
+    label,
+    active,
+    onClick,
+    className,
+  }: {
+    href?: string;
+    icon: React.ElementType;
+    label: string;
+    active?: boolean;
+    onClick?: (e: React.MouseEvent) => void;
+    className?: string;
+  }) => {
+    const baseClass = cn(
+      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors w-full",
+      active
+        ? "bg-brand-primary/10 text-brand-primary font-semibold"
+        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      collapsed && "justify-center px-0 size-10 mx-auto",
+      className
+    );
+
+    const content = (
+      <>
+        <Icon className="size-5 shrink-0" />
+        {!collapsed && <span>{label}</span>}
+      </>
+    );
+
+    const inner = href ? (
+      <Link href={href} onClick={onClick as undefined} className={baseClass}>
+        {content}
+      </Link>
+    ) : (
+      <button type="button" onClick={onClick} className={cn(baseClass, "cursor-pointer")}>
+        {content}
+      </button>
+    );
+
+    return (
+      <SidebarTooltip label={label} collapsed={collapsed}>
+        {inner}
+      </SidebarTooltip>
+    );
+  };
+
   /* ── Shared nav markup ────────────────────────────── */
-  const Nav = ({ collapsed: c = false, onLink = () => {} }: NavOptions) => (
-    <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4 scrollbar-none">
-      {/* Dashboard */}
-      <Link
-        href="/dashboard"
-        onClick={onLink}
-        title="Dashboard"
-        className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
-          pathname === "/dashboard"
-            ? "bg-brand-primary/10 text-brand-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          c && "justify-center px-2"
-        )}
-      >
-        <LayoutDashboard className="size-5 shrink-0" />
-        {!c && "Dashboard"}
-      </Link>
+  const Nav = ({ collapsed: c = false }: NavOptions) => {
 
-      {/* Schedule (Jadwal) */}
-      <Link
-        href="/dashboard/schedule"
-        onClick={onLink}
-        title="Jadwal Bimbingan"
-        className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
-          pathname === "/dashboard/schedule"
-            ? "bg-brand-primary/10 text-brand-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          c && "justify-center px-2"
-        )}
-      >
-        <CalendarRange className="size-5 shrink-0" />
-        {!c && "Jadwal"}
-      </Link>
-
-      {/* Leaderboard */}
-      <Link
-        href="/leaderboard"
-        onClick={onLink}
-        title="Papan Peringkat"
-        className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
-          pathname === "/leaderboard" || pathname.startsWith("/leaderboard")
-            ? "bg-brand-primary/10 text-brand-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          c && "justify-center px-2"
-        )}
-      >
-        <Trophy className="size-5 shrink-0" />
-        {!c && "Peringkat"}
-      </Link>
-
-      {/* Courses */}
-      <div>
-        <button
-          type="button"
-          onClick={handleCoursesToggle}
-          title="Courses"
-          className={cn(
-            "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors cursor-pointer",
-            pathname.startsWith("/courses")
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            c && "justify-center px-2"
-          )}
-        >
-          <BookOpen className="size-5 shrink-0" />
-          {!c && (
-            <>
-              <span className="flex-1 text-left">Courses</span>
-              {coursesOpen
-                ? <ChevronDown className="size-4" />
-                : <ChevronRight className="size-4" />}
-            </>
-          )}
-        </button>
-
-        {coursesOpen && !c && (
-          <div className="ml-4 mt-1 space-y-0.5 border-l border-border pl-3">
-            {enrolledCourses.map((course) => {
-              const active =
-                pathname === `/courses/${course.id}` ||
-                pathname.startsWith(`/courses/${course.id}/`);
-              return (
-                <Link
-                  key={course.id}
-                  href={`/courses/${course.id}`}
-                  onClick={onLink}
-                  className={cn(
-                    "block truncate rounded-lg px-3 py-1.5 text-body-xs font-medium transition-colors",
-                    active
-                      ? "bg-brand-primary/8 text-brand-primary font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {course.title}
-                </Link>
-              );
-            })}
+    if (activeCourse) {
+      return (
+        <nav className={cn(
+          "flex flex-1 flex-col gap-1 py-4 font-sans text-left",
+          c
+            ? "px-1 items-center overflow-y-hidden sidebar-scroll-hidden"
+            : "px-3 overflow-y-auto sidebar-scroll"
+        )}>
+          {/* Back button */}
+          <SidebarTooltip label="Kembali ke Dashboard" collapsed={c}>
             <Link
-              href="/courses"
-              onClick={onLink}
+              href="/dashboard"
+              title={c ? "Kembali ke Dashboard" : undefined}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-xs font-semibold text-brand-secondary hover:underline",
-                pathname === "/courses" && "underline"
+                "flex items-center gap-2.5 rounded-xl px-3 py-2 text-body-xs font-semibold text-brand-secondary hover:bg-muted/40 transition-colors mb-2",
+                c && "justify-center size-10 px-0 mx-auto"
               )}
             >
-              <Search className="size-3 shrink-0" />
-              Jelajahi Course
+              <ArrowLeft className="size-4 shrink-0" />
+              {!c && <span>Dashboard</span>}
             </Link>
-          </div>
-        )}
+          </SidebarTooltip>
 
-        {c && (
-          <Link
-            href="/courses"
-            onClick={onLink}
-            title="Jelajahi Courses"
-            className={cn(
-              "flex items-center justify-center rounded-xl py-2 transition-colors",
-              pathname === "/courses"
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          {/* Active Course Card (expanded only) */}
+          {!c && (
+            <div className="rounded-xl border border-border/60 bg-muted/30 p-3 mb-4 text-left">
+              <div className="flex items-center gap-2">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-brand-primary/10 text-brand-primary">
+                  <BookOpen className="size-4" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-body-xs font-bold text-foreground font-heading leading-tight">
+                    {activeCourse.title}
+                  </p>
+                  <p className="truncate text-[10px] text-muted-foreground uppercase tracking-widest font-semibold mt-0.5">
+                    {activeCourse.category || "Kelas"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Course segments */}
+          <div className={cn("space-y-1", c && "w-full flex flex-col items-center")}>
+            <NavItem
+              href={`/courses/${activeCourse.id}`}
+              icon={LayoutDashboard}
+              label="Ringkasan"
+              active={pathname === `/courses/${activeCourse.id}`}
+            />
+
+            {showStudyPath && (
+              <NavItem
+                href={`/courses/${activeCourse.id}/path`}
+                icon={Compass}
+                label="Alur Belajar"
+                active={pathname.startsWith(`/courses/${activeCourse.id}/path`)}
+              />
             )}
-          >
-            <Search className="size-4 shrink-0" />
-          </Link>
-        )}
-      </div>
 
-      {/* Profile */}
-      <Link
-        href="/profile"
-        onClick={onLink}
-        title="Profile"
-        className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
-          pathname === "/profile"
-            ? "bg-brand-primary/10 text-brand-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          c && "justify-center px-2"
-        )}
-      >
-        <User className="size-5 shrink-0" />
-        {!c && "Profile"}
-      </Link>
+            <NavItem
+              href={`/courses/${activeCourse.id}/material`}
+              icon={FileText}
+              label="Dokumen"
+              active={pathname.startsWith(`/courses/${activeCourse.id}/material`)}
+            />
 
-      {/* Settings */}
-      <Link
-        href="/settings"
-        onClick={onLink}
-        title="Settings"
-        className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors",
-          pathname === "/settings"
-            ? "bg-brand-primary/10 text-brand-primary"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          c && "justify-center px-2"
-        )}
-      >
-        <Settings className="size-5 shrink-0" />
-        {!c && "Settings"}
-      </Link>
+            <NavItem
+              href={`/courses/${activeCourse.id}/flashcard`}
+              icon={Brain}
+              label="Flashcard"
+              active={pathname.startsWith(`/courses/${activeCourse.id}/flashcard`)}
+            />
 
-      {/* Spacer */}
-      <div className="flex-1" />
+            <NavItem
+              href={`/courses/${activeCourse.id}/quiz`}
+              icon={ClipboardList}
+              label="Kuis"
+              active={pathname.startsWith(`/courses/${activeCourse.id}/quiz`)}
+            />
 
-      {/* Streak tag (compact, above sign-out; only when FEATURE_TODAY active) */}
-      {!c && streakCurrent !== null && (
-        <div className="px-3 pb-1">
-          <StreakTag current={streakCurrent} />
+            <NavItem
+              href={`/courses/${activeCourse.id}/tryout`}
+              icon={GraduationCap}
+              label="Tryout"
+              active={pathname.startsWith(`/courses/${activeCourse.id}/tryout`)}
+            />
+
+            {showLive && (
+              <NavItem
+                href={`/courses/${activeCourse.id}/live`}
+                icon={Play}
+                label="Kuis Langsung"
+                active={pathname.startsWith(`/courses/${activeCourse.id}/live`)}
+              />
+            )}
+
+            {showMastery && (
+              <NavItem
+                href={`/courses/${activeCourse.id}/mastery`}
+                icon={Target}
+                label="Penguasaan"
+                active={pathname.startsWith(`/courses/${activeCourse.id}/mastery`)}
+              />
+            )}
+
+            <NavItem
+              href={`/courses/${activeCourse.id}/leaderboard`}
+              icon={Trophy}
+              label="Peringkat"
+              active={pathname.startsWith(`/courses/${activeCourse.id}/leaderboard`)}
+            />
+
+            <NavItem
+              href={`/courses/${activeCourse.id}/my-results`}
+              icon={History}
+              label="Hasil Ujian"
+              active={pathname.startsWith(`/courses/${activeCourse.id}/my-results`)}
+            />
+          </div>
+
+          <div className="h-px bg-border/50 my-3 shrink-0 w-full" />
+
+          <div className="flex-1" />
+
+          {/* Streak calendar strip inside course (expanded only) */}
+          {!c && streakCurrent !== null && (
+            <div className="pb-1">
+              <StreakCalendarStrip current={streakCurrent} weeklyActivity={weeklyActivity} />
+            </div>
+          )}
+
+          {/* Sign out */}
+          <SidebarTooltip label="Keluar" collapsed={c}>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-status-error transition-colors hover:bg-status-error/10 cursor-pointer",
+                c && "justify-center size-10 px-0 mx-auto"
+              )}
+            >
+              <LogOut className="size-5 shrink-0" />
+              {!c && <span>Keluar</span>}
+            </button>
+          </SidebarTooltip>
+        </nav>
+      );
+    }
+
+    // Default global dashboard nav
+    return (
+      <nav className={cn(
+        "flex flex-1 flex-col gap-1 py-4 font-sans text-left",
+        c
+          ? "px-1 items-center overflow-y-hidden sidebar-scroll-hidden"
+          : "px-3 overflow-y-auto sidebar-scroll"
+      )}>
+        <NavItem
+          href="/dashboard"
+          icon={LayoutDashboard}
+          label="Dashboard"
+          active={pathname === "/dashboard"}
+        />
+
+        <NavItem
+          href="/dashboard/schedule"
+          icon={CalendarRange}
+          label="Jadwal"
+          active={pathname === "/dashboard/schedule"}
+        />
+
+        <NavItem
+          href="/leaderboard"
+          icon={Trophy}
+          label="Peringkat"
+          active={pathname === "/leaderboard" || pathname.startsWith("/leaderboard")}
+        />
+
+        {/* Courses accordion */}
+        <div className={cn(c && "w-full flex flex-col items-center")}>
+          <SidebarTooltip label="Courses" collapsed={c}>
+            <button
+              type="button"
+              onClick={handleCoursesToggle}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors cursor-pointer",
+                pathname.startsWith("/courses")
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                c && "justify-center size-10 px-0 mx-auto"
+              )}
+            >
+              <BookOpen className="size-5 shrink-0" />
+              {!c && (
+                <>
+                  <span className="flex-1 text-left">Courses</span>
+                  {coursesOpen
+                    ? <ChevronDown className="size-4" />
+                    : <ChevronRight className="size-4" />}
+                </>
+              )}
+            </button>
+          </SidebarTooltip>
+
+          {coursesOpen && !c && (
+            <div className="ml-4 mt-1 space-y-0.5 border-l border-border pl-3">
+              {enrolledCourses.map((course) => {
+                const active =
+                  pathname === `/courses/${course.id}` ||
+                  pathname.startsWith(`/courses/${course.id}/`);
+                return (
+                  <Link
+                    key={course.id}
+                    href={`/courses/${course.id}`}
+                    className={cn(
+                      "block truncate rounded-lg px-3 py-1.5 text-body-xs font-medium transition-colors",
+                      active
+                        ? "bg-brand-primary/8 text-brand-primary font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {course.title}
+                  </Link>
+                );
+              })}
+              <Link
+                href="/courses"
+                className={cn(
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-body-xs font-semibold text-brand-secondary hover:underline",
+                  pathname === "/courses" && "underline"
+                )}
+              >
+                <Search className="size-3 shrink-0" />
+                Jelajahi Course
+              </Link>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Sign out */}
-      <button
-        type="button"
-        onClick={handleLogout}
-        title="Keluar"
-        className={cn(
-          "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-status-error transition-colors hover:bg-status-error/10 cursor-pointer",
-          c && "justify-center px-2"
-        )}
-      >
-        <LogOut className="size-5 shrink-0" />
-        {!c && "Keluar"}
-      </button>
-    </nav>
-  );
+        <NavItem
+          href="/profile"
+          icon={User}
+          label="Profile"
+          active={pathname === "/profile"}
+        />
 
-  /* ── User card ────────────────────────────────────── */
-  const UserCard = ({ c = false }: { c?: boolean }) =>
-    session?.user ? (
-      <div
-        className={cn(
-          "mx-3 mt-3 flex shrink-0 items-center gap-3 rounded-2xl border border-border/70 bg-muted/40 p-2.5",
-          c && "justify-center"
-        )}
-      >
-        {session.user.image ? (
-          <img
-            src={session.user.image}
-            alt={session.user.name}
-            className="size-8 shrink-0 rounded-full object-cover ring-2 ring-brand-primary/20"
-          />
-        ) : (
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-primary text-xs font-bold text-white">
-            {session.user.name?.charAt(0)?.toUpperCase() ?? "?"}
-          </span>
-        )}
-        {!c && (
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-body-xs font-semibold text-foreground">
-              {session.user.name}
-            </p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              {session.user.email}
-            </p>
+        {/* Spacer */}
+        <div className="flex-1" />
+
+        {/* Streak calendar strip */}
+        {!c && streakCurrent !== null && (
+          <div className="px-3 pb-1">
+            <StreakCalendarStrip current={streakCurrent} weeklyActivity={weeklyActivity} />
           </div>
         )}
-      </div>
-    ) : null;
 
-  return (
-    <>
-      {/* ═══════════════════════════════════════════════
-          MOBILE TOP BAR  (visible only below md)
-          — stacks above main in the flex-col layout
-      ═══════════════════════════════════════════════ */}
-      <div className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 md:hidden">
-        {/* Left Side: Sidebar Toggle Button */}
-        <button
-          type="button"
-          onClick={openDrawer}
-          aria-label="Buka navigasi"
-          title="Buka sidebar"
-          className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-        >
-          <PanelLeftOpen className="size-5" />
-        </button>
-
-        {/* Right Side: Search Trigger Button + Brand Logo */}
-        <div className="flex items-center gap-3">
-          {/* Search Trigger (only loop icon and modKeyHint, vertically centered) */}
+        {/* Sign out */}
+        <SidebarTooltip label="Keluar" collapsed={c}>
           <button
             type="button"
-            onClick={() => setSearchOpen(true)}
-            className="flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer"
+            onClick={handleLogout}
+            className={cn(
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-status-error transition-colors hover:bg-status-error/10 cursor-pointer",
+              c && "justify-center size-10 px-0 mx-auto"
+            )}
           >
-            <Search className="size-4 shrink-0" />
-            <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
-              {modKeyHint}
-            </kbd>
+            <LogOut className="size-5 shrink-0" />
+            {!c && <span>Keluar</span>}
           </button>
+        </SidebarTooltip>
+      </nav>
+    );
+  };
 
-          {/* Logo at the far right */}
+  return (
+    <aside
+      style={{ position: "sticky", top: 0, height: "100svh" }}
+      className={cn(
+        "flex flex-col shrink-0 overflow-hidden z-30",
+        "border-r border-border bg-card",
+        "transition-[width] duration-300 ease-in-out",
+        collapsed ? "w-[64px]" : "w-[248px]"
+      )}
+    >
+      {/* Header row: brand + collapse toggle */}
+      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
+        {!collapsed && (
           <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
             <Logo className="[--logo-height:1.75rem]" />
           </Link>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════
-          DESKTOP SIDEBAR  (visible only at md+)
-          — sticky in the flex-row layout
-      ═══════════════════════════════════════════════ */}
-      <aside
-        style={{ position: "sticky", top: 0, height: "100svh" }}
-        className={cn(
-          "hidden md:flex flex-col shrink-0 overflow-hidden z-30",
-          "border-r border-border bg-card",
-          "transition-[width] duration-300 ease-in-out",
-          collapsed ? "w-[64px]" : "w-[248px]"
         )}
-      >
-        {/* Header row: brand + collapse toggle */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
-          {!collapsed && (
-            <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
-              <Logo className="[--logo-height:1.75rem]" />
-            </Link>
-          )}
+        <SidebarTooltip label={collapsed ? "Expand sidebar" : "Collapse sidebar"} collapsed={collapsed}>
           <button
             type="button"
-            onClick={() => setCollapsed((v) => !v)}
+            onClick={toggleCollapsed}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className={cn(
               "flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors",
@@ -405,24 +517,21 @@ export function StudentSidebar() {
             )}
           >
             {collapsed
-              ? <ChevronRight className="size-4" />
-              : <ChevronLeft className="size-4" />}
+              ? <PanelLeftOpen className="size-4" />
+              : <PanelLeftClose className="size-4" />}
           </button>
-        </div>
+        </SidebarTooltip>
+      </div>
 
-        <div className="shrink-0">
-          {mounted && <UserCard c={collapsed} />}
-        </div>
-
-        {/* Search trigger button for desktop sidebar */}
-        <div className="px-3 pt-3 shrink-0">
+      {/* Search trigger */}
+      <div className="px-3 pt-3 shrink-0">
+        <SidebarTooltip label={`Search  ${modKeyHint}`} collapsed={collapsed}>
           <button
             type="button"
             onClick={() => setSearchOpen(true)}
-            title="Search"
             className={cn(
-              "flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer mx-auto",
-              collapsed ? "size-10" : "w-full"
+              "flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer",
+              collapsed ? "size-10 mx-auto px-0" : "w-full"
             )}
           >
             <Search className="size-4 shrink-0" />
@@ -432,54 +541,10 @@ export function StudentSidebar() {
               </kbd>
             )}
           </button>
-        </div>
+        </SidebarTooltip>
+      </div>
 
-        <Nav collapsed={collapsed} />
-      </aside>
-
-      {/* ═══════════════════════════════════════════════
-          MOBILE DRAWER  — rendered as <dialog>
-          Browser paints this in the top-layer, so it
-          is always above everything else with no
-          z-index fighting. Escape key closes it natively.
-      ═══════════════════════════════════════════════ */}
-      <dialog
-        ref={dialogRef}
-        onClick={(e) => {
-          /* Close when clicking the backdrop (outside the inner panel) */
-          if (e.target === dialogRef.current) closeDrawer();
-        }}
-        className={cn(
-          "sidebar-dialog",
-          /* Reset dialog defaults */
-          "m-0 h-full max-h-full max-w-full bg-transparent p-0",
-          /* Position to the left, take full height */
-          "inset-y-0 left-0",
-          /* Backdrop */
-          "backdrop:bg-black/50 backdrop:backdrop-blur-sm"
-        )}
-      >
-        {/* Inner panel */}
-        <div className="sidebar-panel flex h-full w-72 flex-col bg-card">
-          {/* Drawer header */}
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-4">
-            <Logo className="[--logo-height:1.75rem]" />
-            <button
-              type="button"
-              onClick={closeDrawer}
-              aria-label="Tutup navigasi"
-              className="flex size-9 items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="size-5" />
-            </button>
-          </div>
-
-          <div className="shrink-0">
-            {mounted && <UserCard />}
-          </div>
-          <Nav onLink={closeDrawer} />
-        </div>
-      </dialog>
-    </>
+      <Nav collapsed={collapsed} />
+    </aside>
   );
 }

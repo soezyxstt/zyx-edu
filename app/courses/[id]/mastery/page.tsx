@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronRight, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { EnrollmentForm } from "@/components/enrollment-form";
@@ -44,18 +43,7 @@ export default async function CourseMasteryPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell
-        eyebrow={
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-            <ChevronRight className="size-3" />
-            <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-          </div>
-        }
-        title="Peta Penguasaan (Terkunci)"
-        description="Peta penguasaan konsep dan tingkat kemahiran belajar."
-        hideHeader
-      >
+      <CoursePageShell>
         <Reveal>
           <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
             <div className="flex items-start gap-3">
@@ -121,18 +109,7 @@ export default async function CourseMasteryPage({ params }: Props) {
   // Empty state: empty when no student Concept Mastery rows are found for this course
   if (masteryRows.length === 0) {
     return (
-      <CoursePageShell
-        eyebrow={
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-            <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-            <ChevronRight className="size-3" />
-            <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-          </div>
-        }
-        title="Peta Penguasaan"
-        description="Peta penguasaan konsep dan tingkat kemahiran belajar."
-        hideHeader
-      >
+      <CoursePageShell>
         <Reveal>
           <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border/60 bg-card/10">
             <p className="text-body-sm text-muted-foreground">
@@ -229,18 +206,7 @@ export default async function CourseMasteryPage({ params }: Props) {
     .filter((group) => group.concepts.length > 0);
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-        </div>
-      }
-      title="Peta Penguasaan"
-      description="Peta penguasaan konsep dan tingkat kemahiran belajar."
-      hideHeader
-    >
+    <CoursePageShell>
       <ConceptMap groups={groups} />
     </CoursePageShell>
   );

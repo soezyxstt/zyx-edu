@@ -22,7 +22,19 @@ function isTutorPath(pathname: string | null) {
   return pathname !== null && /^\/tutor(?:\/|$)/.test(pathname);
 }
 
-export function AppChrome({ children }: { children: React.ReactNode }) {
+interface AppChromeProps {
+  children: React.ReactNode;
+  showStudyPath?: boolean;
+  showMastery?: boolean;
+  showLive?: boolean;
+}
+
+export function AppChrome({
+  children,
+  showStudyPath = false,
+  showMastery = false,
+  showLive = false,
+}: AppChromeProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user as { id: string; role?: string | null } | undefined;
@@ -32,6 +44,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     (pathname.startsWith("/dashboard") ||
       pathname.startsWith("/profile") ||
       pathname.startsWith("/settings") ||
+      pathname.startsWith("/leaderboard") ||
       (pathname.startsWith("/courses") && user && user.role !== "admin")) &&
     !isTutorPath(pathname);
 
@@ -39,7 +52,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
     <TutorProvider>
       <CommandMenuProvider>
         {isAdminPath(pathname) ? (
-          <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-hidden md:flex-row">
+          <div className="relative flex min-h-screen flex-row bg-landing-hero-shell [overflow-x:clip]">
             <CoursesAmbient />
             <AdminSidebar />
             <main
@@ -51,7 +64,7 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
             </main>
           </div>
         ) : isTutorPath(pathname) ? (
-          <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-x-hidden md:flex-row">
+          <div className="relative flex min-h-screen flex-row bg-landing-hero-shell [overflow-x:clip]">
             <TutorSidebar />
             <main
               id="main-content"
@@ -63,22 +76,18 @@ export function AppChrome({ children }: { children: React.ReactNode }) {
           </div>
         ) : isStudentLayout ? (
           /*
-           * Student layout — two modes:
-           *
-           * Mobile (< md):
-           *   flex-col → [mobile topbar h-14] + [main flex-1]
-           *   Sidebar rendered as <dialog> outside normal flow
-           *
-           * Desktop (≥ md):
-           *   flex-row → [sticky sidebar w-248] + [main flex-1]
-           *   Sidebar uses position:sticky + height:100svh
-           *
-           * No overflow:hidden / h-dvh on the wrapper —
-           * let the browser handle scrolling naturally.
+           * Student layout — persistent sidebar (always visible):
+           *   flex-row at all screen sizes
+           *   Collapsed (64px icon rail) ↔ Expanded (248px with labels)
+           *   Main content flexes to fill remaining space naturally.
            */
-          <div className="relative flex min-h-screen flex-col bg-landing-hero-shell overflow-x-hidden md:flex-row">
+          <div className="relative flex min-h-screen flex-row bg-landing-hero-shell [overflow-x:clip]">
             <CoursesAmbient />
-            <StudentSidebar />
+            <StudentSidebar
+              showStudyPath={showStudyPath}
+              showMastery={showMastery}
+              showLive={showLive}
+            />
             <main
               id="main-content"
               tabIndex={-1}

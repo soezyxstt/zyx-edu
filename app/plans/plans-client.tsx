@@ -25,8 +25,29 @@ import { planTiers, type PlanKey } from "@/lib/plan-tiers";
 
 export default function PlansClient() {
   const [persons, setPersons] = useState<number>(DEFAULT_PERSONS);
-  const [courses, setCourses] = useState<number>(DEFAULT_COURSES);
+  // Separate standard courses and other courses (Lain-Lain) count
+  const [selectedStandardCourses, setSelectedStandardCourses] = useState<string[]>(() =>
+    CORE_SUBJECTS.slice(0, DEFAULT_COURSES).filter((c) => c !== "Mata Kuliah Lain-Lain")
+  );
+  const [otherCoursesCount, setOtherCoursesCount] = useState<number>(() =>
+    CORE_SUBJECTS.slice(0, DEFAULT_COURSES).includes("Mata Kuliah Lain-Lain") ? 1 : 0
+  );
   const [showSubjects, setShowSubjects] = useState<boolean>(false);
+
+  // Total courses count
+  const courses = selectedStandardCourses.length + otherCoursesCount;
+
+  // Format list for WhatsApp and summary displays
+  const selectedCoursesList = [
+    ...selectedStandardCourses,
+    ...(otherCoursesCount > 0
+      ? [
+          otherCoursesCount === 1
+            ? "Mata Kuliah Lain-Lain"
+            : `Mata Kuliah Lain-Lain (${otherCoursesCount})`,
+        ]
+      : []),
+  ];
 
   const formatPrice = (amount: number): string => {
     return "Rp " + amount.toLocaleString("id-ID");
@@ -41,11 +62,26 @@ export default function PlansClient() {
   };
 
   const handleIncrementCourses = () => {
-    setCourses((prev) => Math.min(prev + 1, MAX_COURSES));
+    if (courses >= MAX_COURSES) return;
+    // Find first standard course not selected
+    const nextCourse = CORE_SUBJECTS.filter((c) => c !== "Mata Kuliah Lain-Lain").find(
+      (subject) => !selectedStandardCourses.includes(subject)
+    );
+    if (nextCourse) {
+      setSelectedStandardCourses((prev) => [...prev, nextCourse]);
+    } else {
+      // If all standard courses are selected, increment otherCoursesCount
+      setOtherCoursesCount((prev) => prev + 1);
+    }
   };
 
   const handleDecrementCourses = () => {
-    setCourses((prev) => Math.max(prev - 1, MIN_COURSES));
+    if (courses <= MIN_COURSES) return;
+    if (otherCoursesCount > 0) {
+      setOtherCoursesCount((prev) => prev - 1);
+    } else {
+      setSelectedStandardCourses((prev) => prev.slice(0, -1));
+    }
   };
 
   return (
@@ -172,20 +208,86 @@ export default function PlansClient() {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {CORE_SUBJECTS.map((subject, idx) => {
-                const isActive = idx < courses;
+              {CORE_SUBJECTS.map((subject) => {
+                const isLainLain = subject === "Mata Kuliah Lain-Lain";
+
+                if (isLainLain) {
+                  const isActive = otherCoursesCount > 0;
+                  if (isActive) {
+                    return (
+                      <div
+                        key={subject}
+                        className="inline-flex items-center rounded-md border border-[var(--zx-accent)]/20 bg-[var(--zx-accent)]/10 text-[var(--zx-accent)] text-xs font-medium overflow-hidden shadow-xs transition-all duration-300"
+                      >
+                        <button
+                          onClick={() => {
+                            if (courses <= MIN_COURSES) return;
+                            setOtherCoursesCount((prev) => Math.max(0, prev - 1));
+                          }}
+                          className="px-2 py-1 hover:bg-[var(--zx-accent)]/20 border-r border-[var(--zx-accent)]/20 transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                          title="Kurangi Mata Kuliah Lain-Lain"
+                          disabled={courses <= MIN_COURSES}
+                        >
+                          <Minus className="size-3" />
+                        </button>
+                        <span className="px-3 py-1 font-semibold select-none flex items-center gap-1.5">
+                          <Check className="size-3 text-[var(--zx-accent)]" />
+                          Mata Kuliah Lain-Lain ({otherCoursesCount})
+                        </span>
+                        <button
+                          onClick={() => {
+                            if (courses >= MAX_COURSES) return;
+                            setOtherCoursesCount((prev) => prev + 1);
+                          }}
+                          className="px-2 py-1 hover:bg-[var(--zx-accent)]/20 border-l border-[var(--zx-accent)]/20 transition-all focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
+                          title="Tambah Mata Kuliah Lain-Lain"
+                          disabled={courses >= MAX_COURSES}
+                        >
+                          <Plus className="size-3" />
+                        </button>
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <button
+                        key={subject}
+                        onClick={() => {
+                          if (courses >= MAX_COURSES) return;
+                          setOtherCoursesCount(1);
+                        }}
+                        disabled={courses >= MAX_COURSES}
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all duration-300 border border-transparent bg-muted/30 text-muted-foreground/50 hover:bg-muted/60 hover:text-foreground hover:border-border/50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {subject}
+                      </button>
+                    );
+                  }
+                }
+
+                // Standard Course
+                const isActive = selectedStandardCourses.includes(subject);
                 return (
-                  <span
+                  <button
                     key={subject}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all duration-300 ${
+                    onClick={() => {
+                      if (isActive) {
+                        if (courses <= MIN_COURSES) return;
+                        setSelectedStandardCourses((prev) => prev.filter((c) => c !== subject));
+                      } else {
+                        if (courses >= MAX_COURSES) return;
+                        setSelectedStandardCourses((prev) => [...prev, subject]);
+                      }
+                    }}
+                    disabled={!isActive && courses >= MAX_COURSES}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-all duration-300 border focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ${
                       isActive
-                        ? "bg-[var(--zx-accent)]/10 text-[var(--zx-accent)] border border-[var(--zx-accent)]/20 shadow-xs"
-                        : "bg-muted/30 text-muted-foreground/30 border border-transparent"
+                        ? "bg-[var(--zx-accent)]/10 text-[var(--zx-accent)] border-[var(--zx-accent)]/20 hover:bg-[var(--zx-accent)]/20 shadow-xs"
+                        : "bg-muted/30 text-muted-foreground/50 border-transparent hover:bg-muted/60 hover:text-foreground hover:border-border/50"
                     }`}
                   >
                     {isActive && <Check className="size-3" />}
                     {subject}
-                  </span>
+                  </button>
                 );
               })}
             </div>
@@ -216,7 +318,7 @@ export default function PlansClient() {
                 : null;
 
               // Generate WhatsApp link dynamically
-              const whatsAppUrl = getWhatsAppPlanUrl(tier.key, tier.name, persons, courses);
+              const whatsAppUrl = getWhatsAppPlanUrl(tier.key, tier.name, persons, courses, selectedCoursesList);
 
               return (
                 <article

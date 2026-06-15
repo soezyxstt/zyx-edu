@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { CourseLayoutChrome } from "@/components/course/course-layout-chrome";
 import { getCourseById } from "@/lib/student-course-fixtures";
 
 type Props = {
@@ -13,10 +12,6 @@ export default async function CourseLayout({ children, params }: Props) {
   const course = getCourseById(id);
   if (!course) notFound();
 
-  return (
-    <>
-      <CourseLayoutChrome courseId={course.id} courseTitle={course.title} />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }
+

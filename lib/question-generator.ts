@@ -14,6 +14,7 @@ import { randomUUID } from "crypto";
 
 // Zod validation helper for Gemini response parsing
 import { z } from "zod";
+import { repairJsonString } from "./ko-utils";
 
 const GeminiQuestionResponseSchema = z.object({
   prompt: z.string(),
@@ -411,7 +412,7 @@ export async function generateQuestionsForKOBatch(
           continue;
         }
 
-        const cleanJSON = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+        const cleanJSON = repairJsonString(rawText);
         candidateBatch = JSON.parse(cleanJSON);
       } catch (err: any) {
         for (const ko of groupKOs) {
@@ -493,7 +494,7 @@ export async function generateQuestionsForKOBatch(
           },
         });
         const rawText = response.text || "";
-        const cleanJSON = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+        const cleanJSON = repairJsonString(rawText);
         const repairedBatch = JSON.parse(cleanJSON);
         const repairedQuestions = repairedBatch?.questions || [];
 

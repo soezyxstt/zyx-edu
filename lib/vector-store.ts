@@ -139,6 +139,11 @@ export class VectorizeStore implements VectorStore {
 // ---------------------------------------------------------------------------
 
 function createVectorStore(): VectorStore {
+  // Use Vectorize in production, Pinecone in development.
+  // Explicit VECTOR_STORE env overrides the default behavior.
+  if (process.env.NODE_ENV === 'production') {
+    return new VectorizeStore();
+  }
   if (shouldReadFromVectorize()) return new VectorizeStore();
   return new PineconeStore();
 }

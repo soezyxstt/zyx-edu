@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { checkEnrollment } from "@/app/dashboard/actions";
@@ -60,18 +59,7 @@ export default async function CourseQuizListPage({ params }: Props) {
     : [];
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <Link href={`/courses/${id}`} className="hover:text-primary transition-colors">{course.title}</Link>
-        </div>
-      }
-      title="Kuis & Latihan"
-      description="Kumpulan kuis cepat untuk menguji pemahaman konsep Anda secara praktis."
-      hideHeader
-    >
+    <CoursePageShell>
       <Reveal>
         <QuizListClient
           courseId={id}

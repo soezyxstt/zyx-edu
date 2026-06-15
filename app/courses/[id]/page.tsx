@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BookOpen, ChevronRight, ClipboardList, Lock, Trophy } from "lucide-react";
-import { checkEnrollment } from "@/app/dashboard/actions";
+import { BookOpen, ClipboardList, Lock, Trophy } from "lucide-react";
+import { checkEnrollment, getDailyTrivia } from "@/app/dashboard/actions";
 import { DailyQuizSection } from "@/components/course/daily-quiz-section";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { courseCardClass } from "@/components/course/course-surfaces";
@@ -32,6 +32,7 @@ export default async function CourseOverviewPage({ params }: Props) {
   if (!course) return null;
 
   const isEnrolled = await checkEnrollment(id);
+  const dailyTrivia = await getDailyTrivia(id);
   const materials = getMaterialsForCourse(id);
   const quizzes = getExamsForCourse(id, "quiz");
   const tryouts = getExamsForCourse(id, "tryout");
@@ -114,18 +115,7 @@ export default async function CourseOverviewPage({ params }: Props) {
   ] as const;
 
   return (
-    <CoursePageShell
-      eyebrow={
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase tracking-widest">
-          <Link href="/courses" className="hover:text-primary transition-colors">Katalog</Link>
-          <ChevronRight className="size-3" />
-          <span>{course.category}</span>
-        </div>
-      }
-      headingTier="primary"
-      title={course.title}
-      description={course.description}
-    >
+    <CoursePageShell>
       <Reveal>
         {!isEnrolled && (
           <div className="mb-5 rounded-lg border border-brand-secondary/25 bg-brand-secondary/5 p-4">
@@ -141,7 +131,7 @@ export default async function CourseOverviewPage({ params }: Props) {
           </div>
         )}
 
-        <DailyQuizSection courseId={id} courseTitle={course.title} />
+        <DailyQuizSection courseId={id} courseTitle={course.title} dailyTrivia={dailyTrivia} />
 
         <div className="grid gap-3 md:grid-cols-3">
           {tiles.map((tile) => {

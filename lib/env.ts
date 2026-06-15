@@ -24,8 +24,14 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: z.string().min(1),
     /** Nomor WhatsApp admin (digits; `+`/spaces allowed). Contoh: `6281234567890`. */
     WHATSAPP_ADMIN_NUMBER: z.string().optional(),
-    /** Gemini API Key for AI operations */
+    /** Gemini API Key for AI operations (primary) */
     GEMINI_API_KEY: z.string().min(1),
+    /** Gemini API Key #2 for failover/load balancing */
+    GEMINI_API_KEY_2: z.string().optional(),
+    /** Gemini API Key #3 for failover/load balancing */
+    GEMINI_API_KEY_3: z.string().optional(),
+    /** Gemini API Key #4 for failover/load balancing */
+    GEMINI_API_KEY_4: z.string().optional(),
     /** Pinecone API Key for vector search (required for AI quiz generation) */
     PINECONE_API_KEY: z.string().transform((v) => v || undefined).optional(),
     /** Pinecone index name (e.g. "zyx-edu") */
@@ -55,6 +61,8 @@ export const env = createEnv({
      * Leave unset to use the Gemini API directly.
      */
     CF_AI_GATEWAY_URL: z.string().url().optional(),
+    /** Cloudflare AI Gateway token for Authorization header */
+    CF_AI_GATEWAY_TOKEN: z.string().optional(),
     /** Cloudflare account ID (used for KV REST API and Workers) */
     CF_ACCOUNT_ID: z.string().optional(),
     /** Cloudflare Workers KV namespace ID for zyx-ai-cache */
@@ -110,6 +118,9 @@ export const env = createEnv({
     UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
     WHATSAPP_ADMIN_NUMBER: process.env.WHATSAPP_ADMIN_NUMBER,
     GEMINI_API_KEY: process.env.GEMINI_API_KEY,
+    GEMINI_API_KEY_2: process.env.GEMINI_API_KEY_2,
+    GEMINI_API_KEY_3: process.env.GEMINI_API_KEY_3,
+    GEMINI_API_KEY_4: process.env.GEMINI_API_KEY_4,
     PINECONE_API_KEY: process.env.PINECONE_API_KEY,
     PINECONE_INDEX_NAME: process.env.PINECONE_INDEX_NAME,
     INNGEST_EVENT_KEY: process.env.INNGEST_EVENT_KEY,
@@ -123,9 +134,10 @@ export const env = createEnv({
     STORAGE_PROVIDER_MODE: process.env.STORAGE_PROVIDER_MODE,
     // AI Gateway
     CF_AI_GATEWAY_URL: process.env.CF_AI_GATEWAY_URL,
-    CF_ACCOUNT_ID: process.env.CF_ACCOUNT_ID,
-    CF_KV_NAMESPACE_ID: process.env.CF_KV_NAMESPACE_ID,
+    CF_AI_GATEWAY_TOKEN: process.env.CF_AI_GATEWAY_TOKEN,
     CF_API_TOKEN: process.env.CF_API_TOKEN,
+    CF_KV_NAMESPACE_ID: process.env.CF_KV_NAMESPACE_ID,
+    CF_ACCOUNT_ID: process.env.CF_ACCOUNT_ID,
     FEATURE_MASTERY: process.env.FEATURE_MASTERY,
     FEATURE_TODAY: process.env.FEATURE_TODAY,
     FEATURE_TUTOR_RAG: process.env.FEATURE_TUTOR_RAG,
