@@ -60,12 +60,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
-  // 4. Authenticated admin trying to access student dashboard/pages -> redirect to /admin
-  // Note: Allow admins to view the catalog at /courses if they want, but direct dashboard
-  // or student-specific routes should redirect them to their management panel.
-  if (pathname.startsWith("/dashboard") && user?.role === "admin") {
-    return NextResponse.redirect(new URL("/admin", request.url));
-  }
+  // 4. Authenticated admin trying to access student dashboard/pages -> allowed
+  // Admins can access student dashboard and other student-specific routes without redirect.
 
   return NextResponse.next();
 }

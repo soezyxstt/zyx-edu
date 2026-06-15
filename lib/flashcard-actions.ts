@@ -200,14 +200,22 @@ export async function submitReview(
       progressId = `progress-${randomUUID()}`;
     }
 
-    // 3. Compute scheduling parameters using SM-2
+    // E4: recall difficulty from the card metadata, only when the flag is on.
+    const cardMeta = (cardRecord.metadata || {}) as Record<string, unknown>;
+    const recallDifficulty =
+      env.FEATURE_FC_DIFFICULTY === "1" && typeof cardMeta.recallDifficulty === "number"
+        ? (cardMeta.recallDifficulty as number)
+        : undefined;
+
+    // 3. Compute scheduling parameters using SM-2 (difficulty-blended when known)
     const sm2 = calculateNextReview(
       grade,
       currentBox,
       currentEF,
       currentInterval,
       lastReviewedAt,
-      safetyFloorActive
+      safetyFloorActive,
+      recallDifficulty
     );
 
     // 4. Update progress and append to history log

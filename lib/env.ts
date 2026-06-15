@@ -71,6 +71,18 @@ export const env = createEnv({
     CF_API_TOKEN: z.string().optional(),
     FEATURE_MASTERY: z.string().optional(),
     FEATURE_TODAY: z.string().optional(),
+    /** EIF E0 learning-context fabric and embedded surfaces. "1" enables. */
+    FEATURE_EMBED: z.string().optional(),
+    /** EIF E1 distractor analytics + deterministic misconception feedback. "1" enables. */
+    FEATURE_MISCONCEPTION: z.string().optional(),
+    /** EIF E2 quiz remediation surfacing (mastery delta + root cause). "1" enables. */
+    FEATURE_REMEDIATION: z.string().optional(),
+    /** EIF E3 interactive material layer (highlight to KO actions). "1" enables. */
+    FEATURE_MATERIAL_LIVE: z.string().optional(),
+    /** EIF E4 flashcard recall difficulty + SM-2 blend. "1" enables. */
+    FEATURE_FC_DIFFICULTY: z.string().optional(),
+    /** EIF E5 navigable concept graph + tutor root cause. "1" enables. */
+    FEATURE_GRAPH: z.string().optional(),
     /** P3 grounded tutor pipeline (RAG + KV cache + learner memory). "1" enables. */
     FEATURE_TUTOR_RAG: z.string().optional(),
     FEATURE_FEEDBACK: z.string().optional(),
@@ -140,6 +152,12 @@ export const env = createEnv({
     CF_ACCOUNT_ID: process.env.CF_ACCOUNT_ID,
     FEATURE_MASTERY: process.env.FEATURE_MASTERY,
     FEATURE_TODAY: process.env.FEATURE_TODAY,
+    FEATURE_EMBED: process.env.FEATURE_EMBED,
+    FEATURE_MISCONCEPTION: process.env.FEATURE_MISCONCEPTION,
+    FEATURE_REMEDIATION: process.env.FEATURE_REMEDIATION,
+    FEATURE_MATERIAL_LIVE: process.env.FEATURE_MATERIAL_LIVE,
+    FEATURE_FC_DIFFICULTY: process.env.FEATURE_FC_DIFFICULTY,
+    FEATURE_GRAPH: process.env.FEATURE_GRAPH,
     FEATURE_TUTOR_RAG: process.env.FEATURE_TUTOR_RAG,
     FEATURE_FEEDBACK: process.env.FEATURE_FEEDBACK,
     FEATURE_STUDY_PATH: process.env.FEATURE_STUDY_PATH,

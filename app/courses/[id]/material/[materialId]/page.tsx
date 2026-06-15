@@ -14,6 +14,7 @@ import { aiMaterialInstances, diktats } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
+import { buildCourseTermIndex } from "@/lib/term-index";
 
 type Props = { params: Promise<{ id: string; materialId: string }> };
 
@@ -134,12 +135,17 @@ export default async function CourseMaterialDetailPage({ params }: Props) {
     );
   }
 
+  const materialLiveEnabled = env.FEATURE_MATERIAL_LIVE === "1";
+  const termIndex = materialLiveEnabled ? await buildCourseTermIndex(id) : [];
+
   return (
     <Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
       <MaterialViewer
         material={material}
         chapterId={material.chapterId}
         ragEnabled={env.FEATURE_TUTOR_RAG === "1"}
+        termIndex={termIndex}
+        materialLiveEnabled={materialLiveEnabled}
       />
     </Suspense>
   );

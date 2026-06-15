@@ -153,7 +153,63 @@ export const driveItemRelations = relations(driveItem, ({ one, many }) => ({
 export const courses = sqliteTable("courses", {
   id: text("id").primaryKey(),
   title: text("title").notNull(), 
-  category: text("category").notNull(), 
+  category: text("category", { enum: [
+    "Matematika",
+    "Fisika",
+    "Astronomi",
+    "Kimia",
+    "Aktuaria",
+    "Mikrobiologi",
+    "Biologi",
+    "Rekayasa Hayati",
+    "Rekayasa Pertanian",
+    "Rekayasa Kehutanan",
+    "Teknologi Pasca Panen",
+    "Sains dan Teknologi Farmasi",
+    "Farmasi Klinik dan Komunitas",
+    "Teknik Pertambangan",
+    "Teknik Perminyakan",
+    "Teknik Geofisika",
+    "Teknik Metalurgi",
+    "Teknik Geologi",
+    "Meteorologi",
+    "Oseanografi",
+    "Teknik Geodesi dan Geomatika",
+    "Teknik Kimia",
+    "Teknik Fisika",
+    "Teknik Industri",
+    "Teknik Pangan",
+    "Manajemen Rekayasa",
+    "Teknik Bioenergi dan Kemurgi",
+    "Teknik Industri (Kampus Cirebon)",
+    "Teknik Elektro",
+    "Teknik Informatika",
+    "Teknik Tenaga Listrik",
+    "Teknik Telekomunikasi",
+    "Sistem dan Teknologi Informasi",
+    "Teknik Biomedis",
+    "Teknik Mesin",
+    "Teknik Dirgantara",
+    "Teknik Material",
+    "Teknik Sipil",
+    "Teknik Lingkungan",
+    "Teknik Kelautan",
+    "Rekayasa Infrastruktur Lingkungan",
+    "Teknik dan Pengelolaan Sumber Daya Air",
+    "Arsitektur",
+    "Perencanaan Wilayah dan Kota",
+    "Perencanaan Wilayah dan Kota (Kampus Cirebon)",
+    "Seni Rupa",
+    "Kriya (Kampus Cirebon)",
+    "Kriya",
+    "Desain Interior",
+    "Desain Komunikasi Visual",
+    "Desain Produk",
+    "Manajemen",
+    "Kewirausahaan",
+    "TPB",
+    "Rekayasa Umum",
+  ] }).notNull(), 
   description: text("description"),
 });
 
@@ -531,6 +587,18 @@ export const aiQuestionBank = sqliteTable(
     prompt: text("prompt").notNull(),
     options: text("options", { mode: "json" }).notNull(),
     correctIndices: text("correct_indices", { mode: "json" }).notNull(),
+    /**
+     * EIF E1: per non-correct option, the misconception it represents.
+     * One entry per wrong option. Empty/null = not tagged (legacy rows).
+     */
+    distractorMap: text("distractor_map", { mode: "json" })
+      .$type<Array<{
+        optionIndex: number;
+        kind: "misconception" | "calc_error" | "unit_error" | "vocab_swap" | "none";
+        misconceptionKoId: string | null;
+        label: string;
+      }>>()
+      .$defaultFn(() => []),
     explanation: text("explanation").notNull(),
     reviewStatus: text("review_status").$type<"generated" | "reviewed" | "published" | "flagged" | "retired">().default("generated").notNull(),
     qualityScore: real("quality_score").default(1.0).notNull(),
@@ -541,6 +609,28 @@ export const aiQuestionBank = sqliteTable(
     index("idx_qbank_selection").on(table.courseId, table.reviewStatus, table.difficulty, table.useCount),
     index("idx_qbank_tags").on(table.tags),
     index("idx_qbank_ko").on(table.knowledgeObjectId),
+  ]
+);
+
+// E1. question_option_stats — aggregate per-option selection counters (distractor analytics)
+export const questionOptionStats = sqliteTable(
+  "question_option_stats",
+  {
+    id: text("id").primaryKey(),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => aiQuestionBank.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    optionIndex: integer("option_index").notNull(),
+    selectedCount: integer("selected_count").default(0).notNull(),
+    totalAttempts: integer("total_attempts").default(0).notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique("uq_qos_question_option").on(table.questionId, table.optionIndex),
+    index("idx_qos_question").on(table.questionId),
   ]
 );
 
@@ -590,6 +680,8 @@ export const studentQuizAttempts = sqliteTable(
     strongAreas: text("strong_areas", { mode: "json" }),
     weakAreas: text("weak_areas", { mode: "json" }),
     recommendedNextSteps: text("recommended_next_steps", { mode: "json" }),
+    /** EIF E2: per-concept mastery score snapshot at attempt start, for the before/after delta. */
+    masteryBefore: text("mastery_before", { mode: "json" }).$type<Record<string, number>>(),
   },
   (table) => [
     index("idx_attempts_student").on(table.studentId, table.status),
@@ -782,6 +874,9 @@ export const websiteMaterials = sqliteTable(
     slug: text("slug").notNull(),
     canonicalMarkdown: text("canonical_markdown").notNull(), // Markdown = editable
     structuredContent: text("structured_content", { mode: "json" }).notNull(), // AST = executable
+    /** EIF E3: normalized term -> concept index, built at publish for the interactive material popover. */
+    termIndex: text("term_index", { mode: "json" })
+      .$type<Array<{ term: string; conceptId: string; conceptName: string }>>(),
     contentVersion: integer("content_version").default(1).notNull(),
     status: text("status").default("draft").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
@@ -1743,5 +1838,30 @@ export const aiExtractionFailuresRelations = relations(aiExtractionFailures, ({ 
   chapter: one(chapters, {
     fields: [aiExtractionFailures.chapterId],
     references: [chapters.id],
+  }),
+}));
+
+// ─── EIF E5: concept-level graph rollup (rebuilt on KO publish) ────────────────
+export const conceptGraphEdges = sqliteTable(
+  "concept_graph_edges",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    sourceConcept: text("source_concept").notNull(),
+    targetConcept: text("target_concept").notNull(),
+    type: text("type").$type<"prerequisite" | "related">().notNull(),
+  },
+  (table) => [
+    index("idx_cge_course").on(table.courseId),
+    unique("uq_cge_edge").on(table.courseId, table.sourceConcept, table.targetConcept, table.type),
+  ]
+);
+
+export const conceptGraphEdgesRelations = relations(conceptGraphEdges, ({ one }) => ({
+  course: one(courses, {
+    fields: [conceptGraphEdges.courseId],
+    references: [courses.id],
   }),
 }));

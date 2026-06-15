@@ -9,7 +9,8 @@ import {
 import { generateContentWithFallback } from "@/lib/gemini";
 import { generateBlueprintForKO } from "@/lib/question-blueprint-engine";
 import { validateQuestion } from "@/lib/question-validator";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { buildDistractorMap, type MisconceptionKO } from "@/lib/distractor-mapper";
+import { eq, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 // Zod validation helper for Gemini response parsing
@@ -243,6 +244,32 @@ export async function generateQuestionsForKOBatch(
   const coursesMap = new Map(coursesList.map(c => [c.id, c]));
   const chaptersMap = new Map(chaptersList.map(c => [c.id, c]));
   const mtdMap = new Map(mtdList.map(m => [m.id, m]));
+
+  // E1: misconception KOs per concept, for deterministic distractor tagging.
+  const misconceptionKOsList = courseIds.length > 0
+    ? await db
+        .select({
+          id: knowledgeObjects.id,
+          conceptName: knowledgeObjects.conceptName,
+          title: knowledgeObjects.title,
+          content: knowledgeObjects.content,
+        })
+        .from(knowledgeObjects)
+        .where(
+          and(
+            inArray(knowledgeObjects.courseId, courseIds),
+            eq(knowledgeObjects.type, "misconception"),
+            eq(knowledgeObjects.status, "active"),
+          ),
+        )
+    : [];
+  const misconceptionByConcept = new Map<string, MisconceptionKO[]>();
+  for (const ko of misconceptionKOsList) {
+    const key = ko.conceptName.trim();
+    const list = misconceptionByConcept.get(key) ?? [];
+    list.push({ id: ko.id, title: ko.title, content: ko.content });
+    misconceptionByConcept.set(key, list);
+  }
 
   // 3. Fetch existing questions to evaluate cardinality rules in batch
   const existingQuestions = await db
@@ -562,6 +589,14 @@ PROVENANCE:
 
       const finalExplanation = `${candidate.explanation}${provenanceBlock}`;
 
+      // E1: deterministic distractor -> misconception tagging (no AI call).
+      const distractorMap = buildDistractorMap({
+        options: candidate.options,
+        correctIndices: candidate.correctIndices,
+        blueprint,
+        misconceptionKOs: misconceptionByConcept.get(ko.conceptName.trim()) ?? [],
+      });
+
       try {
         const existing = existingQuestionsMap.get(koId) || [];
         const lockedQuestions = existing.filter(
@@ -592,8 +627,9 @@ PROVENANCE:
               questionType: "multiple_choice",
               tags: blueprint.tags,
               prompt: candidate.prompt,
-               options: candidate.options,
+              options: candidate.options,
               correctIndices: candidate.correctIndices,
+              distractorMap,
               explanation: finalExplanation,
               reviewStatus: "generated",
               qualityScore: 1.0,
@@ -619,6 +655,7 @@ PROVENANCE:
               prompt: candidate.prompt,
               options: candidate.options,
               correctIndices: candidate.correctIndices,
+              distractorMap,
               explanation: finalExplanation,
               reviewStatus: "generated",
               qualityScore: 1.0,

@@ -89,7 +89,7 @@ export function StudyPathTimeline({ courseId }: Props) {
   if (steps.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border/60 p-6">
-        <p className="text-body-sm text-muted-foreground">Path appears once course content is processed.</p>
+        <p className="text-body-sm text-muted-foreground">Alur belajar akan muncul setelah konten kelas diproses.</p>
       </div>
     );
   }
@@ -150,7 +150,7 @@ export function StudyPathTimeline({ courseId }: Props) {
                     </span>
                     {isFirstActive && (
                       <Badge variant="secondary" className="rounded-md px-1.5 py-0.5 text-body-sm uppercase tracking-wide">
-                        next
+                        Berikutnya
                       </Badge>
                     )}
                   </div>
@@ -159,13 +159,13 @@ export function StudyPathTimeline({ courseId }: Props) {
                   {step.status === "locked" ? (
                     <div className="flex items-center gap-1.5 text-body-sm text-muted-foreground mt-1.5">
                       <Lock className="size-3.5 shrink-0" aria-hidden />
-                      <span>unlocks after {step.prerequisites.join(", ")}</span>
+                      <span>terbuka setelah {step.prerequisites.join(", ")}</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-4 text-body-sm text-primary mt-1.5">
                       {step.actions.moduleHref && (
                         <Link href={step.actions.moduleHref} className="hover:underline font-medium">
-                          Module
+                          Modul
                         </Link>
                       )}
                       {step.actions.quizTemplateId && (
@@ -178,7 +178,7 @@ export function StudyPathTimeline({ courseId }: Props) {
                       )}
                       {step.actions.flashcardCount && (
                         <Link href={`/courses/${courseId}/flashcard`} className="hover:underline font-medium">
-                          {step.actions.flashcardCount} cards
+                          {step.actions.flashcardCount} kartu
                         </Link>
                       )}
                     </div>

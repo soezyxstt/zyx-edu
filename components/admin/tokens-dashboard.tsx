@@ -6,6 +6,15 @@ import { toast } from "sonner";
 import { Copy, Trash2, KeyRound, Check, RefreshCw, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateEnrollmentToken, deleteEnrollmentToken } from "@/app/admin/tokens/actions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 type TokenRow = {
   id: string;
@@ -49,6 +58,7 @@ export function TokensDashboard({ initialTokens, coursesList }: Props) {
   const [capacity, setCapacity] = useState<number>(3); // Default capacity is 3 people
   const [loading, setLoading] = useState(false);
   const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; token: string } | null>(null);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,13 +86,12 @@ export function TokensDashboard({ initialTokens, coursesList }: Props) {
     }
   };
 
-  const handleDelete = async (tokenId: string, tokenStr: string) => {
-    if (!confirm(`Apakah Anda yakin ingin menghapus token "${tokenStr}"?`)) {
-      return;
-    }
+  const handleDeleteConfirm = async () => {
+    if (!pendingDelete) return;
 
     try {
-      const res = await deleteEnrollmentToken(tokenId);
+      const res = await deleteEnrollmentToken(pendingDelete.id);
+      setPendingDelete(null);
       if (res.success) {
         toast.success("Token berhasil dihapus");
         router.refresh();
@@ -383,7 +392,7 @@ export function TokensDashboard({ initialTokens, coursesList }: Props) {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(t.id, t.token)}
+                          onClick={() => setPendingDelete({ id: t.id, token: t.token })}
                           className="size-8 rounded-full text-status-error hover:bg-status-error/10 hover:text-status-error focus:outline-none"
                           title="Hapus token"
                         >
@@ -398,6 +407,26 @@ export function TokensDashboard({ initialTokens, coursesList }: Props) {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Token</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus token <strong className="font-mono">{pendingDelete?.token}</strong>? Siswa yang sudah terdaftar tetap memiliki akses.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Batal</Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

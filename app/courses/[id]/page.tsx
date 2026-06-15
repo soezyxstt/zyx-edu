@@ -33,8 +33,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const course = getCourseById(id);
   return {
-    title: pageTitle(course ? course.title : "Course"),
-    description: course?.description ?? "Course overview",
+    title: pageTitle(course ? course.title : "Kelas"),
+    description: course?.description ?? "Ringkasan kelas",
   };
 }
 

@@ -17,8 +17,8 @@ export async function getStudentSearchDocuments(): Promise<SiteSearchDocument[]>
     const session = await auth.api.getSession({ headers: h });
     const user = session?.user;
 
-    if (!user?.id) {
-      // If not logged in, return all documents (fallback)
+    if (!user?.id || user.role === "admin") {
+      // If not logged in or admin, return all documents (fallback/unrestricted)
       return allDocs;
     }
 

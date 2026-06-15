@@ -46,22 +46,33 @@ export default async function ProfilePage() {
   let studentBookings: any[] = [];
 
   try {
-    activeEnrollments = await db
-      .select({
-        id: courses.id,
-        title: courses.title,
-        category: courses.category,
-        enrolledAt: enrollments.enrolledAt,
-        expiresAt: enrollments.expiresAt,
-      })
-      .from(enrollments)
-      .innerJoin(courses, eq(enrollments.courseId, courses.id))
-      .where(
-        and(
-          eq(enrollments.userId, user.id),
-          gt(enrollments.expiresAt, now)
-        )
-      );
+    if (process.env.NODE_ENV === "development" && user.role === "admin") {
+      const all = await db.select().from(courses);
+      activeEnrollments = all.map((c) => ({
+        id: c.id,
+        title: c.title,
+        category: c.category,
+        enrolledAt: now,
+        expiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+      }));
+    } else {
+      activeEnrollments = await db
+        .select({
+          id: courses.id,
+          title: courses.title,
+          category: courses.category,
+          enrolledAt: enrollments.enrolledAt,
+          expiresAt: enrollments.expiresAt,
+        })
+        .from(enrollments)
+        .innerJoin(courses, eq(enrollments.courseId, courses.id))
+        .where(
+          and(
+            eq(enrollments.userId, user.id),
+            gt(enrollments.expiresAt, now)
+          )
+        );
+    }
   } catch (err) {
     console.error("Failed to fetch enrollments:", err);
   }

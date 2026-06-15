@@ -66,7 +66,7 @@ export default function LiveHostPage() {
 
   const createSession = useCallback(async () => {
     if (!selectedTemplateId) {
-      toast.error("Select a quiz template first.");
+      toast.error("Pilih templat kuis terlebih dahulu.");
       return;
     }
     setCreating(true);
@@ -78,13 +78,13 @@ export default function LiveHostPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Failed to create session");
+        throw new Error(err.error ?? "Gagal membuat sesi");
       }
       const data: SessionData = await res.json();
       setSession(data);
       setPhase("session");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create session");
+      toast.error(err instanceof Error ? err.message : "Gagal membuat sesi");
     } finally {
       setCreating(false);
     }
@@ -102,10 +102,10 @@ export default function LiveHostPage() {
         });
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.error ?? "Control failed");
+          throw new Error(err.error ?? "Kontrol gagal");
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Control failed");
+        toast.error(err instanceof Error ? err.message : "Kontrol gagal");
       } finally {
         setControlling(false);
       }
@@ -118,7 +118,7 @@ export default function LiveHostPage() {
       <div className="mx-auto max-w-xl px-4 py-16 text-center">
         <AlertTriangle className="mx-auto mb-3 size-8 text-status-warning" />
         <p className="text-body-sm text-muted-foreground">
-          Live quiz is not configured. Set NEXT_PUBLIC_REALTIME_URL and FEATURE_LIVE=1.
+          Kuis langsung tidak terkonfigurasi. Atur NEXT_PUBLIC_REALTIME_URL dan FEATURE_LIVE=1.
         </p>
       </div>
     );
@@ -132,30 +132,30 @@ export default function LiveHostPage() {
           <div className="flex items-center gap-2">
             <Radio className="size-4 text-brand-primary" />
             <h1 className="font-heading text-h4 font-semibold text-foreground">
-              Live Quiz
+              Kuis Langsung
             </h1>
           </div>
           <p className="mt-1 text-body-sm text-muted-foreground">
-            Select a quiz template to start a live session for this course.
+            Pilih templat kuis untuk memulai sesi langsung untuk kelas ini.
           </p>
         </div>
 
         {loadingTemplates ? (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Loader2 className="size-4 animate-spin" />
-            <span className="text-body-sm">Loading templates...</span>
+            <span className="text-body-sm">Memuat templat...</span>
           </div>
         ) : templates.length === 0 ? (
           <p className="text-body-sm text-muted-foreground">
-            No published quiz templates found for this course.
+            Tidak ada templat kuis yang diterbitkan untuk kelas ini.
           </p>
         ) : (
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-body-sm font-medium text-foreground">Quiz template</label>
+              <label className="text-body-sm font-medium text-foreground">Templat kuis</label>
               <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
                 <SelectTrigger className="rounded-md">
-                  <SelectValue placeholder="Choose a template..." />
+                  <SelectValue placeholder="Pilih templat..." />
                 </SelectTrigger>
                 <SelectContent>
                   {templates.map((t) => (
@@ -173,7 +173,7 @@ export default function LiveHostPage() {
               className="rounded-lg"
             >
               {creating ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Start session
+              Mulai sesi
             </Button>
           </div>
         )}
@@ -198,7 +198,7 @@ export default function LiveHostPage() {
           aria-hidden
         />
         <span className="text-body-xs text-muted-foreground tabular-nums">
-          {participantCount} joined
+          {participantCount} bergabung
         </span>
       </div>
 
@@ -206,17 +206,17 @@ export default function LiveHostPage() {
       {sessionState === "lobby" && session && (
         <div className="flex flex-col items-center justify-center gap-6 pt-8">
           <p className="text-body-sm font-medium uppercase tracking-widest text-muted-foreground">
-            Join code
+            Kode gabung
           </p>
           <span className="font-heading text-h1 font-bold tracking-widest text-foreground">
             {session.code}
           </span>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Users className="size-4" />
-            <span className="tabular-nums text-body-base font-medium">{participantCount} participants</span>
+            <span className="tabular-nums text-body-base font-medium">{participantCount} peserta</span>
           </div>
           <p className="text-body-sm text-muted-foreground">
-            {session.questionCount} question{session.questionCount !== 1 ? "s" : ""}
+            {session.questionCount} soal
           </p>
         </div>
       )}
@@ -229,7 +229,7 @@ export default function LiveHostPage() {
               Q {currentQuestion.questionIndex + 1} / {currentQuestion.total}
             </span>
             <span className="text-body-sm text-muted-foreground tabular-nums">
-              {totalAnswered} / {totalParticipants || participantCount} answered
+              {totalAnswered} / {totalParticipants || participantCount} menjawab
             </span>
           </div>
 
@@ -269,7 +269,7 @@ export default function LiveHostPage() {
       {(sessionState === "reveal" || sessionState === "ended") && top10.length > 0 && (
         <div className="mx-auto max-w-lg space-y-3">
           <h2 className="font-heading text-h6 font-semibold text-foreground">
-            {sessionState === "ended" ? "Final leaderboard" : "Leaderboard"}
+            {sessionState === "ended" ? "Papan skor akhir" : "Papan Skor"}
           </h2>
           <div className="divide-y divide-border rounded-xl border border-border">
             {top10.map((entry) => (
@@ -291,19 +291,19 @@ export default function LiveHostPage() {
           {sessionState === "lobby" && (
             <Button disabled={controlling} onClick={() => control("start")} className="rounded-lg">
               {controlling ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Start
+              Mulai
             </Button>
           )}
           {sessionState === "reveal" && (
             <Button variant="outline" disabled={controlling} onClick={() => control("next")} className="rounded-lg">
               {controlling ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Next
+              Berikutnya
             </Button>
           )}
           {sessionState === "question" && (
             <Button variant="outline" disabled={controlling} onClick={() => control("reveal")} className="rounded-lg">
               {controlling ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-              Reveal
+              Tampilkan
             </Button>
           )}
           <Button
@@ -313,7 +313,7 @@ export default function LiveHostPage() {
             className="rounded-lg"
           >
             {controlling ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            End
+            Akhiri
           </Button>
         </div>
       )}

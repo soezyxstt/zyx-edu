@@ -31,6 +31,15 @@ import {
   cancelBooking,
   updateTutorCourses,
 } from "./actions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 // Course styling helper
 const getCourseStyles = (courseId: string) => {
@@ -82,6 +91,10 @@ export default function SchedulePage() {
   // Mobile day selector
   const [activeMobileDay, setActiveMobileDay] = useState("Senin");
 
+  // Confirmation dialogs
+  const [pendingDeleteSlotId, setPendingDeleteSlotId] = useState<string | null>(null);
+  const [pendingCancelBookingId, setPendingCancelBookingId] = useState<string | null>(null);
+
   const refreshData = async () => {
     try {
       const scheduleData = await getScheduleData();
@@ -120,12 +133,12 @@ export default function SchedulePage() {
   };
 
   // Tutor Action: Delete Slot
-  const handleDeleteSlot = async (slotId: string) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus slot jadwal ini? Pemesanan terkait juga akan terhapus.")) return;
-    
+  const handleDeleteSlot = async () => {
+    if (!pendingDeleteSlotId) return;
     setActionLoading(true);
-    const res = await deleteTutorSlot(slotId);
+    const res = await deleteTutorSlot(pendingDeleteSlotId);
     setActionLoading(false);
+    setPendingDeleteSlotId(null);
 
     if (res.success) {
       toast.success("Slot jadwal telah dihapus.");
@@ -186,12 +199,13 @@ export default function SchedulePage() {
   };
 
   // Student/Tutor Action: Cancel Booking
-  const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm("Apakah Anda yakin ingin membatalkan jadwal bimbingan ini?")) return;
+  const handleCancelBooking = async () => {
+    if (!pendingCancelBookingId) return;
 
     setActionLoading(true);
-    const res = await cancelBooking(bookingId);
+    const res = await cancelBooking(pendingCancelBookingId);
     setActionLoading(false);
+    setPendingCancelBookingId(null);
 
     if (res.success) {
       toast.success("Jadwal bimbingan telah dibatalkan.");
@@ -363,7 +377,7 @@ export default function SchedulePage() {
                                     {(userRole === "teacher" || isMine) && (
                                       <button
                                         type="button"
-                                        onClick={() => handleCancelBooking(b.id)}
+                                        onClick={() => setPendingCancelBookingId(b.id)}
                                         disabled={actionLoading}
                                         className="mt-2 text-[10px] font-bold text-status-error hover:underline text-left cursor-pointer"
                                       >
@@ -392,7 +406,7 @@ export default function SchedulePage() {
                                     ) : (
                                       <button
                                         type="button"
-                                        onClick={() => handleDeleteSlot(slot.id)}
+                                        onClick={() => setPendingDeleteSlotId(slot.id)}
                                         disabled={actionLoading}
                                         className="mt-3 text-[10px] font-bold text-status-error hover:underline text-left flex items-center gap-1 cursor-pointer"
                                       >
@@ -471,7 +485,7 @@ export default function SchedulePage() {
                                 variant="outline"
                                 size="xs"
                                 className="rounded-md text-status-error border-border/50 hover:bg-status-error/10"
-                                onClick={() => handleCancelBooking(b.id)}
+                                onClick={() => setPendingCancelBookingId(b.id)}
                                 disabled={actionLoading}
                               >
                                 Batal
@@ -495,7 +509,7 @@ export default function SchedulePage() {
                               variant="outline"
                               size="icon"
                               className="rounded-md text-status-error border-border/50 hover:bg-status-error/10"
-                              onClick={() => handleDeleteSlot(slot.id)}
+                              onClick={() => setPendingDeleteSlotId(slot.id)}
                               disabled={actionLoading}
                             >
                               <Trash2 className="size-4" />
@@ -735,7 +749,7 @@ export default function SchedulePage() {
                                 variant="outline"
                                 size="xs"
                                 className="rounded-md text-status-error border-border/60 hover:bg-status-error/10"
-                                onClick={() => handleCancelBooking(b.id)}
+                                onClick={() => setPendingCancelBookingId(b.id)}
                                 disabled={actionLoading}
                               >
                                 Batalkan
@@ -817,6 +831,46 @@ export default function SchedulePage() {
             </Reveal>
           </div>
         )}
+
+        {/* Delete Slot Confirmation Dialog */}
+        <Dialog open={!!pendingDeleteSlotId} onOpenChange={(open) => !open && setPendingDeleteSlotId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Hapus Slot Jadwal</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus slot jadwal ini? Pemesanan terkait juga akan terhapus.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={actionLoading}>Batal</Button>
+              </DialogClose>
+              <Button variant="destructive" onClick={handleDeleteSlot} disabled={actionLoading}>
+                {actionLoading ? "Menghapus..." : "Hapus"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cancel Booking Confirmation Dialog */}
+        <Dialog open={!!pendingCancelBookingId} onOpenChange={(open) => !open && setPendingCancelBookingId(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Batalkan Bimbingan</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin membatalkan jadwal bimbingan ini?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline" disabled={actionLoading}>Tidak</Button>
+              </DialogClose>
+              <Button variant="destructive" onClick={handleCancelBooking} disabled={actionLoading}>
+                {actionLoading ? "Membatalkan..." : "Ya, Batalkan"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
       </div>
     </div>

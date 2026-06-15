@@ -33,19 +33,21 @@ export async function POST(req: NextRequest) {
   if (!chapter) return NextResponse.json({ error: "Chapter not found" }, { status: 404 });
 
   // Verify active enrollment in the chapter's course
-  const [enrollment] = await db
-    .select({ id: enrollments.id })
-    .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.userId, session.user.id),
-        eq(enrollments.courseId, chapter.courseId),
-        gt(enrollments.expiresAt, new Date())
+  if (session.user.role !== "admin") {
+    const [enrollment] = await db
+      .select({ id: enrollments.id })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.userId, session.user.id),
+          eq(enrollments.courseId, chapter.courseId),
+          gt(enrollments.expiresAt, new Date())
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (!enrollment) return NextResponse.json({ error: "Not enrolled" }, { status: 403 });
+    if (!enrollment) return NextResponse.json({ error: "Not enrolled" }, { status: 403 });
+  }
 
   try {
     const result = await summarizeChapterCached(session.user.id, chapter.id, chapter.title);

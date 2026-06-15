@@ -76,7 +76,7 @@ async function setup() {
   await db.insert(courses).values({
     id: EVAL_COURSE_ID,
     title: "Eval Harness Course",
-    category: "eval",
+    category: "eval" as any,
   }).onConflictDoNothing();
 
   await db.insert(chapters).values({

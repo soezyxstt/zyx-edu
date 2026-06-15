@@ -11,6 +11,9 @@ import {
 import { eq, and, desc, asc } from "drizzle-orm";
 import { compileMarkdownToAST } from "./markdown-compiler";
 import { validateAST, WebsiteMaterialAST } from "./ast-validator";
+import { buildTermIndex } from "./term-index";
+import { buildConceptGraph } from "./graph-trace";
+import { env } from "./env";
 import { randomUUID, createHash } from "crypto";
 
 // ─── UTILITY: CALCULATE GENERATION HASH ──────────────────────────────────────
@@ -353,6 +356,9 @@ export async function approveAndPublish(
     );
   }
 
+  // E3: build the term index for the interactive material popover.
+  const termIndex = await buildTermIndex(chapterId);
+
   // 2. Perform DB updates and Transactional Outbox queues
   await db.transaction(async tx => {
     // Set status to published
@@ -361,6 +367,7 @@ export async function approveAndPublish(
       .set({
         status: "published",
         isStale: false,
+        termIndex,
         updatedAt: new Date(),
       })
       .where(eq(websiteMaterials.chapterId, chapterId));
@@ -401,6 +408,13 @@ export async function approveAndPublish(
       });
     }
   });
+
+  // E5: rebuild the concept-graph rollup for this course (deterministic, no AI).
+  if (env.FEATURE_GRAPH === "1") {
+    await buildConceptGraph(material.courseId).catch((err) => {
+      console.error("buildConceptGraph failed after publish:", err);
+    });
+  }
 }
 
 /**

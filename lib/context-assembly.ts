@@ -3,6 +3,8 @@ import { AnalyticsService } from "./analytics-service";
 import { db } from "@/db";
 import { aiQuestionBank } from "@/db/schema";
 import { eq } from "drizzle-orm";
+import { env } from "./env";
+import { traceRootCause } from "./graph-trace";
 
 export interface ConceptContextVars {
   title: string;
@@ -12,6 +14,18 @@ export interface ConceptContextVars {
   difficulty: string;
   bloomLevel: string;
   relatedConcepts: string[];
+  /** EIF E5: deterministic prerequisite root-cause block injected when the chain is non-empty. */
+  rootCause?: string;
+}
+
+/** EIF E5: formats a root-cause chain into a short tutor-context block. */
+export function formatRootCauseBlock(
+  conceptName: string,
+  chain: Array<{ concept: string; mastery: number }>,
+  estimatedMinutes: number,
+): string {
+  const list = chain.map((c) => `${c.concept} (${c.mastery})`).join(", ");
+  return `Student is weak on ${conceptName}. Likely root cause in prerequisites: ${list}. If the question depends on these, address the prerequisite first. Estimated review about ${estimatedMinutes} minutes.`;
 }
 
 export interface MistakeContextVars {
@@ -34,6 +48,19 @@ export class ContextAssembly {
     const related = await KnowledgeService.getRelatedKOs(koId);
     const relatedTitles = related.map(r => r.title);
 
+    // E5: inject deterministic prerequisite root cause when the chain is non-empty.
+    let rootCause: string | undefined;
+    if (env.FEATURE_GRAPH === "1" && ko.courseId) {
+      try {
+        const trace = await traceRootCause(studentId, ko.courseId, ko.conceptName);
+        if (trace.chain.length > 0) {
+          rootCause = formatRootCauseBlock(ko.conceptName, trace.chain, trace.estimatedMinutes);
+        }
+      } catch (err) {
+        console.error("traceRootCause failed in explainConcept:", err);
+      }
+    }
+
     return {
       title: ko.title,
       conceptName: ko.conceptName,
@@ -42,6 +69,7 @@ export class ContextAssembly {
       difficulty: ko.difficulty || "medium",
       bloomLevel: ko.bloomLevel || "understand",
       relatedConcepts: relatedTitles,
+      ...(rootCause ? { rootCause } : {}),
     };
   }
 

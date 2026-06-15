@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: pageTitle(course ? `${course.title} - Flashcard` : "Flashcard"),
-    description: "Spaced repetition study deck for course concepts",
+    description: "Dek belajar spaced repetition untuk konsep-konsep kelas",
   };
 }
 

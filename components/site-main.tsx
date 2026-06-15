@@ -7,7 +7,7 @@ export function SiteMain({ children }: SiteMainProps) {
     <main
       id="main-content"
       tabIndex={-1}
-      className="flex-1 outline-none pt-13 md:pt-14"
+      className="flex-1 outline-none pt-14 md:pt-16"
     >
       {children}
     </main>

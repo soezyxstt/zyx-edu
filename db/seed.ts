@@ -92,7 +92,7 @@ async function main() {
       where: eq(courses.id, c.id),
     });
     if (!existing) {
-      await db.insert(courses).values(c);
+      await db.insert(courses).values(c as any);
       console.log(`Course ${c.title} seeded.`);
     } else {
       console.log(`Course ${c.title} already exists.`);

@@ -42,19 +42,21 @@ export async function POST(req: NextRequest) {
 
   // Validate enrollment
   const now = new Date();
-  const [enrollment] = await db
-    .select({ id: enrollments.id })
-    .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.userId, session.user.id),
-        eq(enrollments.courseId, courseId),
-        gt(enrollments.expiresAt, now)
+  if (session.user.role !== "admin") {
+    const [enrollment] = await db
+      .select({ id: enrollments.id })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.userId, session.user.id),
+          eq(enrollments.courseId, courseId),
+          gt(enrollments.expiresAt, now)
+        )
       )
-    )
-    .limit(1);
-  if (!enrollment) {
-    return NextResponse.json({ error: "Not enrolled in this course" }, { status: 403 });
+      .limit(1);
+    if (!enrollment) {
+      return NextResponse.json({ error: "Not enrolled in this course" }, { status: 403 });
+    }
   }
 
   // Find active session by code

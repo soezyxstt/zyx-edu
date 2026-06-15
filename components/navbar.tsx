@@ -52,7 +52,7 @@ export function Navbar() {
         aria-label="Primary"
       >
         {/* Below lg: search + compact profile + drawer. lg+: centered links + Lihat paket + full profile. */}
-        <div className="relative mx-auto flex min-h-13 min-w-0 w-full max-w-7xl items-center gap-2 px-4 py-3 sm:px-6 md:min-h-14 md:gap-3 md:py-3.5 lg:px-8">
+        <div className="relative mx-auto flex min-h-14 min-w-0 w-full max-w-7xl items-center gap-2 px-4 py-3 sm:px-6 md:min-h-16 md:gap-3 md:py-3.5 lg:px-8">
           <Link
             href="/"
             className="relative z-10 -m-px flex shrink-0 items-center p-px [&_img]:block [&_img]:align-middle [&_svg]:block"

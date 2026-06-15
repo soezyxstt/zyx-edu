@@ -144,14 +144,8 @@ export function FlashcardClient({ courseId, initialQueue, studentId }: Flashcard
 
   if (queue.length === 0) {
     return (
-      <div className="mx-auto max-w-2xl rounded-2xl border border-border/60 bg-card p-8 text-center shadow-xs">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
-          <BookOpen className="size-6" />
-        </div>
-        <h3 className="mt-4 font-heading text-body-lg font-bold text-foreground">
-          Tidak Ada Antrean Flashcard
-        </h3>
-        <p className="mt-2 text-body-sm text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border/60 bg-muted/15 p-6">
+        <p className="text-body-sm text-muted-foreground">
           Semua flashcard yang diterbitkan sudah Anda pelajari atau tidak ada kartu yang perlu diulas hari ini. Silakan kembali lagi nanti!
         </p>
       </div>
@@ -304,9 +298,27 @@ export function FlashcardClient({ courseId, initialQueue, studentId }: Flashcard
               <span className="inline-flex rounded-md border border-emerald-500/20 bg-emerald-500/5 px-2 py-0.5 text-body-2xs font-semibold text-emerald-600">
                 Jawaban
               </span>
-              <span className="text-body-2xs font-medium text-muted-foreground">
-                Detail
-              </span>
+              {typeof activeCard.metadata?.recallDifficulty === "number" ? (
+                <span
+                  className="flex items-center gap-1 text-body-2xs font-medium text-muted-foreground"
+                  title={`Tingkat ingatan ${activeCard.metadata.recallDifficulty} dari 5`}
+                >
+                  <span className="hidden sm:inline">Ingatan</span>
+                  <span className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <span
+                        key={n}
+                        className={
+                          "size-1.5 rounded-full " +
+                          (n <= activeCard.metadata.recallDifficulty ? "bg-status-warning" : "bg-muted")
+                        }
+                      />
+                    ))}
+                  </span>
+                </span>
+              ) : (
+                <span className="text-body-2xs font-medium text-muted-foreground">Detail</span>
+              )}
             </div>
 
             <div className="flex-1 flex flex-col justify-center py-4 overflow-y-auto space-y-3">

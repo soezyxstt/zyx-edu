@@ -7,7 +7,20 @@ export interface SM2Result {
 }
 
 /**
+ * EIF E4: maps a recall difficulty 1..5 to the first-interval seed (days).
+ * Hard cards (5) review tomorrow, easy cards (1) wait 3 days.
+ */
+export function difficultyFirstInterval(recallDifficulty: number): number {
+  const d = Math.max(1, Math.min(5, Math.round(recallDifficulty)));
+  return Math.max(1, Math.min(3, 4 - d));
+}
+
+/**
  * Calculates next spacing interval, Ease Factor, and due dates using pure SM-2.
+ *
+ * EIF E4: when `recallDifficulty` (1..5) is provided, the first interval is
+ * seeded from difficulty and the box>=3 growth is scaled by difficulty (easy
+ * cards grow faster, hard cards slower). When omitted, behaves as pure SM-2.
  */
 export function calculateNextReview(
   grade: number, // 1: Again, 2: Hard, 3: Good, 4: Easy
@@ -15,9 +28,16 @@ export function calculateNextReview(
   currentEF: number,
   currentIntervalDays: number,
   lastReviewedAt: Date | null,
-  safetyFloorActive: boolean = false
+  safetyFloorActive: boolean = false,
+  recallDifficulty?: number
 ): SM2Result {
   const now = new Date();
+
+  const hasDiff = typeof recallDifficulty === "number";
+  const firstSeed = hasDiff ? difficultyFirstInterval(recallDifficulty as number) : 1;
+  const diffFactor = hasDiff
+    ? 1 + (3 - Math.max(1, Math.min(5, Math.round(recallDifficulty as number)))) * 0.1
+    : 1;
 
   // 1. Calculate elapsed days since last review
   let elapsedDays = currentIntervalDays;
@@ -36,7 +56,8 @@ export function calculateNextReview(
     // Grade: Again (failed)
     nextBox = 0;
     nextEF = Math.max(1.3, currentEF - 0.2);
-    nextIntervalDays = 0.007; // 10 minutes interval
+    // E4: reschedule from the difficulty seed when known, else the 10-minute relearn.
+    nextIntervalDays = hasDiff ? firstSeed : 0.007;
 
     // Activate safety floor reset if the failed card was highly stable (interval >= 60 days)
     if (currentIntervalDays >= 60) {
@@ -57,7 +78,8 @@ export function calculateNextReview(
 
     // Determine target interval
     if (nextBox === 1) {
-      nextIntervalDays = grade === 4 ? 2 : 1;
+      // E4: seed the first interval from difficulty when known.
+      nextIntervalDays = hasDiff ? firstSeed : grade === 4 ? 2 : 1;
     } else if (nextBox === 2) {
       nextIntervalDays = grade === 4 ? 8 : grade === 3 ? 6 : 3;
     } else {
@@ -68,6 +90,9 @@ export function calculateNextReview(
       } else if (grade === 4) {
         multiplier = nextEF * 1.3;
       }
+
+      // E4: scale growth by difficulty (easy faster, hard slower).
+      multiplier *= diffFactor;
 
       // Overdue handling: scale based on actual elapsed days if student was late
       const baseDays = elapsedDays > currentIntervalDays && grade > 2 ? elapsedDays : currentIntervalDays;

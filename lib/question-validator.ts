@@ -4,6 +4,11 @@ import { eq } from "drizzle-orm";
 import katex from "katex";
 import { z } from "zod";
 
+// E1: distractor map validation lives in distractor-mapper; re-exported here so
+// callers validate questions and their distractor maps from one module.
+import { validateDistractorMap } from "@/lib/distractor-mapper";
+export { validateDistractorMap };
+
 // Zod schema matching the required question insertion properties
 export const QuizQuestionInputSchema = z.object({
   knowledgeObjectId: z.string().min(1),
@@ -105,6 +110,12 @@ export async function validateQuestion(
   const uniqueOptions = new Set(q.options.map(opt => opt.trim().toLowerCase()));
   if (uniqueOptions.size !== q.options.length) {
     errors.push("Options list contains duplicate choices.");
+  }
+
+  // 3b. E1: optional distractor map validation when present
+  if (question.distractorMap !== undefined) {
+    const dmErrors = validateDistractorMap(question.distractorMap, q.options.length, q.correctIndices);
+    errors.push(...dmErrors.map((e) => `[distractorMap]: ${e}`));
   }
 
   // 4. Strict KaTeX compile checking

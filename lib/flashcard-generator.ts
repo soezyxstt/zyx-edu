@@ -31,7 +31,16 @@ export const GeneratedFlashcardSchema = z.object({
     "misconception",
     "engineering_application",
   ]),
+  /** EIF E4: intrinsic recall difficulty 1 (easy) .. 5 (hard). Defaults from KO difficulty. */
+  recallDifficulty: z.coerce.number().int().min(1).max(5).optional(),
 });
+
+/** EIF E4: prior recall difficulty seeded from a KO's authoring difficulty. */
+export function difficultyPriorFromKO(koDifficulty: "easy" | "medium" | "hard" | undefined): number {
+  if (koDifficulty === "easy") return 2;
+  if (koDifficulty === "hard") return 4;
+  return 3;
+}
 
 export const GeneratedFlashcardListSchema = z.array(GeneratedFlashcardSchema);
 export type GeneratedFlashcard = z.infer<typeof GeneratedFlashcardSchema>;
@@ -79,7 +88,8 @@ Output a JSON array containing objects matching this schema:
     "front": "[Front side text prompt]",
     "back": "[Back side text answer containing details/formulas]",
     "explanation": "[Optional hint or summary context]",
-    "cardType": "[one of: definition, formula, parameter_recognition, derivation, cloze, misconception, engineering_application]"
+    "cardType": "[one of: definition, formula, parameter_recognition, derivation, cloze, misconception, engineering_application]",
+    "recallDifficulty": "[integer 1..5: how hard this card is to recall, 1 trivial, 5 very hard]"
   }
 ]
 
@@ -262,8 +272,15 @@ export async function generateFlashcardsForChapter(chapterId: string): Promise<n
     // Purge prior AI generated flashcards for this set in one shot
     await tx.delete(flashcards).where(eq(flashcards.setId, setId));
 
+    // E4: map koId -> authoring difficulty for the recall-difficulty prior.
+    const koDifficulty = new Map(activeKOs.map((k) => [k.id, k.difficulty]));
+
     // Insert new cards
     for (const card of cardsToInsert) {
+      const recallDifficulty = Math.max(
+        1,
+        Math.min(5, card.recallDifficulty ?? difficultyPriorFromKO(koDifficulty.get(card.koId))),
+      );
       await tx.insert(flashcards).values({
         id: `fc-${randomUUID()}`,
         setId,
@@ -272,7 +289,7 @@ export async function generateFlashcardsForChapter(chapterId: string): Promise<n
         back: card.back,
         explanation: card.explanation,
         status: "active",
-        metadata: { cardType: card.cardType },
+        metadata: { cardType: card.cardType, recallDifficulty },
       });
     }
 

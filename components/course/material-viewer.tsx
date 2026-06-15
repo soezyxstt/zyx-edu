@@ -56,6 +56,8 @@ import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
 import { MathText } from "@/components/course/math-text";
 import { useTutor } from "@/components/course/tutor-drawer";
+import { TermPopover } from "@/components/course/term-popover";
+import { matchTerm, type TermIndexEntry } from "@/lib/term-match";
 
 type MaterialViewerProps = {
   material: CourseMaterial;
@@ -63,6 +65,10 @@ type MaterialViewerProps = {
   chapterId?: string;
   /** P3 grounded-tutor feature flag, resolved on the server. */
   ragEnabled?: boolean;
+  /** EIF E3: course concept term index for the interactive material popover. */
+  termIndex?: TermIndexEntry[];
+  /** EIF E3 feature flag (FEATURE_MATERIAL_LIVE), resolved on the server. */
+  materialLiveEnabled?: boolean;
 };
 
 interface ChapterSummary {
@@ -482,7 +488,7 @@ const getConceptTags = (courseId: string, materialTitle: string) => {
   return ["Kalkulus", "Sains"];
 };
 
-export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialViewerProps) {
+export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, materialLiveEnabled }: MaterialViewerProps) {
   const [done, setDone] = useState(material.completed);
   const [viewerType, setViewerType] = useState<"custom" | "chrome">("chrome");
   const [showDemoViewer, setShowDemoViewer] = useState(false);
@@ -592,6 +598,41 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
   const { openExplain } = useTutor();
   const [selectedText, setSelectedText] = useState("");
   const [selectionCoords, setSelectionCoords] = useState<{ top: number; left: number } | null>(null);
+  const popoverActiveRef = useRef(false);
+
+  // E3: match the current selection to a course concept (client-side, instant).
+  const matchedConcept = useMemo(() => {
+    if (!materialLiveEnabled || !termIndex || termIndex.length === 0 || !selectedText) return null;
+    return matchTerm(termIndex, selectedText)?.conceptName ?? null;
+  }, [materialLiveEnabled, termIndex, selectedText]);
+
+  // E3: shared tutor escalation (used by the legacy button and the term popover).
+  const dismissPopover = () => {
+    window.getSelection()?.removeAllRanges();
+    setSelectedText("");
+    setSelectionCoords(null);
+    popoverActiveRef.current = false;
+  };
+
+  const runTutorExplain = (query: string) => {
+    dismissPopover();
+    toast.promise(
+      (async () => {
+        const { findKoForMaterialSectionAction } = await import("@/app/actions/tutor");
+        const res = await findKoForMaterialSectionAction(material.courseId, query);
+        if (res.success && res.koId) {
+          openExplain(res.koId, "content");
+        } else {
+          openExplain("ko-101", "content");
+        }
+      })(),
+      {
+        loading: "Menganalisis konsep...",
+        success: "Zyra siap menjelaskan!",
+        error: "Gagal memproses konsep.",
+      },
+    );
+  };
 
   useEffect(() => {
     const handleSelectionChange = () => {
@@ -615,25 +656,41 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
         return;
       }
 
-      if (text.length < 3) return;
+      if (text.length < 3) {
+        setSelectedText("");
+        setSelectionCoords(null);
+        popoverActiveRef.current = false;
+        return;
+      }
 
       try {
         const range = selection.getRangeAt(0);
         const rect = range.getBoundingClientRect();
-        
+
         setSelectionCoords({
           top: rect.top - 45,
-          left: rect.left + rect.width / 2
+          left: rect.left + rect.width / 2,
         });
         setSelectedText(text);
+        popoverActiveRef.current = true;
       } catch (e) {
         // Safe fallback
       }
     };
 
+    const handleScroll = () => {
+      if (popoverActiveRef.current) {
+        setSelectedText("");
+        setSelectionCoords(null);
+        popoverActiveRef.current = false;
+      }
+    };
+
     document.addEventListener("selectionchange", handleSelectionChange);
+    document.addEventListener("scroll", handleScroll, true);
     return () => {
       document.removeEventListener("selectionchange", handleSelectionChange);
+      document.removeEventListener("scroll", handleScroll, true);
     };
   }, []);
 
@@ -896,42 +953,43 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
         zIndex: 9999,
       }}
       className="animate-fade-in"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
     >
-      <Button
-        type="button"
-        size="xs"
-        className="rounded-lg bg-brand-primary hover:bg-brand-primary/95 shadow-md flex items-center gap-1.5 h-8 font-sans text-[11px] !text-white px-3 border border-brand-primary/20"
-        onClick={async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const textToQuery = selectedText;
-          // Clear selection to hide button
-          window.getSelection()?.removeAllRanges();
-          setSelectedText("");
-          setSelectionCoords(null);
-          
-          toast.promise(
-            (async () => {
-              const { findKoForMaterialSectionAction } = await import("@/app/actions/tutor");
-              const res = await findKoForMaterialSectionAction(material.courseId, textToQuery);
-              if (res.success && res.koId) {
-                openExplain(res.koId, "content");
-              } else {
-                // Fallback to general explain
-                openExplain("ko-101", "content");
-              }
-            })(),
-            {
-              loading: "Menganalisis konsep...",
-              success: "Zyra siap menjelaskan!",
-              error: "Gagal memproses konsep."
-            }
-          );
-        }}
-      >
-        <Sparkles className="size-3.5" />
-        Tanya Zyra
-      </Button>
+      <div className="relative">
+        {matchedConcept ? (
+          // E3: deterministic concept actions sourced from KO data (no LLM until "Tanya tutor").
+          <TermPopover
+            courseId={material.courseId}
+            conceptName={matchedConcept}
+            onAskTutor={() => runTutorExplain(matchedConcept)}
+          />
+        ) : (
+          <Button
+            type="button"
+            size="xs"
+            className="rounded-lg bg-brand-primary hover:bg-brand-primary/95 shadow-md flex items-center gap-1.5 h-8 font-sans text-[11px] !text-white px-3 border border-brand-primary/20"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              runTutorExplain(selectedText);
+            }}
+          >
+            <Sparkles className="size-3.5" />
+            Tanya Zyra
+          </Button>
+        )}
+        <button
+          type="button"
+          onClick={dismissPopover}
+          className="absolute -top-2 -right-2 flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-border hover:text-foreground shadow-sm transition-colors"
+          aria-label="Tutup"
+        >
+          <X className="size-3" />
+        </button>
+      </div>
     </div>
   ) : null;
 

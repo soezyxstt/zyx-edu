@@ -18,6 +18,29 @@ export interface MasteryRow {
 }
 
 /**
+ * Collapses KO-level prerequisite edges to a concept-level map.
+ * Returns targetConcept -> set of prerequisite source concepts.
+ * Pure function (no DB), shared by getMastery and the learning-context fabric (E0).
+ */
+export function buildPrereqConceptMap(
+  koIdToConcept: Map<string, string>,
+  edges: Array<{ sourceKoId: string; targetKoId: string }>,
+): Map<string, Set<string>> {
+  const prereqMap = new Map<string, Set<string>>();
+  for (const rel of edges) {
+    const srcConcept = koIdToConcept.get(rel.sourceKoId);
+    const tgtConcept = koIdToConcept.get(rel.targetKoId);
+    if (srcConcept && tgtConcept && srcConcept !== tgtConcept) {
+      if (!prereqMap.has(tgtConcept)) {
+        prereqMap.set(tgtConcept, new Set());
+      }
+      prereqMap.get(tgtConcept)!.add(srcConcept);
+    }
+  }
+  return prereqMap;
+}
+
+/**
  * Recomputes mastery for every concept of (studentId, courseId) and upserts results.
  * Called by the mastery-recompute-worker Inngest function.
  */
@@ -150,17 +173,7 @@ export async function getMastery(studentId: string, courseId: string): Promise<M
       )
     );
 
-  const prereqMap = new Map<string, Set<string>>();
-  for (const rel of relationships) {
-    const srcConcept = koIdToConcept.get(rel.sourceKoId);
-    const tgtConcept = koIdToConcept.get(rel.targetKoId);
-    if (srcConcept && tgtConcept && srcConcept !== tgtConcept) {
-      if (!prereqMap.has(tgtConcept)) {
-        prereqMap.set(tgtConcept, new Set());
-      }
-      prereqMap.get(tgtConcept)!.add(srcConcept);
-    }
-  }
+  const prereqMap = buildPrereqConceptMap(koIdToConcept, relationships);
 
   const masteryMap = new Map<string, number>();
   for (const r of rows) {

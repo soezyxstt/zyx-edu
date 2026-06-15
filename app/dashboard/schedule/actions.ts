@@ -100,15 +100,25 @@ export async function getScheduleData() {
     // ─── STUDENT WORKFLOW ───
     // Fetch student's active enrollments
     const now = new Date();
-    const activeEnrollments = await db
-      .select({
-        id: courses.id,
-        title: courses.title,
-        category: courses.category,
-      })
-      .from(enrollments)
-      .innerJoin(courses, eq(enrollments.courseId, courses.id))
-      .where(and(eq(enrollments.userId, userId), sql`${enrollments.expiresAt} > ${now}`));
+    let activeEnrollments;
+    if (process.env.NODE_ENV === "development" && dbUser.role === "admin") {
+      const all = await db.select().from(courses);
+      activeEnrollments = all.map((c) => ({
+        id: c.id,
+        title: c.title,
+        category: c.category,
+      }));
+    } else {
+      activeEnrollments = await db
+        .select({
+          id: courses.id,
+          title: courses.title,
+          category: courses.category,
+        })
+        .from(enrollments)
+        .innerJoin(courses, eq(enrollments.courseId, courses.id))
+        .where(and(eq(enrollments.userId, userId), sql`${enrollments.expiresAt} > ${now}`));
+    }
 
     const enrolledCourseIds = activeEnrollments.map((ae) => ae.id);
 

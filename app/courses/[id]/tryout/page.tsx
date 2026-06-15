@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const course = getCourseById(id);
   return {
     title: pageTitle(course ? `${course.title} - Tryout` : "Tryout"),
-    description: "Daftar tryout course",
+    description: "Daftar tryout kelas",
   };
 }
 

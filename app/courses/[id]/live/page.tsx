@@ -37,7 +37,7 @@ export default function LiveStudentPage() {
   const handleJoin = useCallback(async () => {
     const trimmedCode = code.trim().toUpperCase();
     if (trimmedCode.length !== 6) {
-      toast.error("Code must be 6 characters.");
+      toast.error("Kode harus terdiri dari 6 karakter.");
       return;
     }
     setJoining(true);
@@ -49,14 +49,14 @@ export default function LiveStudentPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? "Failed to join");
+        throw new Error(err.error ?? "Gagal bergabung");
       }
       const data: JoinResponse = await res.json();
       const wsEndpoint = `${data.wsUrl}?token=${data.token}`;
       setWsFullUrl(wsEndpoint);
       setPhase("live");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to join session");
+      toast.error(err instanceof Error ? err.message : "Gagal bergabung ke sesi");
     } finally {
       setJoining(false);
     }
@@ -67,7 +67,7 @@ export default function LiveStudentPage() {
       <CoursePageShell title={title} description="Ikuti kuis langsung bersama teman sekelas." icon={Play}>
         <div className="mx-auto max-w-xl px-4 py-16 text-center">
           <AlertTriangle className="mx-auto mb-3 size-8 text-status-warning" />
-          <p className="text-body-sm text-muted-foreground">Live quiz is not available right now.</p>
+          <p className="text-body-sm text-muted-foreground">Kuis langsung tidak tersedia saat ini.</p>
         </div>
       </CoursePageShell>
     );
@@ -77,7 +77,7 @@ export default function LiveStudentPage() {
     return (
       <CoursePageShell title={title} description="Ikuti kuis langsung bersama teman sekelas." icon={Play}>
         <div className="mx-auto flex max-w-xs flex-col items-center gap-6 px-4 py-20">
-          <h1 className="font-heading text-h4 font-semibold text-foreground">Join live quiz</h1>
+          <h1 className="font-heading text-h4 font-semibold text-foreground">Gabung kuis langsung</h1>
           <Input
             className="rounded-lg text-center font-heading text-h5 tracking-widest uppercase"
             placeholder="ABC123"
@@ -93,7 +93,7 @@ export default function LiveStudentPage() {
             className="w-full rounded-lg"
           >
             {joining ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-            Join
+            Gabung
           </Button>
         </div>
       </CoursePageShell>
@@ -159,9 +159,9 @@ function LiveView({ state, sendAnswer }: LiveViewProps) {
       {sessionState === "lobby" && (
         <div className="flex flex-col items-center gap-3 pt-16">
           <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          <p className="text-body-base font-medium text-foreground">Waiting for host to start...</p>
+          <p className="text-body-base font-medium text-foreground">Menunggu penyelenggara memulai...</p>
           <p className="text-body-sm text-muted-foreground tabular-nums">
-            {participantCount} joined
+            {participantCount} bergabung
           </p>
         </div>
       )}
@@ -225,7 +225,7 @@ function LiveView({ state, sendAnswer }: LiveViewProps) {
 
           {myAnswer !== null && sessionState === "question" && (
             <p className="text-body-sm text-muted-foreground">
-              Answer locked. Waiting for reveal.
+              Jawaban dikunci. Menunggu hasil.
             </p>
           )}
         </div>
@@ -237,7 +237,7 @@ function LiveView({ state, sendAnswer }: LiveViewProps) {
           top10={top10}
           yourRank={yourRank}
           yourScore={yourScore}
-          title="Leaderboard"
+          title="Papan Skor"
         />
       )}
 
@@ -245,17 +245,17 @@ function LiveView({ state, sendAnswer }: LiveViewProps) {
       {sessionState === "ended" && (
         <div className="mx-auto max-w-lg space-y-6">
           <div className="text-center">
-            <p className="font-heading text-h4 font-bold text-foreground">Session ended</p>
+            <p className="font-heading text-h4 font-bold text-foreground">Sesi berakhir</p>
             <p className="mt-1 text-body-sm text-muted-foreground">
-              Your score: <span className="font-bold tabular-nums text-primary">{yourScore}</span>
-              {yourRank ? ` · Rank ${yourRank}` : ""}
+              Skor Anda: <span className="font-bold tabular-nums text-primary">{yourScore}</span>
+              {yourRank ? ` · Peringkat ${yourRank}` : ""}
             </p>
           </div>
           <Leaderboard
             top10={finalBoard.slice(0, 10)}
             yourRank={yourRank}
             yourScore={yourScore}
-            title="Final leaderboard"
+            title="Papan skor akhir"
           />
         </div>
       )}
@@ -287,7 +287,7 @@ function Leaderboard({ top10, yourRank, yourScore, title }: LeaderboardProps) {
           <span className="w-6 shrink-0 text-center text-body-sm font-bold tabular-nums text-primary">
             {yourRank}
           </span>
-          <span className="flex-1 text-body-sm font-medium text-foreground">You</span>
+          <span className="flex-1 text-body-sm font-medium text-foreground">Anda</span>
           <span className="tabular-nums text-body-sm font-bold text-primary">{yourScore}</span>
         </div>
       )}

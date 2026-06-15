@@ -52,6 +52,16 @@ interface AttemptData {
       reviewHref: string;
     };
   }>;
+  remediation?: {
+    concepts: Array<{ conceptName: string; before: number; after: number; delta: number }>;
+    rootCauses: Array<{
+      conceptName: string;
+      mastery: number;
+      blockedBy: Array<{ conceptName: string; mastery: number }>;
+    }>;
+    misconceptions: Array<{ misconceptionName: string; whyWrong: string; reviewHref: string }>;
+    estimatedMinutes: number;
+  } | null;
 }
 
 const KIND_ICON = {
@@ -216,6 +226,66 @@ export function AttemptReview({ attemptId }: { attemptId: string }) {
           </ul>
         </div>
       </div>
+
+      {/* E2: Embedded remediation — mastery delta + root cause */}
+      {attempt.remediation && attempt.remediation.concepts.length > 0 && (
+        <div className="border-t border-border pt-8 space-y-6">
+          <div>
+            <h3 className="font-heading text-h6 font-bold text-foreground">Perubahan Penguasaan</h3>
+            <ul className="mt-3 space-y-3">
+              {attempt.remediation.concepts.map((c) => (
+                <li key={c.conceptName} className="space-y-1">
+                  <div className="flex items-center justify-between gap-3 text-body-sm">
+                    <span className="font-medium text-foreground">{c.conceptName}</span>
+                    <span className="tabular-nums text-muted-foreground">
+                      {c.before}
+                      <ArrowRight className="inline size-3 mx-1" />
+                      {c.after}
+                      <span
+                        className={cn(
+                          "ml-2 font-semibold",
+                          c.delta >= 0 ? "text-status-success" : "text-status-error",
+                        )}
+                      >
+                        {c.delta >= 0 ? "+" : ""}
+                        {c.delta}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-md bg-muted">
+                    <div
+                      className="h-full rounded-md bg-primary transition-[width] duration-500 ease-out"
+                      style={{ width: `${Math.max(0, Math.min(100, c.after))}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {attempt.remediation.rootCauses.length > 0 && (
+            <div>
+              <h3 className="font-heading text-h6 font-bold text-foreground">Kemungkinan Akar Masalah</h3>
+              <ul className="mt-3 space-y-2 text-body-sm">
+                {attempt.remediation.rootCauses.map((rc) => (
+                  <li key={rc.conceptName}>
+                    <span className="font-medium text-foreground">
+                      {rc.conceptName} ({rc.mastery})
+                    </span>
+                    <span className="text-muted-foreground"> bergantung pada: </span>
+                    <span className="text-status-error">
+                      {rc.blockedBy.map((b) => `${b.conceptName} (${b.mastery})`).join(", ")}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-body-sm text-muted-foreground">
+                Estimasi tinjauan: sekitar {attempt.remediation.estimatedMinutes} menit.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Questions List */}
       <div className="divide-y divide-border mt-8">

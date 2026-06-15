@@ -14,6 +14,7 @@ import {
   quizTemplates,
   studentQuizAttempts,
   enrollments,
+  courses,
 } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -31,17 +32,23 @@ export async function GET(req: NextRequest) {
 
   // Get the student's active enrolled course IDs
   const now = new Date();
-  const enrolled = await db
-    .select({ courseId: enrollments.courseId })
-    .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.userId, studentId),
-        sql`${enrollments.expiresAt} > ${now}`,
-      ),
-    );
+  let courseIds: string[];
+  if (session.user.role === 'admin') {
+    const all = await db.select({ id: courses.id }).from(courses);
+    courseIds = all.map((c) => c.id);
+  } else {
+    const enrolled = await db
+      .select({ courseId: enrollments.courseId })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.userId, studentId),
+          sql`${enrollments.expiresAt} > ${now}`,
+        ),
+      );
+    courseIds = enrolled.map((e) => e.courseId);
+  }
 
-  const courseIds = enrolled.map((e) => e.courseId);
   if (courseIds.length === 0) {
     return NextResponse.json({ questions: [], templateId: null });
   }

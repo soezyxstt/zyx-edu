@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: pageTitle(course ? `${course.title} - Kuis` : "Kuis"),
-    description: "Daftar kuis course",
+    description: "Daftar kuis kelas",
   };
 }
 

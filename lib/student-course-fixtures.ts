@@ -160,6 +160,37 @@ const courses: StudentCourse[] = [
     category: "TPB",
     description: "Stoikiometri, ikatan, dan dasar termokimia.",
   },
+  // EIF seed courses — fixture entries so pages don't 404
+  {
+    id: "embed-test-course",
+    title: "Embed Test",
+    category: "Test",
+    description: "E0 Learning Context Fabric seed course",
+  },
+  {
+    id: "miscon-test-course",
+    title: "Misconception Test",
+    category: "Test",
+    description: "E1 Misconception Engine seed course",
+  },
+  {
+    id: "remed-test-course",
+    title: "Remediation Test",
+    category: "Test",
+    description: "E2 Quiz Remediation seed course",
+  },
+  {
+    id: "term-test-course",
+    title: "Term Test",
+    category: "Test",
+    description: "E3 Interactive Material seed course",
+  },
+  {
+    id: "graph-test-course",
+    title: "Graph Test",
+    category: "Test",
+    description: "E5 Learning Graph seed course",
+  },
 ];
 
 const materials: CourseMaterial[] = [
@@ -251,6 +282,18 @@ const materials: CourseMaterial[] = [
     fileSize: "45 MB",
     completed: false,
     url: "https://www.youtube.com/watch?v=riXcqc2dfmU",
+  },
+  // EIF: dummy material for term popover manual check
+  {
+    id: "m-term-popover",
+    courseId: "term-test-course",
+    title: "Term Popover Demo",
+    kind: "article",
+    docCategory: "materi",
+    fileSize: "2 KB",
+    completed: false,
+    isPreview: true,
+    body: "Konsep Bilangan Real adalah fondasi kalkulus.\n\nBilangan riil mencakup bilangan rasional dan irasional.\n\nPahami bilangan real sebelum melangkah ke limit.",
   },
   {
     id: "m-calc-link",

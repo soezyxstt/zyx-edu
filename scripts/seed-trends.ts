@@ -39,7 +39,7 @@ async function main() {
     .values({
       id: courseId,
       title: "RAG Evaluation Course",
-      category: "Test",
+      category: "Test" as any,
       description: "Test course for RAG and mastery",
     })
     .onConflictDoNothing();

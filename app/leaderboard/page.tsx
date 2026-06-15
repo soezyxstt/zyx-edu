@@ -38,10 +38,16 @@ export default async function LeaderboardPage() {
   const now = new Date();
 
   // Get all courses the student is enrolled in
-  const enrolled = await db
-    .select({ courseId: enrollments.courseId })
-    .from(enrollments)
-    .where(and(eq(enrollments.userId, session.user.id), gt(enrollments.expiresAt, now)));
+  let enrolled;
+  if (process.env.NODE_ENV === "development" && session.user.role === "admin") {
+    const all = await db.select({ courseId: courses.id }).from(courses);
+    enrolled = all;
+  } else {
+    enrolled = await db
+      .select({ courseId: enrollments.courseId })
+      .from(enrollments)
+      .where(and(eq(enrollments.userId, session.user.id), gt(enrollments.expiresAt, now)));
+  }
 
   const courseIds = enrolled.map((e) => e.courseId);
 

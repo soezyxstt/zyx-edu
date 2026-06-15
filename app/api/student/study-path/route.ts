@@ -23,20 +23,22 @@ export async function GET(req: NextRequest) {
   }
 
   // Verify active enrollment
-  const [enrollment] = await db
-    .select({ id: enrollments.id })
-    .from(enrollments)
-    .where(
-      and(
-        eq(enrollments.userId, session.user.id),
-        eq(enrollments.courseId, courseId),
-        gt(enrollments.expiresAt, new Date())
+  if (session.user.role !== "admin") {
+    const [enrollment] = await db
+      .select({ id: enrollments.id })
+      .from(enrollments)
+      .where(
+        and(
+          eq(enrollments.userId, session.user.id),
+          eq(enrollments.courseId, courseId),
+          gt(enrollments.expiresAt, new Date())
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  if (!enrollment) {
-    return NextResponse.json({ error: "Not enrolled or enrollment expired" }, { status: 403 });
+    if (!enrollment) {
+      return NextResponse.json({ error: "Not enrolled or enrollment expired" }, { status: 403 });
+    }
   }
 
   try {

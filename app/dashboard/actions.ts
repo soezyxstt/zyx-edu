@@ -28,6 +28,18 @@ export async function getStudentEnrollments() {
   const user = await requireUser();
   const now = new Date();
 
+  if (process.env.NODE_ENV === "development" && user.role === "admin") {
+    const allCourses = await db.select().from(courses);
+    return allCourses.map((c) => ({
+      id: c.id,
+      title: c.title,
+      category: c.category,
+      description: c.description,
+      enrolledAt: now,
+      expiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+    }));
+  }
+
   return db
     .select({
       id: courses.id,
@@ -253,6 +265,11 @@ export async function checkEnrollment(courseId: string): Promise<boolean> {
   } catch {
     return false;
   }
+
+  if (user.role === "admin") {
+    return true;
+  }
+
   const now = new Date();
   const activeEnrollment = await db.query.enrollments.findFirst({
     where: and(

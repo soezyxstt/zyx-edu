@@ -52,7 +52,7 @@ Sebagai contoh: Jika robot berada di titik $p = (3, 4)$ dan target berada di $q 
     await db.insert(courses).values({
       id: testCourseId,
       title: "Test Course for Extractors",
-      category: "math",
+      category: "math" as any,
     });
 
     await db.insert(chapters).values({

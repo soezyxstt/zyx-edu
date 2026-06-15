@@ -44,15 +44,14 @@ export function AppChrome({
       pathname.startsWith("/profile") ||
       pathname.startsWith("/settings") ||
       pathname.startsWith("/leaderboard") ||
-      (pathname.startsWith("/courses") && user && user.role !== "admin")) &&
+      (pathname.startsWith("/courses") && !!user)) &&
     !isTutorPath(pathname);
 
   return (
     <TutorProvider>
       <CommandMenuProvider>
         {isAdminPath(pathname) ? (
-          <div className="relative flex min-h-screen flex-row bg-landing-hero-shell [overflow-x:clip]">
-            <CoursesAmbient />
+          <div className="relative flex min-h-screen flex-row bg-background">
             <AdminSidebar />
             <main
               id="main-content"

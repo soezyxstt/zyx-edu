@@ -7,10 +7,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { db } from '@/db';
-import { quizTemplates, aiQuestionBank, studentQuizAttempts } from '@/db/schema';
+import { quizTemplates, aiQuestionBank, studentQuizAttempts, knowledgeObjects, studentConceptMastery } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { and, eq, asc, inArray, sql, desc, notInArray } from 'drizzle-orm';
+import { env } from '@/lib/env';
 
 const StartSchema = z.object({
   templateId: z.string().min(1),
@@ -135,6 +136,36 @@ export async function POST(req: NextRequest) {
     difficulty: q.difficulty,
   }));
 
+  // E2: snapshot current mastery for every concept this quiz covers (before/after delta).
+  let masteryBefore: Record<string, number> | null = null;
+  if (env.FEATURE_REMEDIATION === "1") {
+    const koIds = Array.from(new Set(selected.map((q) => q.knowledgeObjectId).filter((x): x is string => !!x)));
+    if (koIds.length > 0) {
+      const koRows = await db
+        .select({ conceptName: knowledgeObjects.conceptName })
+        .from(knowledgeObjects)
+        .where(inArray(knowledgeObjects.id, koIds));
+      const conceptNames = Array.from(new Set(koRows.map((k) => k.conceptName.trim())));
+      if (conceptNames.length > 0) {
+        const masteryRows = await db
+          .select({ conceptName: studentConceptMastery.conceptName, masteryScore: studentConceptMastery.masteryScore })
+          .from(studentConceptMastery)
+          .where(
+            and(
+              eq(studentConceptMastery.studentId, studentId),
+              eq(studentConceptMastery.courseId, template.courseId),
+              inArray(studentConceptMastery.conceptName, conceptNames),
+            ),
+          );
+        const scoreByConcept = new Map(masteryRows.map((r) => [r.conceptName.trim(), r.masteryScore]));
+        masteryBefore = {};
+        for (const name of conceptNames) {
+          masteryBefore[name] = scoreByConcept.get(name) ?? 0;
+        }
+      }
+    }
+  }
+
   const attemptId = randomUUID();
   await db.insert(studentQuizAttempts).values({
     id: attemptId,
@@ -143,6 +174,7 @@ export async function POST(req: NextRequest) {
     status: 'in_progress',
     questionsSnapshot: snapshot as unknown as Record<string, unknown>,
     answersSnapshot: null,
+    masteryBefore,
   });
 
   // Return questions WITHOUT correct_indices to the client

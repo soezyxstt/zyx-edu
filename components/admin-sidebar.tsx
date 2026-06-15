@@ -17,6 +17,9 @@ import {
   Search,
   PanelLeftOpen,
   PanelLeftClose,
+  Bell,
+  Activity,
+  BarChart3,
 } from "lucide-react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
@@ -65,6 +68,8 @@ export function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
 
   const [mounted, setMounted] = useState(false);
   const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
@@ -93,6 +98,17 @@ export function AdminSidebar() {
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [profileOpen]);
 
   const isCollapsed = isMobile ? false : collapsed;
 
@@ -179,41 +195,79 @@ export function AdminSidebar() {
 
   const UserCard = ({ c = false }: { c?: boolean }) => {
     if (!session?.user) return null;
-    const cardContent = (
-      <div
-        className={cn(
-          "mx-3 mt-3 flex shrink-0 items-center gap-3 rounded-xl border border-border/70 bg-muted/40 p-2.5 transition-all duration-300",
-          c && "justify-center p-1.5 mx-auto size-10"
-        )}
-      >
-        {session.user.image ? (
-          <img
-            src={session.user.image}
-            alt={session.user.name}
-            className="size-7 shrink-0 rounded-full object-cover ring-2 ring-brand-primary/20"
-          />
-        ) : (
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-xs font-bold text-white">
-            {session.user.name?.charAt(0)?.toUpperCase() ?? "?"}
-          </span>
-        )}
-        {!c && (
-          <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-body-xs font-semibold text-foreground">
-              {session.user.name}
-            </p>
-            <p className="truncate text-[11px] text-muted-foreground">
-              {session.user.email}
-            </p>
+
+    return (
+      <div className="relative" ref={profileRef}>
+        <button
+          type="button"
+          onClick={() => setProfileOpen(!profileOpen)}
+          aria-expanded={profileOpen}
+          aria-haspopup="true"
+          className={cn(
+            "mx-3 mt-3 flex w-[calc(100%-1.5rem)] shrink-0 items-center gap-3 rounded-xl border border-border/70 bg-muted/40 p-2.5 transition-all duration-300 hover:bg-muted/70 text-left cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            c && "justify-center p-1.5 mx-auto size-10 w-10"
+          )}
+        >
+          {session.user.image ? (
+            <img
+              src={session.user.image}
+              alt={session.user.name}
+              className="size-7 shrink-0 rounded-full object-cover ring-2 ring-brand-primary/20"
+            />
+          ) : (
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-primary text-xs font-bold text-white">
+              {session.user.name?.charAt(0)?.toUpperCase() ?? "?"}
+            </span>
+          )}
+          {!c && (
+            <div className="min-w-0 flex-1 text-left">
+              <p className="truncate text-body-xs font-semibold text-foreground">
+                {session.user.name}
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground">
+                {session.user.email}
+              </p>
+            </div>
+          )}
+        </button>
+
+        {profileOpen && (
+          <div
+            className={cn(
+              "absolute z-50 mt-1 rounded-xl border border-border bg-popover p-1 shadow-md animate-in fade-in-50 slide-in-from-top-1 duration-150",
+              c
+                ? "left-14 top-0 ml-0 w-48"
+                : "top-full w-[calc(100%-1.5rem)] mx-3"
+            )}
+          >
+            <Link
+              href="/settings"
+              onClick={() => setProfileOpen(false)}
+              className="flex w-full items-center rounded-lg px-2.5 py-2 text-body-sm text-foreground hover:bg-muted transition-colors"
+            >
+              Pengaturan Profil
+            </Link>
+            <Link
+              href="/dashboard"
+              onClick={() => setProfileOpen(false)}
+              className="flex w-full items-center rounded-lg px-2.5 py-2 text-body-sm text-foreground hover:bg-muted transition-colors"
+            >
+              Beranda Siswa
+            </Link>
+            <div className="my-1 border-t border-border" />
+            <button
+              type="button"
+              onClick={() => {
+                setProfileOpen(false);
+                handleLogout();
+              }}
+              className="flex w-full items-center rounded-lg px-2.5 py-2 text-body-sm text-status-error hover:bg-status-error/10 transition-colors cursor-pointer text-left font-medium"
+            >
+              Keluar
+            </button>
           </div>
         )}
       </div>
-    );
-
-    return (
-      <SidebarTooltip label={`${session.user.name} (${session.user.email})`} collapsed={c}>
-        {cardContent}
-      </SidebarTooltip>
     );
   };
 
@@ -328,6 +382,14 @@ export function AdminSidebar() {
             active={isLinkActive("/admin")}
           />
 
+          {/* Mata Kuliah */}
+          <NavItem
+            href="/admin/courses"
+            icon={GraduationCap}
+            label="Mata Kuliah"
+            active={isLinkActive("/admin/courses")}
+          />
+
           <NavItem
             href="/admin/files"
             icon={FolderOpen}
@@ -377,6 +439,29 @@ export function AdminSidebar() {
             active={isLinkActive("/admin/ai/quizzes")}
           />
 
+          <NavItem
+            href="/admin/ai/distractors"
+            icon={BarChart3}
+            label="Analitik Distraktor"
+            active={isLinkActive("/admin/ai/distractors")}
+          />
+
+          {/* Push Notification */}
+          <NavItem
+            href="/admin/notifications"
+            icon={Bell}
+            label="Push Notification"
+            active={isLinkActive("/admin/notifications")}
+          />
+
+          {/* Ops Monitor */}
+          <NavItem
+            href="/admin/ops"
+            icon={Activity}
+            label="Ops Monitor"
+            active={isLinkActive("/admin/ops")}
+          />
+
           {/* Spacer */}
           <div className="flex-1" />
 
@@ -385,7 +470,7 @@ export function AdminSidebar() {
             href="/dashboard"
             icon={GraduationCap}
             label="Beranda Siswa"
-            className="text-brand-secondary hover:bg-brand-secondary/10 hover:text-brand-secondary font-semibold"
+            className="text-tertiary-1 hover:bg-tertiary-1/10 hover:text-tertiary-1 font-semibold"
           />
 
           {/* Sign out */}
@@ -393,7 +478,7 @@ export function AdminSidebar() {
             icon={LogOut}
             label="Keluar"
             onClick={handleLogout}
-            className="text-status-error hover:bg-status-error/10 hover:text-status-error"
+            className="text-muted-foreground hover:bg-status-error/10 hover:text-status-error"
           />
         </nav>
       </aside>

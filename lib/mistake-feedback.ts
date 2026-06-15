@@ -4,6 +4,7 @@ import { studentQuizAttempts, aiQuestionBank, knowledgeObjects, websiteMaterials
 import { eq, inArray, and } from "drizzle-orm";
 import { kvGet, kvPut } from "@/lib/kv-cache";
 import { generateContentWithFallback } from "@/lib/gemini";
+import { env } from "@/lib/env";
 import { randomUUID } from "node:crypto";
 
 interface FeedbackPayload {
@@ -11,6 +12,20 @@ interface FeedbackPayload {
   misconceptionName?: string | null;
   correctApproach: string[];
   reviewHref: string;
+}
+
+interface DistractorEntryShape {
+  optionIndex: number;
+  kind: string;
+  misconceptionKoId: string | null;
+  label: string;
+}
+
+/** First N sentences of a block of text, trimmed for a feedback card. */
+function firstSentences(text: string, max = 2): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  const parts = clean.split(/(?<=[.!?])\s+/);
+  return parts.slice(0, max).join(" ").slice(0, 400);
 }
 
 export function normalizeAnswer(indices: number[]): string {
@@ -81,59 +96,105 @@ export async function generateMistakeFeedback(attemptId: string): Promise<void> 
     return;
   }
 
-  // 3. Process each wrong question
+  // Resolve courseId from the template once.
+  const [templateRow] = await db
+    .select({ courseId: quizTemplates.courseId })
+    .from(quizTemplates)
+    .where(eq(quizTemplates.id, attempt.templateId))
+    .limit(1);
+  const resolvedCourseId = templateRow?.courseId || "calc-1";
+
+  // Fetch bank details for ALL wrong questions up front (incl. distractor map).
+  const allWrongIds = wrongQuestions.map((w) => w.id);
+  const allBankRows = await db
+    .select({
+      id: aiQuestionBank.id,
+      prompt: aiQuestionBank.prompt,
+      options: aiQuestionBank.options,
+      correctIndices: aiQuestionBank.correctIndices,
+      explanation: aiQuestionBank.explanation,
+      distractorMap: aiQuestionBank.distractorMap,
+      conceptName: knowledgeObjects.conceptName,
+      courseId: aiQuestionBank.courseId,
+    })
+    .from(aiQuestionBank)
+    .leftJoin(knowledgeObjects, eq(aiQuestionBank.knowledgeObjectId, knowledgeObjects.id))
+    .where(inArray(aiQuestionBank.id, allWrongIds));
+  const bankMap = new Map(allBankRows.map((r) => [r.id, r]));
+
+  // 3. Tier the wrong questions: deterministic (tagged misconception) first.
   const hits: Array<{ questionId: string; questionIndex: number; payload: FeedbackPayload }> = [];
+  const deterministic: Array<{ questionId: string; questionIndex: number; payload: FeedbackPayload }> = [];
   const misses: Array<{ id: string; correctIndices: number[]; submitted: number[]; index: number; cacheKey: string }> = [];
 
+  const useDeterministic = env.FEATURE_MISCONCEPTION === "1";
+
+  // Find selected misconception distractors so we can fetch their KO content in one query.
+  const pendingForLLM: typeof wrongQuestions = [];
+  const detPlan: Array<{ wq: (typeof wrongQuestions)[number]; entry: DistractorEntryShape }> = [];
+
   for (const wq of wrongQuestions) {
+    const details = bankMap.get(wq.id);
+    const dmap = (details?.distractorMap as DistractorEntryShape[] | null) ?? [];
+    const submitted = new Set(wq.submitted);
+    const tagged = useDeterministic
+      ? dmap.find((e) => e.kind === "misconception" && e.misconceptionKoId && submitted.has(e.optionIndex))
+      : undefined;
+    if (tagged) {
+      detPlan.push({ wq, entry: tagged });
+    } else {
+      pendingForLLM.push(wq);
+    }
+  }
+
+  // Build deterministic payloads from misconception KO content (no AI call).
+  if (detPlan.length > 0) {
+    const koIds = Array.from(new Set(detPlan.map((p) => p.entry.misconceptionKoId!).filter(Boolean)));
+    const koRows = koIds.length
+      ? await db
+          .select({ id: knowledgeObjects.id, title: knowledgeObjects.title, content: knowledgeObjects.content })
+          .from(knowledgeObjects)
+          .where(inArray(knowledgeObjects.id, koIds))
+      : [];
+    const koMap = new Map(koRows.map((r) => [r.id, r]));
+
+    for (const { wq, entry } of detPlan) {
+      const details = bankMap.get(wq.id);
+      const opts = (details?.options as string[]) ?? [];
+      const correctIndices = (Array.isArray(details?.correctIndices) ? details!.correctIndices : []) as number[];
+      const correctText = correctIndices.map((i) => opts[i] ?? `Opsi ${i}`).join(", ");
+      const ko = entry.misconceptionKoId ? koMap.get(entry.misconceptionKoId) : undefined;
+      const reviewHref = await getReviewHref(resolvedCourseId, details?.conceptName ?? null);
+
+      const payload: FeedbackPayload = {
+        whyWrong: ko
+          ? firstSentences(ko.content)
+          : "Pilihan yang kamu ambil mencerminkan miskonsepsi umum pada konsep ini.",
+        misconceptionName: ko?.title ?? entry.label,
+        correctApproach: [`Jawaban yang benar: ${correctText}`],
+        reviewHref,
+      };
+      deterministic.push({ questionId: wq.id, questionIndex: wq.index, payload });
+    }
+  }
+
+  // 4. Remaining questions: KV cache, then Gemini batch.
+  for (const wq of pendingForLLM) {
     const norm = normalizeAnswer(wq.submitted);
     const hash = getAnswerHash(norm);
     const cacheKey = `feedback:${wq.id}:${hash}`;
 
     const cached = await kvGet<FeedbackPayload>(cacheKey);
     if (cached) {
-      hits.push({
-        questionId: wq.id,
-        questionIndex: wq.index,
-        payload: cached,
-      });
+      hits.push({ questionId: wq.id, questionIndex: wq.index, payload: cached });
     } else {
-      misses.push({
-        ...wq,
-        cacheKey,
-      });
+      misses.push({ ...wq, cacheKey });
     }
   }
 
-  // 4. If misses, call Gemini in batch
   const newFeedbacks: Array<{ questionId: string; questionIndex: number; payload: FeedbackPayload }> = [];
 
   if (misses.length > 0) {
-    // Resolve courseId from the template
-    const [templateRow] = await db
-      .select({ courseId: quizTemplates.courseId })
-      .from(quizTemplates)
-      .where(eq(quizTemplates.id, attempt.templateId))
-      .limit(1);
-    const resolvedCourseId = templateRow?.courseId || "calc-1";
-
-    // Fetch the missing question details from the bank
-    const questionIds = misses.map((m) => m.id);
-    const bankRows = await db
-      .select({
-        id: aiQuestionBank.id,
-        prompt: aiQuestionBank.prompt,
-        options: aiQuestionBank.options,
-        correctIndices: aiQuestionBank.correctIndices,
-        explanation: aiQuestionBank.explanation,
-        conceptName: knowledgeObjects.conceptName,
-        courseId: aiQuestionBank.courseId,
-      })
-      .from(aiQuestionBank)
-      .leftJoin(knowledgeObjects, eq(aiQuestionBank.knowledgeObjectId, knowledgeObjects.id))
-      .where(inArray(aiQuestionBank.id, questionIds));
-
-    const bankMap = new Map(bankRows.map((r) => [r.id, r]));
 
     // Build batch prompt
     let promptItems = "";
@@ -249,8 +310,8 @@ ${promptItems}`;
     }
   }
 
-  // 5. Store all feedback rows (hits + misses) in database
-  const allFeedback = [...hits, ...newFeedbacks];
+  // 5. Store all feedback rows (deterministic + cache hits + new) in database
+  const allFeedback = [...deterministic, ...hits, ...newFeedbacks];
   if (allFeedback.length > 0) {
     const insertValues = allFeedback.map((f) => ({
       id: randomUUID(),

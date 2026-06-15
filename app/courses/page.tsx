@@ -10,14 +10,28 @@ import {
   getMaterialsForCourse,
   getExamsForCourse,
 } from "@/lib/student-course-fixtures";
+import { db } from "@/db";
+import { courses as coursesTable } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export const metadata: Metadata = {
   title: pageTitle("Courses"),
   description: "Katalog course Zyx Academy - enrollment diaktifkan oleh admin sesuai paket.",
 };
 
-export default function CoursesPage() {
-  const courses = listCourses();
+export default async function CoursesPage() {
+  // Fetch courses from DB (authoritative) and fall back to fixtures for missing entries
+  const dbCourses = await db.select().from(coursesTable);
+  const fixtureCourses = listCourses();
+  const courseMap = new Map(dbCourses.map((c) => [c.id, c] as [string, any]));
+  const merged: typeof dbCourses = [];
+  // Add DB courses first
+  merged.push(...dbCourses);
+  // Add any fixture courses not present in DB
+  for (const fc of fixtureCourses) {
+    if (!courseMap.has(fc.id)) merged.push(fc as any);
+  }
+  const courses = merged;
 
   return (
     <CoursePageShell

@@ -13,6 +13,8 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { recordLearningEvents } from '@/lib/learning-events';
 import { inngest } from '@/lib/inngest';
 import { markRecommendationDone, buildPlanForConcepts } from '@/lib/recommendation-service';
+import { recordQuestionOptionStats } from '@/lib/option-stats';
+import { buildRemediation } from '@/lib/remediation';
 import { env } from '@/lib/env';
 
 type Context = { params: Promise<{ id: string }> };
@@ -40,9 +42,34 @@ export async function GET(_req: NextRequest, { params }: Context) {
     .from(attemptFeedback)
     .where(eq(attemptFeedback.attemptId, id));
 
+  // E2: deterministic remediation (mastery delta + root cause + misconceptions)
+  let remediation = null;
+  if (env.FEATURE_REMEDIATION === "1" && attempt.status === "completed") {
+    const [tpl] = await db
+      .select({ courseId: quizTemplates.courseId })
+      .from(quizTemplates)
+      .where(eq(quizTemplates.id, attempt.templateId))
+      .limit(1);
+    if (tpl?.courseId) {
+      remediation = await buildRemediation(
+        {
+          id: attempt.id,
+          studentId: attempt.studentId,
+          masteryBefore: attempt.masteryBefore as Record<string, number> | null,
+          weakAreas: attempt.weakAreas as string[] | null,
+        },
+        tpl.courseId,
+      ).catch((err) => {
+        console.error("buildRemediation failed:", err);
+        return null;
+      });
+    }
+  }
+
   return NextResponse.json({
     ...attempt,
     feedback: feedbackRows,
+    remediation,
   });
 }
 
@@ -199,6 +226,17 @@ export async function POST(req: NextRequest, { params }: Context) {
       recordLearningEvents(events),
       inngest.send({ name: 'mastery/recompute.requested', data: { studentId: attempt.studentId, courseId: template.courseId } }),
     ]);
+  }
+
+  // E1: aggregate distractor analytics (once per attempt, deterministic)
+  if (env.FEATURE_MISCONCEPTION === "1") {
+    const answered = snapshot.map((q) => ({
+      questionId: q.id,
+      selectedOptions: answers[q.id] ?? [],
+    }));
+    await recordQuestionOptionStats(courseId, answered).catch((err) => {
+      console.error("recordQuestionOptionStats failed:", err);
+    });
   }
 
   // Fire mistake feedback generation background event

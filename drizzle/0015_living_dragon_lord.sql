@@ -1,0 +1,1 @@
+ALTER TABLE `student_quiz_attempts` ADD `mastery_before` text;

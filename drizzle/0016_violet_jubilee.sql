@@ -1,0 +1,1 @@
+ALTER TABLE `website_materials` ADD `term_index` text;

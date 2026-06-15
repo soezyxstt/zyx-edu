@@ -12,6 +12,8 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { and, eq, gt, asc } from "drizzle-orm";
 import { ConceptMap } from "@/components/course/concept-map";
+import { ConceptGraphView } from "@/components/course/concept-graph-view";
+import { env } from "@/lib/env";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -122,7 +124,7 @@ export default async function CourseMasteryPage({ params }: Props) {
         <Reveal>
           <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border/60 bg-card/10">
             <p className="text-body-sm text-muted-foreground">
-              Knowledge map appears after your first quiz.
+              Peta pemahaman konsep akan muncul setelah Anda mengerjakan kuis pertama.
             </p>
           </div>
         </Reveal>
@@ -214,12 +216,36 @@ export default async function CourseMasteryPage({ params }: Props) {
     })
     .filter((group) => group.concepts.length > 0);
 
+  // E5: build the concept-graph dataset (nodes + prerequisite edges) for the graph view.
+  const graphEnabled = env.FEATURE_GRAPH === "1";
+  const graphNodes = graphEnabled
+    ? [...new Set(groups.flatMap((g) => g.concepts.map((c) => c.conceptName)))].map((conceptName) => ({
+        conceptName,
+        mastery: masteryMap.has(conceptName) ? masteryMap.get(conceptName)! : null,
+      }))
+    : [];
+  const graphEdges = graphEnabled
+    ? [...prereqMap.entries()].flatMap(([to, sources]) =>
+        [...sources].map((from) => ({ from, to })),
+      )
+    : [];
+
   return (
     <CoursePageShell
       title={`Penguasaan Materi: ${course.title}`}
       description="Analisis tingkat penguasaan konsep Anda berdasarkan data kuis."
       icon={Target}
     >
+      {graphEnabled && graphNodes.length > 0 && (
+        <Reveal>
+          <div className="mb-8 space-y-3">
+            <h2 className="text-body-sm font-semibold uppercase tracking-wide text-muted-foreground">
+              Graf konsep
+            </h2>
+            <ConceptGraphView nodes={graphNodes} edges={graphEdges} courseId={id} />
+          </div>
+        </Reveal>
+      )}
       <ConceptMap groups={groups} />
     </CoursePageShell>
   );
