@@ -21,7 +21,7 @@ import { Bell, History } from "lucide-react";
 
 export const metadata: Metadata = {
   title: pageTitle("Notifikasi Push"),
-  description: "Kirim dan kelola push notification untuk pengguna ZYX Academy.",
+  description: "Kirim dan kelola push notification untuk pengguna Zyx Academy.",
 };
 
 export default async function AdminNotificationsPage() {

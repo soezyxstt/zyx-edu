@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { GraduationCap } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { getCourseById, getExamsForCourse } from "@/lib/student-course-fixtures";
@@ -50,7 +51,11 @@ export default async function CourseTryoutListPage({ params }: Props) {
   const allTryouts = [...getExamsForCourse(id, "tryout"), ...mappedDb];
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Tryout Ujian: ${course.title}`}
+      description="Simulasikan ujian asli dengan batas waktu dan analisis pembahasan."
+      icon={GraduationCap}
+    >
       <Reveal>
         <TryoutListClient courseId={id} isEnrolled={isEnrolled} tryouts={allTryouts} />
       </Reveal>

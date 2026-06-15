@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+/** Converts text into a stable, URL-safe, machine-readable slug. */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /**
  * Normalizes and cleans markdown text derived from PDFs.
  * Handles Unicode normalization, invisible character/null character removal, and line ending normalization.

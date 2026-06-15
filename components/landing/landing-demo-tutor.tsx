@@ -77,13 +77,13 @@ export function LandingDemoTutor() {
 
         <div className="order-1 max-w-xl lg:order-2">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">
-            Tutor AI
+            Zyra
           </p>
           <SectionHeading as="h2" id="landing-tutor-heading" className="mt-3 text-foreground">
             Jawaban dari materimu, bukan dari internet.
           </SectionHeading>
           <p className="mt-4 text-body-base text-muted-foreground">
-            Tutor AI ZYX menjawab berdasar materi kuliahmu dan menyebutkan sumbernya — bab, contoh
+            Zyra menjawab berdasar materi kuliahmu dan menyebutkan sumbernya — bab, contoh
             soal, sampai kuis yang pernah kamu kerjakan.
           </p>
           <p className="mt-3 text-body-sm italic text-muted-foreground">

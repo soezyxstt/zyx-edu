@@ -151,7 +151,7 @@ Please output a corrected, fully compliant JSON object matching the requested sc
     }
 
     try {
-      const cleanJSON = rawText.replace(/^```json\s*/i, "").replace(/```\s*$/, "").trim();
+      const cleanJSON = repairJsonString(rawText);
       const parsed = JSON.parse(cleanJSON);
       const validated = params.schema.parse(parsed);
 

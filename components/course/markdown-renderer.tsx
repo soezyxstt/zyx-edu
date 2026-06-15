@@ -146,7 +146,7 @@ function parseInline(text: string): ReactNode[] {
       flushText();
       const content = boldMatch[1];
       result.push(
-        <strong key={`bold-${index}`} className="font-bold text-foreground">
+        <strong key={`bold-${index}`} className="font-bold">
           {parseInline(content)}
         </strong>
       );
@@ -655,9 +655,14 @@ function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) 
 
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
   const blocks = parseMarkdown(content);
+  const hasTextColor = className && /\btext-\w+/.test(className);
 
   return (
-    <div className={cn("markdown-article text-left space-y-4 font-sans select-text text-foreground/90", className)}>
+    <div className={cn(
+      "markdown-article text-left space-y-4 font-sans select-text",
+      !hasTextColor && "text-foreground/90",
+      className
+    )}>
       {blocks.map((block, idx) => {
         switch (block.type) {
           case "p":
@@ -670,11 +675,11 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
           case "h": {
             const hLvl = block.level || 2;
             const headingClasses = {
-              1: "text-h2 font-heading font-bold text-foreground mt-8 mb-4 border-b border-border/60 pb-2.5 tracking-tight",
-              2: "text-h3 font-heading font-bold text-foreground mt-7 mb-3 tracking-tight",
-              3: "text-h4 font-heading font-bold text-foreground mt-6 mb-3 tracking-tight",
-              4: "text-h5 font-heading font-semibold text-foreground mt-5 mb-2.5 tracking-tight",
-              5: "text-h6 font-heading font-semibold text-foreground mt-4 mb-2 tracking-tight",
+              1: "text-h2 font-heading font-bold mt-8 mb-4 border-b border-border/60 pb-2.5 tracking-tight",
+              2: "text-h3 font-heading font-bold mt-7 mb-3 tracking-tight",
+              3: "text-h4 font-heading font-bold mt-6 mb-3 tracking-tight",
+              4: "text-h5 font-heading font-semibold mt-5 mb-2.5 tracking-tight",
+              5: "text-h6 font-heading font-semibold mt-4 mb-2 tracking-tight",
               6: "text-body-base font-heading font-semibold text-muted-foreground mt-4 mb-2 tracking-tight",
             };
             const cls = headingClasses[hLvl as 1 | 2 | 3 | 4 | 5 | 6] || headingClasses[2];
@@ -717,7 +722,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
                 )}
               >
                 {block.items?.map((item, itemIdx) => (
-                  <li key={itemIdx} className="text-foreground/90 pl-1">
+                  <li key={itemIdx} className="pl-1">
                     {parseInline(item.text)}
                   </li>
                 ))}

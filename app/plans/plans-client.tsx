@@ -387,9 +387,15 @@ export default function PlansClient() {
                           : ""
                       }`}
                     >
-                      <Link href={whatsAppUrl} target="_blank" rel="noopener noreferrer">
-                        {isFree ? "Daftar Sekarang" : isCustom ? "Hubungi Admin" : "Pilih Paket"}
-                      </Link>
+                      {isFree ? (
+                        <Link href="/sign-up">
+                          Daftar Sekarang
+                        </Link>
+                      ) : (
+                        <Link href={whatsAppUrl} target="_blank" rel="noopener noreferrer">
+                          {isCustom ? "Hubungi Admin" : "Pilih Paket"}
+                        </Link>
+                      )}
                     </Button>
                   </div>
                 </article>

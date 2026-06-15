@@ -204,6 +204,7 @@ export async function generateFlashcardsForChapter(chapterId: string): Promise<n
     const prompt = buildFlashcardPrompt(courseRecord.title, chapterRecord.title, activeKOs);
     const { response } = await generateContentWithFallback({
       contents: prompt,
+      config: { responseMimeType: "application/json" },
     });
 
     const outputText = response.text || "";
@@ -258,16 +259,8 @@ export async function generateFlashcardsForChapter(chapterId: string): Promise<n
       });
     }
 
-    // Purge prior AI generated flashcards linked to KOs in this chapter
-    const currentCards = await tx
-      .select()
-      .from(flashcards)
-      .where(eq(flashcards.setId, setId));
-    
-    // We map delete
-    for (const card of currentCards) {
-      await tx.delete(flashcards).where(eq(flashcards.id, card.id));
-    }
+    // Purge prior AI generated flashcards for this set in one shot
+    await tx.delete(flashcards).where(eq(flashcards.setId, setId));
 
     // Insert new cards
     for (const card of cardsToInsert) {

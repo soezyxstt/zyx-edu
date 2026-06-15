@@ -78,22 +78,23 @@ export async function getOrUpdateStreak(
  * Returns a 7-element boolean array mapping Monday to Sunday activity of the current week.
  */
 export async function getWeeklyActivity(studentId: string): Promise<boolean[]> {
+  // Use UTC throughout — must match the SQL strftime('...', 'unixepoch') which is UTC-based
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0: Sunday, 1: Mon, ..., 6: Sat
-  
+  const dayOfWeekUtc = today.getUTCDay(); // 0: Sunday, 1: Mon, ..., 6: Sat
+
   // Align Monday as first index (0) and Sunday as last index (6)
-  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  
+  const mondayOffset = dayOfWeekUtc === 0 ? -6 : 1 - dayOfWeekUtc;
+
   const monday = new Date(today);
-  monday.setDate(today.getDate() + mondayOffset);
+  monday.setUTCDate(today.getUTCDate() + mondayOffset);
 
   const dates: string[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
+    d.setUTCDate(monday.getUTCDate() + i);
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
     dates.push(`${yyyy}-${mm}-${dd}`);
   }
 

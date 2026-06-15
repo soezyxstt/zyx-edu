@@ -22,11 +22,13 @@ export async function recordLearningEvent(event: LearningEventInput): Promise<vo
     koId: event.koId ?? null,
     correctness: event.correctness ?? null,
     weight: event.weight ?? 1,
+    createdAt: new Date(), // explicit: avoids defaultNow() ms raw SQL; mapToDriverValue stores Unix seconds
   });
 }
 
 export async function recordLearningEvents(events: LearningEventInput[]): Promise<void> {
   if (events.length === 0) return;
+  const now = new Date();
   await db.insert(learningEvents).values(
     events.map((e) => ({
       id: randomUUID(),
@@ -37,6 +39,7 @@ export async function recordLearningEvents(events: LearningEventInput[]): Promis
       koId: e.koId ?? null,
       correctness: e.correctness ?? null,
       weight: e.weight ?? 1,
+      createdAt: now, // explicit: avoids defaultNow() ms raw SQL; mapToDriverValue stores Unix seconds
     }))
   );
 }

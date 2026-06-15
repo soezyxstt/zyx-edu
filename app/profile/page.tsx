@@ -243,7 +243,7 @@ export default async function ProfilePage() {
                     <div key={course.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4 border-b border-border/40 last:border-b-0 text-left">
                       <div className="min-w-0 flex-1 text-left">
                         <div className="flex items-center gap-2 flex-wrap text-left">
-                          <span className="inline-flex rounded-md border border-brand-primary/20 bg-brand-primary/5 px-2 py-0.5 text-[10px] font-semibold text-brand-primary uppercase">
+                          <span className="inline-flex rounded-md bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary uppercase tracking-wider ring-1 ring-brand-primary/20">
                             {course.category}
                           </span>
                           <span className="text-[11px] text-muted-foreground">

@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
+import { Compass } from "lucide-react";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { CoursePageShell } from "@/components/course/course-page-shell";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
@@ -34,9 +36,13 @@ export default async function CoursePathPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell>
+      <CoursePageShell
+        title={`Alur Belajar: ${course.title}`}
+        description="Ikuti alur belajar terstruktur untuk menguasai materi ini."
+        icon={Compass}
+      >
         <Reveal>
-          <div className="mx-auto max-w-xl text-center py-12">
+          <div className={studentCardClass("mx-auto max-w-xl text-center py-12")}>
             <h3 className="font-heading text-body-lg font-bold text-foreground">Alur Belajar Terkunci</h3>
             <p className="mt-2 text-body-sm text-muted-foreground leading-relaxed">
               Anda perlu mendaftar kelas ini untuk melihat alur belajar personal Anda. Aktifkan kelas menggunakan token pendaftaran di bawah ini.
@@ -51,7 +57,11 @@ export default async function CoursePathPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Alur Belajar: ${course.title}`}
+      description="Ikuti alur belajar terstruktur untuk menguasai materi ini."
+      icon={Compass}
+    >
       <StudyPathTimeline courseId={id} />
     </CoursePageShell>
   );

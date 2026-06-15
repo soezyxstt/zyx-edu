@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Lock } from "lucide-react";
+import { Lock, Target } from "lucide-react";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { CoursePageShell } from "@/components/course/course-page-shell";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
@@ -43,9 +44,13 @@ export default async function CourseMasteryPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell>
+      <CoursePageShell
+        title={`Penguasaan Materi: ${course.title}`}
+        description="Analisis tingkat penguasaan konsep Anda berdasarkan data kuis."
+        icon={Target}
+      >
         <Reveal>
-          <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
+          <div className={studentCardClass()}>
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border">
                 <Lock className="size-5" />
@@ -109,7 +114,11 @@ export default async function CourseMasteryPage({ params }: Props) {
   // Empty state: empty when no student Concept Mastery rows are found for this course
   if (masteryRows.length === 0) {
     return (
-      <CoursePageShell>
+      <CoursePageShell
+        title={`Penguasaan Materi: ${course.title}`}
+        description="Analisis tingkat penguasaan konsep Anda berdasarkan data kuis."
+        icon={Target}
+      >
         <Reveal>
           <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border/60 bg-card/10">
             <p className="text-body-sm text-muted-foreground">
@@ -206,7 +215,11 @@ export default async function CourseMasteryPage({ params }: Props) {
     .filter((group) => group.concepts.length > 0);
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Penguasaan Materi: ${course.title}`}
+      description="Analisis tingkat penguasaan konsep Anda berdasarkan data kuis."
+      icon={Target}
+    >
       <ConceptMap groups={groups} />
     </CoursePageShell>
   );

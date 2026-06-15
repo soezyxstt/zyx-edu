@@ -15,8 +15,8 @@ export class UsageBudgetService {
    * Aggregates the number of usage events for a user on the current calendar date.
    */
   static async getDailyUsageCount(userId: string): Promise<number> {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const todayUtc = new Date().toISOString().slice(0, 10);
+    const startOfDay = new Date(`${todayUtc}T00:00:00.000Z`);
     const result = await db
       .select({ count: sql<number>`count(*)` })
       .from(aiUsageEvents)

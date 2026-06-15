@@ -9,6 +9,7 @@ import {
   Bookmark,
   Trophy,
   ArrowUpRight,
+  Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
@@ -31,6 +32,11 @@ import { db } from "@/db";
 import { weeklyReflections } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { WeeklyReflection } from "@/components/dashboard/weekly-reflection";
+import { getOrUpdateStreak } from "@/lib/streak-service";
+import { ActivateClassModal } from "@/components/dashboard/activate-class-modal";
+import { PageHeader } from "@/components/page-header";
+import { studentCardClass } from "@/components/course/course-surfaces";
+import { cn } from "@/lib/utils";
 
 
 export const metadata: Metadata = {
@@ -47,9 +53,20 @@ export default async function DashboardPage() {
   const featureToday = env.FEATURE_TODAY === "1";
   const firstName = userName.split(" ")[0];
 
-  const enrollments = await getStudentEnrollments();
-  const progressList = await getMaterialsProgress();
-  const submissionsList = await getStudentSubmissions();
+  const [enrollments, progressList, submissionsList] = await Promise.all([
+    getStudentEnrollments(),
+    getMaterialsProgress(),
+    getStudentSubmissions(),
+  ]);
+
+  let streakInfo = null;
+  if (user?.id) {
+    try {
+      streakInfo = await getOrUpdateStreak(user.id);
+    } catch (e) {
+      console.error("Error loading streak:", e);
+    }
+  }
 
   // Fetch latest weekly reflection if feature is enabled
   let latestReflection = null;
@@ -164,14 +181,45 @@ export default async function DashboardPage() {
         ) : (
           /* Welcome Header (shown when FEATURE_TODAY is off) */
           <Reveal duration="duration-500">
-            <header className="mx-auto mb-10 max-w-4xl text-center">
-              <h1 className="font-heading text-h3 font-bold text-foreground md:text-h2">
-                Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>! 👋
-              </h1>
-              <p className="mt-1.5 text-body-base text-muted-foreground">
-                Mari lanjutkan aktivitas belajarmu hari ini.
-              </p>
-            </header>
+            <PageHeader
+              title={
+                <>
+                  Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>!
+                </>
+              }
+              description="Mari lanjutkan aktivitas belajarmu hari ini."
+              actions={
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 shadow-xs">
+                    <GraduationCap className="size-4 text-brand-primary" />
+                    <div className="text-left">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground leading-none">Kelas</p>
+                      <p className="text-body-xs font-semibold text-foreground mt-0.5 leading-none">{enrollments.length} Aktif</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 shadow-xs">
+                    <Bookmark className="size-4 text-brand-primary" />
+                    <div className="text-left">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground leading-none">Materi</p>
+                      <p className="text-body-xs font-semibold text-foreground mt-0.5 leading-none">{inProgressDocuments.length} Dibaca</p>
+                    </div>
+                  </div>
+
+                  {streakInfo && (
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 shadow-xs">
+                      <Flame className={cn("size-4", streakInfo.current > 0 ? "text-brand-secondary fill-brand-secondary/10" : "text-muted-foreground")} />
+                      <div className="text-left">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground leading-none">Streak</p>
+                        <p className="text-body-xs font-semibold text-foreground mt-0.5 leading-none">
+                          {streakInfo.current > 0 ? `${streakInfo.current} Hari` : "Mulai Hari Ini"}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              }
+            />
           </Reveal>
         )}
 
@@ -208,7 +256,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="mt-8 rounded-2xl border border-border/60 bg-gradient-to-br from-brand-primary/5 via-transparent to-tertiary-3/5 p-6 text-left shadow-xs">
+            <div className={studentCardClass("mt-8 bg-gradient-to-br from-brand-primary/5 via-transparent to-tertiary-3/5 text-left shadow-xs")}>
               <h3 className="font-heading text-body-sm font-bold text-foreground mb-1">
                 Masukkan Kode Aktivasi
               </h3>
@@ -224,16 +272,19 @@ export default async function DashboardPage() {
             {/* Left Column (Main study track) - 7 cols */}
             <div className="space-y-6 lg:col-span-7">
               {/* Classes list Section */}
-              <div className="rounded-2xl border border-border/60 bg-card/65 p-6 shadow-xs backdrop-blur-md">
-                <div className="mb-5 flex items-center justify-between">
+              <div className={studentCardClass()}>
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-y-2">
                   <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2">
                     <GraduationCap className="size-5 text-brand-primary" />
                     Kelas Aktif
                   </h2>
-                  <Link href="/courses" className="text-body-xs font-bold text-brand-secondary hover:underline flex items-center gap-0.5">
-                    Lihat Semua
-                    <ArrowUpRight className="size-3.5" />
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <ActivateClassModal />
+                    <Link href="/courses" className="text-body-xs font-bold text-brand-primary hover:underline flex items-center gap-0.5">
+                      Lihat Semua
+                      <ArrowUpRight className="size-3.5" />
+                    </Link>
+                  </div>
                 </div>
 
                 <div className="divide-y divide-border/50">
@@ -246,55 +297,60 @@ export default async function DashboardPage() {
                     const progressPct = materials.length > 0 ? Math.round((doneCount / materials.length) * 100) : 0;
 
                     return (
-                      <div
+                      <Link
                         key={course.id}
-                        className="py-5 first:pt-0 last:pb-0 flex flex-col gap-4 sm:flex-row sm:items-center justify-between"
+                        href={`/courses/${course.id}`}
+                        className="group block py-4 hover:bg-muted/30 px-4 -mx-4 rounded-xl transition-colors"
                       >
-                        <div className="min-w-0 flex-1">
-                          <span className="inline-flex rounded-md border border-brand-primary/20 bg-brand-primary/5 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary uppercase tracking-wider">
-                            {course.category}
-                          </span>
-                          <h3 className="mt-2 font-heading text-body-md font-bold text-foreground truncate">
-                            {course.title}
-                          </h3>
-                          
-                          {/* Sleek inline progress */}
-                          <div className="mt-3 flex items-center gap-3 max-w-xs">
-                            <div className="h-1.5 flex-1 overflow-hidden rounded bg-muted/70">
-                              <div
-                                className="h-full bg-brand-primary transition-all duration-300 rounded"
-                                style={{ width: `${progressPct}%` }}
-                              />
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            {/* Category Badge + Title on one line */}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex rounded-md bg-brand-primary/10 px-2 py-0.5 text-[10px] font-bold text-brand-primary uppercase tracking-wider ring-1 ring-brand-primary/20 shrink-0">
+                                {course.category}
+                              </span>
+                              <h3 className="font-heading text-body-sm font-bold text-foreground group-hover:text-brand-primary transition-colors truncate min-w-0">
+                                {course.title}
+                              </h3>
                             </div>
-                            <span className="text-body-xs font-semibold text-muted-foreground shrink-0">{progressPct}%</span>
+                            
+                            {/* Sleek inline progress */}
+                            <div className="mt-3 flex items-center gap-3 max-w-md">
+                              <div className="h-1.5 w-24 overflow-hidden rounded bg-muted/70">
+                                <div
+                                  className="h-full bg-brand-primary transition-all duration-300 rounded"
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+                              <span className="text-body-xs font-semibold text-foreground">{progressPct}%</span>
+                              <span className="text-body-xs text-muted-foreground">({doneCount} dari {materials.length} materi)</span>
+                            </div>
+
+                            {env.FEATURE_STUDY_PATH === "1" && nextConcepts[course.id] && (
+                              <div className="mt-2.5 text-body-xs font-medium text-muted-foreground">
+                                Langkah selanjutnya:{" "}
+                                <span className="text-brand-primary font-semibold group-hover:underline">
+                                  {nextConcepts[course.id]}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
-                          {env.FEATURE_STUDY_PATH === "1" && nextConcepts[course.id] && (
-                            <div className="mt-3 text-body-xs font-medium text-muted-foreground">
-                              Langkah selanjutnya:{" "}
-                              <Link
-                                href={`/courses/${course.id}/path`}
-                                className="text-brand-primary font-semibold hover:underline"
-                              >
-                                {nextConcepts[course.id]}
-                              </Link>
-                            </div>
-                          )}
+                          {/* Interactive arrow indicator */}
+                          <div className="flex size-7 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground group-hover:text-brand-primary group-hover:border-brand-primary/30 transition-all shrink-0">
+                            <ArrowUpRight className="size-4" />
+                          </div>
                         </div>
-
-                        <Button asChild size="sm" variant="outline" className="rounded-md shrink-0 self-start sm:self-center">
-                          <Link href={`/courses/${course.id}`}>Buka Kelas</Link>
-                        </Button>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
               </div>
 
               {/* Documents In Progress ("sedang dibaca tetapi belum selesai") */}
-              <div className="rounded-2xl border border-border/60 bg-card/65 p-6 shadow-xs backdrop-blur-md">
+              <div className={studentCardClass()}>
                 <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
-                  <Bookmark className="size-5 text-brand-secondary" />
+                  <Bookmark className="size-5 text-brand-primary" />
                   Materi Terbuka (Belum Selesai)
                 </h2>
                 {inProgressDocuments.length > 0 ? (
@@ -302,27 +358,29 @@ export default async function DashboardPage() {
                     {inProgressDocuments.map((doc) => {
                       if (!doc) return null;
                       return (
-                        <div
-                          key={doc.id}
-                          className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
-                        >
-                          <div className="min-w-0 flex-1">
-                            <span className="inline-flex rounded-md border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                              {doc.courseTitle}
-                            </span>
-                            <h4 className="font-heading text-body-sm font-bold text-foreground mt-2 truncate">
-                              {doc.title}
-                            </h4>
-                            <p className="text-body-xs text-muted-foreground mt-0.5 capitalize">
-                              {doc.kind}
-                            </p>
-                          </div>
-                          <Button asChild size="sm" variant="outline" className="rounded-md gap-1.5 shrink-0">
-                            <Link href={`/courses/${doc.courseId}/material/${doc.id}`}>
+                        <div key={doc.id} className="group py-4.5 first:pt-0 last:pb-0">
+                          <Link
+                            href={`/courses/${doc.courseId}/material/${doc.id}`}
+                            className="flex items-center justify-between gap-4"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex rounded-md border border-border/50 bg-muted/40 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                  {doc.courseTitle}
+                                </span>
+                                <span className="text-body-xs text-muted-foreground capitalize">
+                                  ({doc.kind})
+                                </span>
+                              </div>
+                              <h4 className="font-heading text-body-sm font-bold text-foreground group-hover:text-brand-primary transition-colors mt-2 truncate">
+                                {doc.title}
+                              </h4>
+                            </div>
+                            <Button size="sm" variant="outline" className="rounded-md gap-1.5 shrink-0 pointer-events-none group-hover:bg-muted transition-colors">
                               <Play className="size-3 fill-current" />
                               Lanjutkan
-                            </Link>
-                          </Button>
+                            </Button>
+                          </Link>
                         </div>
                       );
                     })}
@@ -341,33 +399,33 @@ export default async function DashboardPage() {
               <DashboardWeakConcepts concepts={masteryConcepts} />
               
               {/* Quizzes and Tryouts */}
-              <div className="rounded-2xl border border-border/60 bg-card/65 p-6 shadow-xs backdrop-blur-md">
+              <div className={studentCardClass()}>
                 <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
-                  <ClipboardList className="size-5 text-tertiary-1" />
+                  <ClipboardList className="size-5 text-brand-primary" />
                   Kuis & Tryout Tersedia
                 </h2>
                 {availableExams.length > 0 ? (
                   <ul className="divide-y divide-border/50">
                     {availableExams.map((exam) => (
-                      <li
-                        key={exam.id}
-                        className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-heading text-body-sm font-bold text-foreground truncate">
-                            {exam.title}
-                          </h4>
-                          <p className="text-body-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                            <span className="font-semibold text-brand-primary">{exam.courseTitle}</span>
-                            <span>·</span>
-                            <span className="capitalize">{exam.type}</span>
-                          </p>
-                        </div>
-                        <Button asChild size="sm" className="rounded-md shrink-0">
-                          <Link href={`/courses/${exam.courseId}/${exam.type}/${exam.id}`}>
+                      <li key={exam.id} className="group py-4.5 first:pt-0 last:pb-0">
+                        <Link
+                          href={`/courses/${exam.courseId}/${exam.type}/${exam.id}`}
+                          className="flex items-center justify-between gap-4"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-heading text-body-sm font-bold text-foreground group-hover:text-brand-primary transition-colors truncate">
+                              {exam.title}
+                            </h4>
+                            <p className="text-body-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                              <span className="font-semibold text-brand-primary">{exam.courseTitle}</span>
+                              <span className="text-border-strong">·</span>
+                              <span className="capitalize">{exam.type}</span>
+                            </p>
+                          </div>
+                          <Button size="sm" className="rounded-md shrink-0 pointer-events-none group-hover:bg-brand-primary/95 transition-all">
                             Kerjakan
-                          </Link>
-                        </Button>
+                          </Button>
+                        </Link>
                       </li>
                     ))}
                   </ul>
@@ -377,17 +435,6 @@ export default async function DashboardPage() {
                     <p className="text-body-sm text-muted-foreground">Semua ujian telah selesai.</p>
                   </div>
                 )}
-              </div>
-
-              {/* Activation box (Token form) */}
-              <div className="rounded-2xl border border-border/60 bg-card/65 p-6 shadow-xs backdrop-blur-md">
-                <h3 className="font-heading text-body-base font-bold text-foreground mb-1">
-                  Aktivasi Kelas Tambahan
-                </h3>
-                <p className="text-body-xs text-muted-foreground mb-4 leading-relaxed">
-                  Masukkan token pendaftaran untuk mengaktifkan kelas baru Anda.
-                </p>
-                <EnrollmentForm />
               </div>
             </div>
           </div>

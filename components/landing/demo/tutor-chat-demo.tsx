@@ -23,7 +23,7 @@ const AI_DELAY = 1600;
 
 function TypingIndicator() {
   return (
-    <div className="flex w-fit items-center gap-1 rounded-lg bg-muted px-3 py-2.5" aria-label="Tutor AI sedang mengetik">
+    <div className="flex w-fit items-center gap-1 rounded-lg bg-muted px-3 py-2.5" aria-label="Zyra sedang mengetik">
       {[0, 1, 2].map((dot) => (
         <span
           key={dot}
@@ -95,7 +95,7 @@ export function TutorChatDemo({ messages }: TutorChatDemoProps) {
   return (
     <div ref={containerRef}>
       <DemoFrame
-        title="Tutor AI"
+        title="Zyra"
         meta={
           <span className="flex items-center gap-1 text-[var(--zx-accent)]">
             <Sparkles className="size-3.5" aria-hidden />

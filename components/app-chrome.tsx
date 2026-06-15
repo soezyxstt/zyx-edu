@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { AdminSidebar } from "@/components/admin-sidebar";
-import { NavScrollProvider } from "@/components/nav-scroll-provider";
 import { SiteMain } from "@/components/site-main";
 import { Footer } from "@/components/footer";
 import { CommandMenuProvider } from "@/components/command-menu";
@@ -97,11 +96,11 @@ export function AppChrome({
             </main>
           </div>
         ) : (
-          <NavScrollProvider>
+          <>
             <Navbar />
             <SiteMain>{children}</SiteMain>
             <Footer />
-          </NavScrollProvider>
+          </>
         )}
       </CommandMenuProvider>
     </TutorProvider>

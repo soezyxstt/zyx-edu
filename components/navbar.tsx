@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useEffect } from "react";
 import Link from "next/link";
-import { Menu, Search, X } from "lucide-react";
+import { Menu, Search, X, Tag, Info, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetTrigger,
-  SheetHeader,
   SheetTitle,
   SheetDescription,
   SheetClose,
@@ -20,9 +19,9 @@ import { useCommandMenu } from "@/components/command-menu";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { name: "Paket", href: "/plans" },
-  { name: "Tentang kami", href: "/about" },
-  { name: "Testimoni", href: "/testimonial" },
+  { name: "Paket", href: "/plans", icon: Tag },
+  { name: "Tentang kami", href: "/about", icon: Info },
+  { name: "Testimoni", href: "/testimonial", icon: Star },
 ];
 
 export function Navbar() {
@@ -120,78 +119,72 @@ export function Navbar() {
                 showCloseButton={false}
                 className={cn(
                   "gap-0 p-0",
-                  "flex h-full max-h-dvh w-[min(17.5rem,calc(100vw-1.5rem))] flex-col border-l border-border/80 bg-background shadow-xl",
+                  "flex h-full max-h-dvh w-[clamp(248px,80vw,300px)] flex-col border-l border-border bg-card shadow-xl",
                   "pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
                 )}
               >
-                <SheetHeader className="border-border space-y-1 border-b px-5 pb-4 pt-[max(1.25rem,env(safe-area-inset-top,0px))] text-left">
-                  <SheetTitle className="font-heading text-xl font-semibold tracking-tight text-foreground">
-                    Menu
-                  </SheetTitle>
-                  <SheetDescription className="text-body-sm text-muted-foreground">
-                    Plans, tentang kami, testimoni, paket, dan akun.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="flex min-h-0 flex-1 flex-col">
-                  <nav className="min-h-0 flex-1 overflow-y-auto px-3 py-4" aria-label="Mobile menu">
-                    <ul className="flex flex-col gap-1">
-                      <li>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMobileOpen(false);
-                            setSearchOpen(true);
-                          }}
-                          className={cn(
-                            "font-heading text-lg font-medium text-foreground",
-                            "flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left transition-colors",
-                            "hover:bg-muted/80 active:bg-muted",
-                            "focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                          )}
-                        >
-                          <Search className="size-5 shrink-0 opacity-70" aria-hidden />
-                          Cari di situs…
-                        </button>
-                      </li>
-                      {navLinks.map((link) => (
-                        <li key={link.href}>
-                          <SheetClose asChild>
-                            <Link
-                              href={link.href}
-                              className={cn(
-                                "font-heading text-lg font-medium text-foreground",
-                                "block rounded-xl px-4 py-3.5 transition-colors",
-                                "hover:bg-muted/80 active:bg-muted",
-                                "focus-visible:ring-ring outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-                              )}
-                            >
-                              {link.name}
-                            </Link>
-                          </SheetClose>
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-4 flex flex-col gap-2 px-1">
-                      <SheetClose asChild>
-                        <Button
-                          asChild
-                          className={cn(
-                            "h-11 w-full rounded-md text-body-sm font-medium shadow-none",
-                            "bg-[#1a2744] text-white hover:bg-[#1a2744]/90",
-                          )}
-                        >
-                          <Link href="/plans">Lihat paket</Link>
-                        </Button>
-                      </SheetClose>
-                    </div>
-                  </nav>
-                  <div className="border-border flex w-full flex-col border-t px-5 py-4">
-                    <NavProfileOrSignIn
-                      variant="sheet"
-                      callbackURL="/dashboard"
-                      onNavigate={() => setMobileOpen(false)}
-                    />
-                  </div>
+                {/* sr-only title/description required by Radix for accessibility */}
+                <SheetTitle className="sr-only">Menu navigasi</SheetTitle>
+                <SheetDescription className="sr-only">Menu navigasi utama situs</SheetDescription>
+
+                {/* Header: logo + close button — mirrors student sidebar */}
+                <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
+                  <SheetClose asChild>
+                    <Link href="/" className="flex items-center" aria-label="Beranda">
+                      <Logo className="[--logo-height:1.75rem]" />
+                    </Link>
+                  </SheetClose>
+                  <SheetClose asChild>
+                    <button
+                      type="button"
+                      aria-label="Tutup menu"
+                      className="flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="size-4" />
+                    </button>
+                  </SheetClose>
+                </div>
+
+                {/* Search bar */}
+                <div className="px-3 pt-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setSearchOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer"
+                  >
+                    <Search className="size-4 shrink-0" aria-hidden />
+                    <span className="flex-1 text-left text-body-sm">Cari di situs…</span>
+                    <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
+                      {modKeyHint}
+                    </kbd>
+                  </button>
+                </div>
+
+                {/* Nav links */}
+                <nav className="flex flex-1 flex-col gap-1 px-3 py-4 overflow-y-auto" aria-label="Mobile menu">
+                  {navLinks.map(({ name, href, icon: Icon }) => (
+                    <SheetClose key={href} asChild>
+                      <Link
+                        href={href}
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <Icon className="size-5 shrink-0" aria-hidden />
+                        {name}
+                      </Link>
+                    </SheetClose>
+                  ))}
+                </nav>
+
+                {/* Profile / sign-in */}
+                <div className="border-t border-border px-3 py-3 shrink-0">
+                  <NavProfileOrSignIn
+                    variant="sheet"
+                    callbackURL="/dashboard"
+                    onNavigate={() => setMobileOpen(false)}
+                  />
                 </div>
               </SheetContent>
             </Sheet>

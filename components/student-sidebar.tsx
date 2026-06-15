@@ -1,7 +1,5 @@
 "use client";
 
-/* eslint-disable react-hooks/static-components */
-
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -26,7 +24,10 @@ import {
   Play,
   Target,
   History,
+  Flame,
+  Sparkles,
 } from "lucide-react";
+import { useTutor } from "@/components/course/tutor-drawer";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getStudentEnrollments } from "@/app/dashboard/actions";
 import { getCourseById } from "@/lib/student-course-fixtures";
@@ -44,10 +45,6 @@ import {
 /* ─────────────────────────────────────────────────────────────────
    Types
    ───────────────────────────────────────────────────────────────── */
-interface NavOptions {
-  collapsed?: boolean;
-}
-
 type StudentEnrollment = Awaited<ReturnType<typeof getStudentEnrollments>>[number];
 
 interface StudentSidebarProps {
@@ -85,9 +82,64 @@ function SidebarTooltip({
 }
 
 /* ─────────────────────────────────────────────────────────────────
+   NavItem — render function (NOT a component) to avoid remounting
+   on every StudentSidebar re-render
+   ───────────────────────────────────────────────────────────────── */
+function NavItem({
+  href,
+  icon: Icon,
+  label,
+  active,
+  onClick,
+  className,
+  collapsed,
+}: {
+  href?: string;
+  icon: React.ElementType;
+  label: string;
+  active?: boolean;
+  onClick?: (e: React.MouseEvent) => void;
+  className?: string;
+  collapsed: boolean;
+}) {
+  const baseClass = cn(
+    "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors w-full",
+    active
+      ? "bg-brand-primary/10 text-brand-primary font-semibold"
+      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+    collapsed && "justify-center px-0 size-10 mx-auto",
+    className
+  );
+
+  const content = (
+    <>
+      <Icon className="size-5 shrink-0" />
+      {!collapsed && <span>{label}</span>}
+    </>
+  );
+
+  const inner = href ? (
+    <Link href={href} onClick={onClick as undefined} className={baseClass}>
+      {content}
+    </Link>
+  ) : (
+    <button type="button" onClick={onClick} className={cn(baseClass, "cursor-pointer")}>
+      {content}
+    </button>
+  );
+
+  return (
+    <SidebarTooltip label={label} collapsed={collapsed}>
+      {inner}
+    </SidebarTooltip>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────
    StudentSidebar — always-visible persistent sidebar
    Collapsed  : 64px icon rail with tooltip popovers
    Expanded   : 248px with labels — main view shrinks via flex
+   Mobile     : off-canvas drawer with overlay
  ───────────────────────────────────────────────────────────────── */
 export function StudentSidebar({
   showStudyPath = false,
@@ -97,19 +149,16 @@ export function StudentSidebar({
   const { data: session } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const { openChat } = useTutor();
   const { setOpen: setSearchOpen } = useCommandMenu();
   const courseIdFromPath = pathname.startsWith("/courses/")
     ? pathname.split("/")[2]
     : undefined;
   const activeCourse = courseIdFromPath ? getCourseById(courseIdFromPath) : undefined;
 
-  // Default to collapsed on mobile (small screens), expanded on desktop
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
-    const stored = localStorage.getItem("sidebar-collapsed");
-    if (stored !== null) return stored === "true";
-    return window.innerWidth < 768;
-  });
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const [coursesOpen, setCoursesOpen] = useState(true);
   const [enrolledCourses, setEnrolledCourses] = useState<StudentEnrollment[]>([]);
@@ -122,9 +171,40 @@ export function StudentSidebar({
     setMounted(true);
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
     setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
+
+    const stored = localStorage.getItem("sidebar-collapsed");
+    if (stored !== null) {
+      setCollapsed(stored === "true");
+    }
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Persist collapse state
+  // Close drawer on navigation
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  // Prevent body scroll while mobile drawer is open
+  useEffect(() => {
+    if (!mounted) return;
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen, mounted]);
+
+  const isCollapsed = isMobile ? false : collapsed;
+
   const toggleCollapsed = useCallback(() => {
     setCollapsed((v) => {
       const next = !v;
@@ -137,15 +217,19 @@ export function StudentSidebar({
   useEffect(() => {
     if (session?.user?.id) {
       getStudentEnrollments().then(setEnrolledCourses).catch(console.error);
-      fetch("/api/student/today")
-        .then((r) => (r.ok ? r.json() : null))
-        .then((d) => {
-          if (d?.streak?.current != null) setStreakCurrent(d.streak.current);
-          if (d?.weeklyActivity != null) setWeeklyActivity(d.weeklyActivity);
-        })
-        .catch(() => {});
     }
   }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    fetch("/api/student/today")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.streak?.current != null) setStreakCurrent(d.streak.current);
+        if (d?.weeklyActivity != null) setWeeklyActivity(d.weeklyActivity);
+      })
+      .catch(() => {});
+  }, [session?.user?.id, pathname]);
 
   /* ── Handlers ─────────────────────────────────────── */
   const handleLogout = async () => {
@@ -155,65 +239,15 @@ export function StudentSidebar({
 
   const handleCoursesToggle = (e: React.MouseEvent) => {
     e.preventDefault();
-    if (collapsed) {
+    if (isCollapsed) {
       router.push("/courses");
     } else {
       setCoursesOpen((v) => !v);
     }
   };
 
-  /* ── Nav item helper ──────────────────────────────── */
-  const NavItem = ({
-    href,
-    icon: Icon,
-    label,
-    active,
-    onClick,
-    className,
-  }: {
-    href?: string;
-    icon: React.ElementType;
-    label: string;
-    active?: boolean;
-    onClick?: (e: React.MouseEvent) => void;
-    className?: string;
-  }) => {
-    const baseClass = cn(
-      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors w-full",
-      active
-        ? "bg-brand-primary/10 text-brand-primary font-semibold"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-      collapsed && "justify-center px-0 size-10 mx-auto",
-      className
-    );
-
-    const content = (
-      <>
-        <Icon className="size-5 shrink-0" />
-        {!collapsed && <span>{label}</span>}
-      </>
-    );
-
-    const inner = href ? (
-      <Link href={href} onClick={onClick as undefined} className={baseClass}>
-        {content}
-      </Link>
-    ) : (
-      <button type="button" onClick={onClick} className={cn(baseClass, "cursor-pointer")}>
-        {content}
-      </button>
-    );
-
-    return (
-      <SidebarTooltip label={label} collapsed={collapsed}>
-        {inner}
-      </SidebarTooltip>
-    );
-  };
-
-  /* ── Shared nav markup ────────────────────────────── */
-  const Nav = ({ collapsed: c = false }: NavOptions) => {
-
+  /* ── Nav markup (render function, not a component) ── */
+  const renderNav = (c: boolean) => {
     if (activeCourse) {
       return (
         <nav className={cn(
@@ -263,6 +297,7 @@ export function StudentSidebar({
               icon={LayoutDashboard}
               label="Ringkasan"
               active={pathname === `/courses/${activeCourse.id}`}
+              collapsed={c}
             />
 
             {showStudyPath && (
@@ -271,6 +306,7 @@ export function StudentSidebar({
                 icon={Compass}
                 label="Alur Belajar"
                 active={pathname.startsWith(`/courses/${activeCourse.id}/path`)}
+                collapsed={c}
               />
             )}
 
@@ -279,6 +315,7 @@ export function StudentSidebar({
               icon={FileText}
               label="Dokumen"
               active={pathname.startsWith(`/courses/${activeCourse.id}/material`)}
+              collapsed={c}
             />
 
             <NavItem
@@ -286,6 +323,7 @@ export function StudentSidebar({
               icon={Brain}
               label="Flashcard"
               active={pathname.startsWith(`/courses/${activeCourse.id}/flashcard`)}
+              collapsed={c}
             />
 
             <NavItem
@@ -293,6 +331,7 @@ export function StudentSidebar({
               icon={ClipboardList}
               label="Kuis"
               active={pathname.startsWith(`/courses/${activeCourse.id}/quiz`)}
+              collapsed={c}
             />
 
             <NavItem
@@ -300,6 +339,7 @@ export function StudentSidebar({
               icon={GraduationCap}
               label="Tryout"
               active={pathname.startsWith(`/courses/${activeCourse.id}/tryout`)}
+              collapsed={c}
             />
 
             {showLive && (
@@ -308,6 +348,7 @@ export function StudentSidebar({
                 icon={Play}
                 label="Kuis Langsung"
                 active={pathname.startsWith(`/courses/${activeCourse.id}/live`)}
+                collapsed={c}
               />
             )}
 
@@ -317,6 +358,7 @@ export function StudentSidebar({
                 icon={Target}
                 label="Penguasaan"
                 active={pathname.startsWith(`/courses/${activeCourse.id}/mastery`)}
+                collapsed={c}
               />
             )}
 
@@ -325,6 +367,7 @@ export function StudentSidebar({
               icon={Trophy}
               label="Peringkat"
               active={pathname.startsWith(`/courses/${activeCourse.id}/leaderboard`)}
+              collapsed={c}
             />
 
             <NavItem
@@ -332,19 +375,29 @@ export function StudentSidebar({
               icon={History}
               label="Hasil Ujian"
               active={pathname.startsWith(`/courses/${activeCourse.id}/my-results`)}
+              collapsed={c}
             />
           </div>
 
           <div className="h-px bg-border/50 my-3 shrink-0 w-full" />
 
-          <div className="flex-1" />
+          {/* AI Tutor chat button */}
+          <SidebarTooltip label="Tanya Zyra" collapsed={c}>
+            <button
+              type="button"
+              onClick={openChat}
+              className={cn(
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-semibold transition-colors cursor-pointer",
+                "bg-brand-primary/10 text-brand-primary hover:bg-brand-primary/20",
+                c && "justify-center size-10 px-0 mx-auto"
+              )}
+            >
+              <Sparkles className="size-5 shrink-0" />
+              {!c && <span>Tanya Zyra</span>}
+            </button>
+          </SidebarTooltip>
 
-          {/* Streak calendar strip inside course (expanded only) */}
-          {!c && streakCurrent !== null && (
-            <div className="pb-1">
-              <StreakCalendarStrip current={streakCurrent} weeklyActivity={weeklyActivity} />
-            </div>
-          )}
+          <div className="flex-1" />
 
           {/* Sign out */}
           <SidebarTooltip label="Keluar" collapsed={c}>
@@ -352,7 +405,7 @@ export function StudentSidebar({
               type="button"
               onClick={handleLogout}
               className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-status-error transition-colors hover:bg-status-error/10 cursor-pointer",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer",
                 c && "justify-center size-10 px-0 mx-auto"
               )}
             >
@@ -377,6 +430,7 @@ export function StudentSidebar({
           icon={LayoutDashboard}
           label="Dashboard"
           active={pathname === "/dashboard"}
+          collapsed={c}
         />
 
         <NavItem
@@ -384,6 +438,7 @@ export function StudentSidebar({
           icon={CalendarRange}
           label="Jadwal"
           active={pathname === "/dashboard/schedule"}
+          collapsed={c}
         />
 
         <NavItem
@@ -391,6 +446,7 @@ export function StudentSidebar({
           icon={Trophy}
           label="Peringkat"
           active={pathname === "/leaderboard" || pathname.startsWith("/leaderboard")}
+          collapsed={c}
         />
 
         {/* Courses accordion */}
@@ -459,17 +515,10 @@ export function StudentSidebar({
           icon={User}
           label="Profile"
           active={pathname === "/profile"}
+          collapsed={c}
         />
 
-        {/* Spacer */}
         <div className="flex-1" />
-
-        {/* Streak calendar strip */}
-        {!c && streakCurrent !== null && (
-          <div className="px-3 pb-1">
-            <StreakCalendarStrip current={streakCurrent} weeklyActivity={weeklyActivity} />
-          </div>
-        )}
 
         {/* Sign out */}
         <SidebarTooltip label="Keluar" collapsed={c}>
@@ -477,7 +526,7 @@ export function StudentSidebar({
             type="button"
             onClick={handleLogout}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-status-error transition-colors hover:bg-status-error/10 cursor-pointer",
+              "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer",
               c && "justify-center size-10 px-0 mx-auto"
             )}
           >
@@ -490,61 +539,113 @@ export function StudentSidebar({
   };
 
   return (
-    <aside
-      style={{ position: "sticky", top: 0, height: "100svh" }}
-      className={cn(
-        "flex flex-col shrink-0 overflow-hidden z-30",
-        "border-r border-border bg-card",
-        "transition-[width] duration-300 ease-in-out",
-        collapsed ? "w-[64px]" : "w-[248px]"
+    <>
+      {/* Mobile Backdrop Overlay — only rendered when open, no backdrop-filter to avoid Safari issues */}
+      {mounted && mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden cursor-pointer"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
       )}
-    >
-      {/* Header row: brand + collapse toggle */}
-      <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
-        {!collapsed && (
-          <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
-            <Logo className="[--logo-height:1.75rem]" />
-          </Link>
+
+      {/* Mobile Floating Trigger Button — hidden while drawer is open */}
+      {mounted && !mobileOpen && (
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open navigation"
+          className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm fixed top-3 left-3 z-40 md:hidden"
+        >
+          <PanelLeftOpen className="size-4" />
+        </button>
+      )}
+
+      <aside
+        style={{
+          height: "100svh",
+          // Explicit transform values on mobile so CSS transitions animate reliably.
+          // On desktop (isMobile=false) no inline style: Tailwind's md:translate-x-0 takes over.
+          ...(isMobile ? { transform: mobileOpen ? "translateX(0)" : "translateX(-100%)" } : {}),
+        }}
+        className={cn(
+          "flex flex-col shrink-0 overflow-hidden",
+          "border-r border-border bg-card",
+          "transition-transform duration-300 ease-in-out",
+          // Mobile: fixed off-canvas drawer
+          "fixed inset-y-0 left-0 z-50 shadow-xl w-[clamp(248px,80vw,300px)] -translate-x-full",
+          // Desktop: sticky in-flow sidebar, no shadow, width based on collapse state
+          "md:sticky md:top-0 md:translate-x-0 md:z-30 md:shadow-none",
+          isCollapsed ? "md:w-[64px]" : "md:w-[248px]"
         )}
-        <SidebarTooltip label={collapsed ? "Expand sidebar" : "Collapse sidebar"} collapsed={collapsed}>
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className={cn(
-              "flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors",
-              collapsed && "mx-auto"
-            )}
-          >
-            {collapsed
-              ? <PanelLeftOpen className="size-4" />
-              : <PanelLeftClose className="size-4" />}
-          </button>
-        </SidebarTooltip>
-      </div>
+      >
+        {/* Header row: brand + collapse toggle */}
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
+          {!isCollapsed && (
+            <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
+              <Logo className="[--logo-height:1.75rem]" />
+            </Link>
+          )}
+          <SidebarTooltip label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} collapsed={isCollapsed}>
+            <button
+              type="button"
+              onClick={isMobile ? () => setMobileOpen(false) : toggleCollapsed}
+              aria-label={isMobile ? "Close navigation" : isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className={cn(
+                "flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors",
+                isCollapsed && "mx-auto"
+              )}
+            >
+              {isMobile
+                ? <PanelLeftClose className="size-4" />
+                : isCollapsed
+                  ? <PanelLeftOpen className="size-4" />
+                  : <PanelLeftClose className="size-4" />}
+            </button>
+          </SidebarTooltip>
+        </div>
 
-      {/* Search trigger */}
-      <div className="px-3 pt-3 shrink-0">
-        <SidebarTooltip label={`Search  ${modKeyHint}`} collapsed={collapsed}>
-          <button
-            type="button"
-            onClick={() => setSearchOpen(true)}
-            className={cn(
-              "flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer",
-              collapsed ? "size-10 mx-auto px-0" : "w-full"
-            )}
-          >
-            <Search className="size-4 shrink-0" />
-            {!collapsed && (
-              <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
-                {modKeyHint}
-              </kbd>
-            )}
-          </button>
-        </SidebarTooltip>
-      </div>
+        {/* Search trigger */}
+        <div className="px-3 pt-3 shrink-0">
+          <SidebarTooltip label={`Search  ${modKeyHint}`} collapsed={isCollapsed}>
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className={cn(
+                "flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer",
+                isCollapsed ? "size-10 mx-auto px-0" : "w-full"
+              )}
+            >
+              <Search className="size-4 shrink-0" />
+              {!isCollapsed && (
+                <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
+                  {modKeyHint}
+                </kbd>
+              )}
+            </button>
+          </SidebarTooltip>
+        </div>
 
-      <Nav collapsed={collapsed} />
-    </aside>
+        {/* Streak calendar strip (when expanded) */}
+        {!isCollapsed && streakCurrent !== null && (
+          <div className="px-3 pt-3 shrink-0">
+            <StreakCalendarStrip current={streakCurrent} weeklyActivity={weeklyActivity} />
+          </div>
+        )}
+
+        {/* Streak Flame indicator (when collapsed) */}
+        {isCollapsed && streakCurrent !== null && (
+          <div className="px-3 pt-3 shrink-0 flex justify-center">
+            <SidebarTooltip label={`Streak: ${streakCurrent} Hari`} collapsed={true}>
+              <div className="flex size-10 items-center justify-center rounded-xl bg-brand-secondary/10 text-brand-secondary">
+                <Flame className="size-5" />
+              </div>
+            </SidebarTooltip>
+          </div>
+        )}
+
+        {renderNav(isCollapsed)}
+      </aside>
+    </>
   );
 }

@@ -83,6 +83,31 @@ export interface ChapterSummary {
   practiceRecommendations: string[];
 }
 
+// UUID v4-ish shape used for all source ids; never appears in tutoring prose.
+const UUID_RE = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
+
+// Cleans model output before it reaches the student:
+//  - converts literal "\n" (backslash + n) the model emits as two characters
+//    into real markdown paragraph breaks;
+//  - strips inline source-id citations the model leaks despite instructions
+//    (the ids belong only in the sources chips, never in the answer text).
+function sanitizeAnswer(text: string): string {
+  let out = text.replace(/\\n/g, "\n\n");
+
+  // Remove ids wrapped in ()/[], with an optional "source id:" prefix.
+  out = out.replace(
+    new RegExp(`[ \\t]*[\\(\\[]\\s*(?:source\\s*id\\s*:?\\s*)?${UUID_RE}\\s*[\\)\\]]`, "gi"),
+    ""
+  );
+  // Remove any remaining bare ids.
+  out = out.replace(new RegExp(`[ \\t]*${UUID_RE}`, "gi"), "");
+
+  // Tidy leftover artefacts: space before punctuation, doubled spaces.
+  out = out.replace(/[ \t]+([.,!?;:])/g, "$1").replace(/[ \t]{2,}/g, " ");
+
+  return out.trim();
+}
+
 // ─── Cache keys ───────────────────────────────────────────────────────────────
 
 export function normalizeQuestion(question: string): string {
@@ -123,9 +148,9 @@ interface GroundedVars {
 }
 
 const tutorGroundedAnswer: SystemPrompt<GroundedVars> = {
-  version: "tutor_rag/grounded_answer/v1.0.0",
+  version: "tutor_rag/grounded_answer/v1.4.0",
   systemInstruction:
-    "You are a precise university tutor. The excerpts were retrieved by similarity and may be irrelevant. First decide if they actually address the question. If they do, answer ONLY from them and cite sources strictly by the ids in the source list. If they do not (the question is off-topic for this course), set covered=false, give a brief general answer, and cite nothing. Never invent citations. Use markdown with LaTeX ($ inline, $$ display) for math, escaping backslashes for valid JSON. Answer in the same language as the question.",
+    "You are Zyra, a friendly and knowledgeable AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable — like a smart kakak tingkat (senior student) who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'yuk', 'nih', 'ya') but stay accurate and clear. You have access to course material snippets that may or may not be relevant to the question. First decide if they actually address the question. If they do, answer ONLY from them and cite sources strictly by the ids in the source list. If they do not (the question is off-topic for this course), set covered=false, give a brief general answer, and cite nothing. IMPORTANT: Never reveal internal pipeline details to the student — do not use words like 'excerpt', 'retrieved', 'snippet', 'context', 'source list', or any technical RAG terminology in your answer. Instead refer to course material naturally as 'materi kuliah', 'bahan ajar', or 'materi yang ada'. Never invent citations. Use markdown with LaTeX ($ inline, $$ display) for math, escaping backslashes for valid JSON. Never use em dashes or en dashes. Answer in the same language as the question.",
   userPrompt: (vars) => `QUESTION: ${vars.question}
 
 COURSE MATERIAL EXCERPTS:
@@ -137,8 +162,8 @@ ${vars.sourceList}
 Generate a single JSON object:
 {
   "covered": [true only if the excerpts actually address this question, else false],
-  "answer": "[Markdown answer. If covered, grounded in the excerpts; if not covered, a brief general explanation]",
-  "sourceIds": ["[ids you actually used; empty array when covered is false]"],
+  "answer": "[Markdown answer. IMPORTANT: Do NOT include any source ids or UUIDs inline in the answer text. Write the answer in natural prose only. Source attribution goes exclusively in the sourceIds array below.]",
+  "sourceIds": ["[ids you actually used — only in this array, never embedded in the answer text; empty array when covered is false]"],
   "matchedConcepts": ["[concept names this question is about]"],
   "confidence": [0.0 to 1.0, how well the excerpts cover the question]
 }`,
@@ -149,9 +174,9 @@ interface UngroundedVars {
 }
 
 const tutorUngroundedAnswer: SystemPrompt<UngroundedVars> = {
-  version: "tutor_rag/ungrounded_answer/v1.0.0",
+  version: "tutor_rag/ungrounded_answer/v1.1.0",
   systemInstruction:
-    "You are a careful university tutor. The student's question is not covered by their course materials. Give a short, correct general explanation. Never fabricate citations or pretend to reference course content. Answer in the same language as the question.",
+    "You are Zyra, a friendly AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable — like a smart kakak tingkat who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'nih', 'ya') but stay accurate. The student's question is not covered by their course materials. Give a short, correct general explanation and be upfront that this topic is not in their course material. Never fabricate citations. Never use em dashes or en dashes. Answer in the same language as the question.",
   userPrompt: (vars) => `QUESTION: ${vars.question}
 
 Generate a single JSON object:
@@ -172,9 +197,9 @@ interface PersonalVars {
 }
 
 const tutorPersonalGuidance: SystemPrompt<PersonalVars> = {
-  version: "tutor_rag/personal_guidance/v1.0.0",
+  version: "tutor_rag/personal_guidance/v1.1.0",
   systemInstruction:
-    "You are a patient tutor adapting an explanation for a student who is weak on this concept. Use smaller steps, check one prerequisite, and address their recent mistake pattern. Keep it short (max 5 sentences). Same language as the question.",
+    "You are Zyra, a friendly AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and encouraging — like a kakak tingkat who has been through the same struggle. Use informal Indonesian but stay precise. The student is weak on this concept. Break it into smaller steps, check one prerequisite, and gently address their recent mistake pattern. Keep it short (max 5 sentences). Never use em dashes or en dashes. Same language as the question.",
   userPrompt: (vars) => `QUESTION: ${vars.question}
 BASE ANSWER ALREADY SHOWN: ${vars.baseAnswer}
 WEAK CONCEPT: ${vars.conceptName} (mastery ${vars.masteryScore}/100)
@@ -348,6 +373,9 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
 
   if (base && typeof base.answer === "string") {
     cached = true;
+    // Re-sanitize on read: entries cached before the strip/cleanup logic
+    // existed may still carry leaked source ids or literal \n sequences.
+    base = { ...base, answer: sanitizeAnswer(base.answer) };
     await logCacheHit(studentId, "tutor_rag");
   } else {
     base = null;
@@ -362,7 +390,7 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
       });
       if (result.success && result.data) {
         base = {
-          answer: result.data.answer,
+          answer: sanitizeAnswer(result.data.answer),
           sources: [],
           matchedConcepts: result.data.matchedConcepts,
           confidence: result.data.confidence,
@@ -399,7 +427,7 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
             return { type: s.type, id: s.id, label: s.label, href: s.href };
           });
           base = {
-            answer: d.answer,
+            answer: sanitizeAnswer(d.answer),
             sources,
             matchedConcepts: d.matchedConcepts,
             confidence: d.confidence,
@@ -408,7 +436,7 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
         } else {
           // Retrieved excerpts do not actually cover the question: honest, uncited.
           base = {
-            answer: d.answer,
+            answer: sanitizeAnswer(d.answer),
             sources: [],
             matchedConcepts: d.matchedConcepts,
             confidence: d.confidence,
@@ -462,7 +490,7 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
       schema: PersonalSchema,
     });
     if (result.success && result.data) {
-      personalized = result.data.guidance;
+      personalized = sanitizeAnswer(result.data.guidance);
     }
     // quota exceeded or failure: serve Tier 1+2 silently
   }

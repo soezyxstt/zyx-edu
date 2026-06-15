@@ -121,7 +121,7 @@ export function ReviewClient({ listItem, review }: ReviewClientProps) {
                       className="text-body-xs font-semibold flex items-center gap-1.5 border-brand-primary/30 text-brand-primary hover:bg-brand-primary/5 rounded-lg h-9"
                     >
                       <Sparkles className="size-3.5" />
-                      Tanya Tutor AI: Analisis Kesalahan
+                      Tanya Zyra: Analisis Kesalahan
                     </Button>
                   </div>
                 )}

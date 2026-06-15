@@ -1423,6 +1423,28 @@ export const tutorSessionSummaries = sqliteTable(
   ]
 );
 
+// tutor_chat_messages — per-message history, capped at 100 rows per (student, course)
+export const tutorChatMessages = sqliteTable(
+  "tutor_chat_messages",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["student", "ai"] }).notNull(),
+    content: text("content").notNull(),
+    sources: text("sources", { mode: "json" }),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_tcm_student_course").on(table.studentId, table.courseId),
+    index("idx_tcm_created_at").on(table.createdAt),
+  ]
+);
+
 // ─── Push Notifications Relations ─────────────────────────────────────────────
 
 export const studentStreaksRelations = relations(studentStreaks, ({ one }) => ({

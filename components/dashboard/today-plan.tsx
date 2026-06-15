@@ -6,6 +6,8 @@ import { Layers, ListChecks, BookOpen, Check, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StreakTag } from "@/components/dashboard/streak-tag";
+import { PageHeader } from "@/components/page-header";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import { cn } from "@/lib/utils";
 
 interface PlanItem {
@@ -61,27 +63,25 @@ export function TodayPlan({ firstName }: { firstName: string }) {
   return (
     <div className="mb-8">
       {/* Region 1: Greeting row */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-border">
-        <div>
-          <h1 className="font-heading text-h3 font-bold text-foreground">
-            Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{firstName}</span>! 👋
-          </h1>
-          <p className="mt-1 text-body-sm text-muted-foreground">
-            Siap untuk melanjutkan petualangan belajarmu hari ini?
-          </p>
-        </div>
-        {loading ? (
-          <div className="h-9 w-32 bg-muted rounded-xl animate-pulse self-start sm:self-center" />
-        ) : (
-          <div className="self-start sm:self-center">
+      <PageHeader
+        title={
+          <>
+            Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{firstName}</span>!
+          </>
+        }
+        description="Siap untuk melanjutkan petualangan belajarmu hari ini?"
+        actions={
+          loading ? (
+            <div className="h-9 w-32 bg-muted rounded-xl animate-pulse" />
+          ) : (
             <StreakTag current={data?.streak.current ?? 0} />
-          </div>
-        )}
-      </div>
+          )
+        }
+      />
 
       {/* Region 2: Today's plan */}
       {total > 0 && (
-        <div className="mt-8 rounded-2xl border border-border bg-card/50 p-6 shadow-xs backdrop-blur-md">
+        <div className={studentCardClass("mt-8 bg-card/50")}>
           <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4">
             <h2 className="font-heading text-body-base font-bold text-foreground">
               Rencana Belajar Hari Ini

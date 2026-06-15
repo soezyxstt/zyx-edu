@@ -84,9 +84,15 @@ export async function embedText(text: string): Promise<number[]> {
   throw lastError || new Error('All Gemini embedding models failed to generate vector');
 }
 
-/** Batch version – simply maps over embedText */
+/** Batch version — processes in chunks of 5 to avoid hammering the rate limit. */
 export async function embedTexts(texts: string[]): Promise<number[][]> {
-  const results = await Promise.all(texts.map((t) => embedText(t)));
+  const BATCH_SIZE = 5;
+  const results: number[][] = [];
+  for (let i = 0; i < texts.length; i += BATCH_SIZE) {
+    const chunk = texts.slice(i, i + BATCH_SIZE);
+    const batch = await Promise.all(chunk.map((t) => embedText(t)));
+    results.push(...batch);
+  }
   return results;
 }
 
@@ -122,22 +128,13 @@ interface GenerateContentParams {
   config?: any;
 }
 
-/** Model priority – best to fallback. Adjust as needed. */
+/** Model priority – best to fallback. Only models that actually exist in the Gemini API. */
 const MODEL_PRIORITY = [
-  // Premium Gemini models (best quality)
-  'gemini-3.5-flash',
-  'gemini-3-flash-preview',
   'gemini-2.5-flash',
-  // High‑quality Gemini lite / preview models (still fast)
-  'gemini-2.5-flash-lite',
-  'gemini-3.1-flash-lite',
-  'gemini-3.1-flash-lite-preview',
-  // Additional Gemini flash‑lite variants that are functional
-  'gemini-3-flash-preview',
-  'gemini-flash-lite-latest',
-  // Open‑source Gemma 4 models – good fallback when Gemini quota is exhausted
-  'gemma-4-26b-a4b-it',
-  'gemma-4-31b-it',
+  'gemini-2.5-flash-8b',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash',
 ];
 
 export async function generateContentWithFallback(

@@ -4,6 +4,7 @@ import { ArrowRight, BookOpen, ClipboardList } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
+import { studentInteractiveCardClass } from "@/components/course/course-surfaces";
 import {
   listCourses,
   getMaterialsForCourse,
@@ -39,11 +40,11 @@ export default function CoursesPage() {
             return (
               <div
                 key={c.id}
-                className="group relative flex flex-col justify-between rounded-2xl border border-border/60 bg-card/65 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-brand-primary/45 hover:bg-card hover:shadow-md hover:shadow-brand-primary/5"
+                className={studentInteractiveCardClass("justify-between")}
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="inline-flex rounded-md bg-brand-primary/10 px-2.5 py-0.5 text-xs font-semibold text-brand-primary ring-1 ring-brand-primary/20">
+                    <span className="inline-flex rounded-md bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary uppercase tracking-wider ring-1 ring-brand-primary/20">
                       {c.category}
                     </span>
                     <span className="text-[11px] font-medium text-muted-foreground">

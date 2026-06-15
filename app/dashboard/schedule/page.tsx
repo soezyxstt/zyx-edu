@@ -21,6 +21,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Reveal } from "@/components/ui/reveal";
+import { PageHeader } from "@/components/page-header";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import {
   getScheduleData,
   addTutorSlot,
@@ -246,22 +248,19 @@ export default function SchedulePage() {
         
         {/* Welcome Header */}
         <Reveal duration="duration-500">
-          <header className="mb-8 pb-6 border-b border-border">
-            <h1 className="font-heading text-h3 font-bold text-foreground">
-              Jadwal Kelas & Bimbingan
-            </h1>
-            <p className="mt-1.5 text-body-sm text-muted-foreground">
-              {userRole === "teacher"
+          <PageHeader
+            title="Jadwal Kelas & Bimbingan"
+            description={
+              userRole === "teacher"
                 ? "Kelola ketersediaan jadwal tutorial Anda dan pantau sesi bimbingan mingguan bersama murid."
-                : "Lihat dan pesan jadwal kosong tutor kelompok bimbingan Anda dengan sistem First Come First Served (FCFS)."}
-            </p>
-          </header>
+                : "Lihat dan pesan jadwal kosong tutor kelompok bimbingan Anda dengan sistem First Come First Served (FCFS)."
+            }
+          />
         </Reveal>
 
         {/* Calendar Timetable Section (Full Width) */}
         <Reveal duration="duration-700" className="mb-8">
-          <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md overflow-hidden">
-            <CardContent className="p-4 md:p-6">
+          <div className={studentCardClass("overflow-hidden !p-4 md:!p-6")}>
               
               {/* MOBILE DAY SELECTOR BUTTONS */}
               <div className="flex border-b border-border/40 pb-2 mb-4 md:hidden overflow-x-auto scrollbar-none gap-2">
@@ -513,9 +512,8 @@ export default function SchedulePage() {
                   </div>
                 )}
               </div>
-            </CardContent>
-          </Card>
-        </Reveal>
+            </div>
+          </Reveal>
 
         {userRole === "teacher" ? (
           /* ========================================================
@@ -526,17 +524,17 @@ export default function SchedulePage() {
             {/* Subject Certifications (Tutor Courses Checklist) */}
             <div className="lg:col-span-6">
               <Reveal duration="duration-700">
-                <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
+                <div className={studentCardClass("h-full")}>
+                  <div className="pb-3 mb-4 border-b border-border/30">
+                    <h3 className="font-heading text-body-base font-bold flex items-center gap-2 text-foreground">
                       <BookOpen className="size-4 text-brand-primary" />
                       Mata Kuliah Bimbingan Anda
-                    </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    </h3>
+                    <p className="text-body-xs text-muted-foreground mt-1">
                       Pilih mata kuliah yang ingin Anda ajarkan. Jadwal kosong Anda hanya akan tampil pada siswa yang mengambil kelas ini.
                     </p>
-                  </CardHeader>
-                  <CardContent>
+                  </div>
+                  <div>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {data.allCourses?.map((course: any) => {
                         const isCertified = data.certifiedCourses.some((c: any) => c.id === course.id);
@@ -572,25 +570,25 @@ export default function SchedulePage() {
                         );
                       })}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </Reveal>
             </div>
 
             {/* Quick Add Availability Slot Form */}
             <div className="lg:col-span-6" id="add-slot-form">
               <Reveal duration="duration-700">
-                <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
+                <div className={studentCardClass("h-full")}>
+                  <div className="pb-3 mb-4 border-b border-border/30">
+                    <h3 className="font-heading text-body-base font-bold flex items-center gap-2 text-foreground">
                       <Clock className="size-4 text-brand-secondary" />
                       Tambah Ketersediaan Jadwal Baru
-                    </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    </h3>
+                    <p className="text-body-xs text-muted-foreground mt-1">
                       Cantumkan jam kosong perpekan. Anda juga bisa mengklik tombol <strong>+</strong> pada kolom kalender di atas.
                     </p>
-                  </CardHeader>
-                  <CardContent>
+                  </div>
+                  <div>
                     <form onSubmit={handleAddSlot} className="flex flex-col gap-4">
                       <div className="grid gap-4 sm:grid-cols-3">
                         <div className="space-y-1.5">
@@ -633,8 +631,8 @@ export default function SchedulePage() {
                         <CalendarPlus className="size-4" /> Simpan Slot Waktu
                       </Button>
                     </form>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </Reveal>
             </div>
 
@@ -648,17 +646,17 @@ export default function SchedulePage() {
             {/* Tutors in Group Info Card */}
             <div className="lg:col-span-6">
               <Reveal duration="duration-700">
-                <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
-                  <CardHeader>
-                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
+                <div className={studentCardClass("h-full")}>
+                  <div className="pb-3 mb-4 border-b border-border/30">
+                    <h3 className="font-heading text-body-base font-bold flex items-center gap-2 text-foreground">
                       <GraduationCap className="size-4 text-brand-primary" />
                       Tutor Bimbingan Kelompok Anda
-                    </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    </h3>
+                    <p className="text-body-xs text-muted-foreground mt-1">
                       Tutor yang terdaftar di kelompok belajar Anda beserta sertifikasi mata kuliah yang mereka pegang.
                     </p>
-                  </CardHeader>
-                  <CardContent>
+                  </div>
+                  <div>
                     {data.relevantTutors?.length > 0 ? (
                       <div className="space-y-3">
                         {data.relevantTutors.map((tutor: any) => (
@@ -696,25 +694,25 @@ export default function SchedulePage() {
                         </p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </Reveal>
             </div>
 
             {/* Student Personal Bookings List */}
             <div className="lg:col-span-6">
               <Reveal duration="duration-700">
-                <Card className="rounded-2xl border border-border/60 bg-card/65 shadow-xs backdrop-blur-md h-full">
-                  <CardHeader>
-                    <CardTitle className="font-heading text-body-base font-bold flex items-center gap-2">
+                <div className={studentCardClass("h-full")}>
+                  <div className="pb-3 mb-4 border-b border-border/30">
+                    <h3 className="font-heading text-body-base font-bold flex items-center gap-2 text-foreground">
                       <CalendarCheck className="size-4 text-status-success" />
                       Daftar Pemesanan Bimbingan Saya
-                    </CardTitle>
-                    <p className="text-body-xs text-muted-foreground">
+                    </h3>
+                    <p className="text-body-xs text-muted-foreground mt-1">
                       Jadwal privat bimbingan mingguan yang berhasil Anda pesan. Harap hadir tepat waktu!
                     </p>
-                  </CardHeader>
-                  <CardContent>
+                  </div>
+                  <div>
                     {data.myBookings?.length > 0 ? (
                       <div className="space-y-3">
                         {data.myBookings.map((b: any) => {
@@ -754,8 +752,8 @@ export default function SchedulePage() {
                         </p>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </Reveal>
             </div>
 

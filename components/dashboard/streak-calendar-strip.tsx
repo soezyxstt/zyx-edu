@@ -48,13 +48,13 @@ export function StreakCalendarStrip({ current, weeklyActivity = [] }: StreakCale
 
           return (
             <div key={idx} className="flex flex-col items-center gap-1">
-              <span className="font-sans text-[10px] font-semibold text-muted-foreground">
+              <span className="font-sans text-[11px] font-bold text-foreground/80">
                 {day.label}
               </span>
               <div
                 title={`${day.name}: ${isActive ? "Selesai" : "Belum selesai"}`}
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-300",
+                  "flex size-8 items-center justify-center rounded-lg text-[10px] font-bold transition-all duration-300",
                   isActive
                     ? "bg-brand-secondary text-white shadow-xs scale-105"
                     : "bg-muted text-muted-foreground/50 border border-border/40",
@@ -62,9 +62,9 @@ export function StreakCalendarStrip({ current, weeklyActivity = [] }: StreakCale
                 )}
               >
                 {isActive ? (
-                  <Check className="size-3.5 stroke-[3]" />
+                  <Check className="size-4 stroke-[3]" />
                 ) : (
-                  <span className="text-[9px] font-medium opacity-60">{day.label}</span>
+                  <span className="text-[10px] font-semibold opacity-80">{day.label}</span>
                 )}
               </div>
             </div>

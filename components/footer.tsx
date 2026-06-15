@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FaXTwitter, FaInstagram, FaLinkedin } from "react-icons/fa6";
+import { FaTiktok, FaInstagram } from "react-icons/fa6";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +63,7 @@ export function Footer() {
             </ul>
             <div className="mt-6 flex flex-wrap items-center gap-2">
               <Link
-                href="https://instagram.com/zyxofficial"
+                href="https://instagram.com/zyx_academy"
                 className={socialClass}
                 aria-label="Zyx Academy di Instagram"
                 target="_blank"
@@ -71,11 +71,14 @@ export function Footer() {
               >
                 <FaInstagram className="size-4.5" aria-hidden />
               </Link>
-              <Link href="#" className={socialClass} aria-label="Zyx Academy di X">
-                <FaXTwitter className="size-4.5" aria-hidden />
-              </Link>
-              <Link href="#" className={socialClass} aria-label="Zyx Academy di LinkedIn">
-                <FaLinkedin className="size-4.5" aria-hidden />
+              <Link
+                href="https://tiktok.com/@zyx_academy"
+                className={socialClass}
+                aria-label="Zyx Academy di TikTok"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaTiktok className="size-4.5" aria-hidden />
               </Link>
             </div>
           </nav>

@@ -165,7 +165,7 @@ export function renderDiktatToHTML(
   const coverHtml = `
     <div class="cover-page">
       <div class="cover-header">
-        <p class="cover-subtitle">ZYX Academy Student Handbook</p>
+        <p class="cover-subtitle">Zyx Academy Student Handbook</p>
         <h1 class="cover-title">${diktat.title}</h1>
         <p style="font-size: 11pt; color: #555555; margin-top: 10px;">Diktat ringkas berorientasi pemahaman konsep dan persiapan ujian.</p>
       </div>
@@ -534,7 +534,7 @@ export function renderDiktatToHTML(
         diktatHash: ${diktat.generationHash}<br />
         generatedAt: ${new Date().toISOString()}<br />
         complianceStatus: verified<br />
-        renderedBy: ZYX PDF Compiler v1 (Textbook Layout Engine)
+        renderedBy: Zyx PDF Compiler v1 (Textbook Layout Engine)
       </div>
     </div>
   `

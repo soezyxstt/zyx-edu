@@ -27,14 +27,17 @@ import {
   FileQuestion,
   Lightbulb
 } from "lucide-react";
-import { 
-  explainConceptAction, 
-  analyzeMistakeAction, 
-  buildStudyPlanAction, 
-  generatePracticeQuizAction, 
-  startFlashcardReviewAction, 
+import {
+  explainConceptAction,
+  analyzeMistakeAction,
+  buildStudyPlanAction,
+  generatePracticeQuizAction,
+  startFlashcardReviewAction,
   openMaterialAction,
-  askTutorRagAction
+  askTutorRagAction,
+  saveTutorMessagesAction,
+  loadTutorHistoryAction,
+  clearTutorHistoryAction,
 } from "@/app/actions/tutor";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
 import { toast } from "sonner";
@@ -43,7 +46,7 @@ import { cn } from "@/lib/utils";
 // Fetch extra actions from custom action file
 import { getFlashcardsForKOAction } from "@/app/actions/tutor-extra";
 
-type TutorMode = "explain" | "mistake" | "study-plan" | null;
+type TutorMode = "explain" | "mistake" | "study-plan" | "chat" | null;
 type ActiveAction = "none" | "flashcards" | "practice-quiz";
 
 interface ChatMessage {
@@ -57,6 +60,7 @@ interface TutorContextType {
   openExplain: (koId: string, initialMode?: "content" | "analogy" | "simplification") => void;
   openMistake: (questionId: string, userAnswer: string) => void;
   openStudyPlan: () => void;
+  openChat: () => void;
   close: () => void;
   isOpen: boolean;
   activeMode: TutorMode;
@@ -95,6 +99,36 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
 
   // Ref for auto-scrolling
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const savedDataRef = React.useRef<any>(null);
+
+  // Resizable drawer state
+  const MIN_WIDTH = 320;
+  const MAX_WIDTH = 860;
+  const DEFAULT_WIDTH = 448;
+  const [drawerWidth, setDrawerWidth] = React.useState(DEFAULT_WIDTH);
+  const isResizing = React.useRef(false);
+
+  const startResize = React.useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    const onMove = (ev: MouseEvent) => {
+      if (!isResizing.current) return;
+      const newWidth = window.innerWidth - ev.clientX;
+      setDrawerWidth(Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, newWidth)));
+    };
+    const onUp = () => {
+      isResizing.current = false;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, []);
 
   // Active micro-app widget inside drawer (e.g. Flashcards or Quiz)
   const [activeAction, setActiveAction] = React.useState<ActiveAction>("none");
@@ -143,6 +177,49 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
     setIsOpen(true);
   }, []);
 
+  const openChat = React.useCallback(async () => {
+    setKoId(null);
+    setQuestionId(null);
+    setUserAnswer(null);
+    setActiveMode("chat");
+    setActiveAction("none");
+    setIsOpen(true);
+
+    const courseId = pathname?.startsWith("/courses/")
+      ? pathname.split("/")[2]
+      : null;
+
+    if (courseId) {
+      setLoading(true);
+      try {
+        const history = await loadTutorHistoryAction(courseId);
+        if (history.length > 0) {
+          setMessages(history);
+        } else {
+          setMessages([{
+            id: "chat-welcome",
+            role: "ai",
+            content: "Halo! Aku Zyra, asisten belajar buatan Zyx. Tanyain apa aja seputar mata kuliah ini, aku bakal berusaha jawab sesuai konteks materi yang ada ya!",
+          }]);
+        }
+      } catch {
+        setMessages([{
+          id: "chat-welcome",
+          role: "ai",
+          content: "Halo! Aku Zyra, asisten belajar buatan Zyx. Tanyain apa aja seputar mata kuliah ini, aku bakal berusaha jawab sesuai konteks materi yang ada ya!",
+        }]);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      setMessages([{
+        id: "chat-welcome",
+        role: "ai",
+        content: "Halo! Aku Zyra, asisten belajar buatan Zyx. Tanyain apa aja seputar mata kuliah ini, aku bakal berusaha jawab sesuai konteks materi yang ada ya!",
+      }]);
+    }
+  }, [pathname]);
+
   const close = React.useCallback(() => {
     setIsOpen(false);
     setActiveMode(null);
@@ -154,6 +231,8 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
   // Sync execution from backend services on mode triggers
   React.useEffect(() => {
     if (!isOpen || !activeMode) return;
+
+    if (activeMode === "chat") return; // chat mode seeds its own welcome message inline
 
     async function loadData() {
       setLoading(true);
@@ -191,51 +270,66 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
   // Synchronize data results to chat messages history
   React.useEffect(() => {
     if (!data) return;
+    if (savedDataRef.current === data) return;
     
+    const courseId = pathname?.startsWith("/courses/") ? pathname.split("/")[2] : null;
+    let newMessages: ChatMessage[] = [];
+
     if (activeMode === "explain") {
       // Content/definition display
-      setMessages([
+      newMessages = [
         {
-          id: "initial-q",
+          id: `initial-q-${Date.now()}`,
           role: "student",
           content: `Jelaskan konsep: ${data.title}`,
         },
         {
-          id: "initial-a",
+          id: `initial-a-${Date.now()}`,
           role: "ai",
           content: data.content,
           sources: data.sources || [],
         }
-      ]);
+      ];
     } else if (activeMode === "mistake") {
-      setMessages([
+      newMessages = [
         {
-          id: "initial-q",
+          id: `initial-q-${Date.now()}`,
           role: "student",
           content: `Analisis kesalahanku pada soal kuis.`,
         },
         {
-          id: "initial-a",
+          id: `initial-a-${Date.now()}`,
           role: "ai",
           content: `### Temuan Miskonsepsi Utama:\n${data.detectedMisconception}\n\n### Kesalahan Perhitungan / Substitusi:\n${data.mathematicalError}\n\n### Panduan Berpikir (Socratic):\n${data.socraticGuidance}`,
         }
-      ]);
+      ];
     } else if (activeMode === "study-plan") {
       const formattedPlan = data.map((step: string) => step).join("\n\n");
-      setMessages([
+      newMessages = [
         {
-          id: "initial-q",
+          id: `initial-q-${Date.now()}`,
           role: "student",
           content: "Tampilkan rencana belajar mandiriku.",
         },
         {
-          id: "initial-a",
+          id: `initial-a-${Date.now()}`,
           role: "ai",
           content: `### Rencana Studi Mandiri Anda:\n\n${formattedPlan}`,
         }
-      ]);
+      ];
     }
-  }, [data, activeMode]);
+
+    if (newMessages.length > 0) {
+      setMessages(newMessages);
+      savedDataRef.current = data;
+      if (courseId) {
+        saveTutorMessagesAction(
+          courseId, 
+          newMessages.map(m => ({ role: m.role, content: m.content, sources: m.sources }))
+        ).catch(() => {});
+      }
+    }
+  }, [data, activeMode, pathname]);
 
   // Flashcards launcher inside drawer
   const handleLaunchFlashcards = async (targetKoId: string) => {
@@ -299,63 +393,135 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
     const questionText = inputVal.trim();
     if (!questionText) return;
 
+    const courseId = pathname?.startsWith("/courses/")
+      ? pathname.split("/")[2]
+      : null;
+
+    const studentMsg = {
+      id: `user-msg-${Date.now()}`,
+      role: "student" as const,
+      content: questionText,
+    };
+
     setInputVal("");
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `user-msg-${Date.now()}`,
-        role: "student",
-        content: questionText,
-      },
-    ]);
+    setMessages((prev) => [...prev, studentMsg]);
     setChatLoading(true);
 
+    let aiMsg: { id: string; role: "ai"; content: string; sources?: Array<{ type: string; id: string; label: string; href: string }> };
+
     try {
-      // Determine course ID from current path or fallback safely
-      const courseId = pathname?.startsWith("/courses/") 
-        ? pathname.split("/")[2] 
-        : "kalkulus-ia";
-      
-      const res = await askTutorRagAction(courseId, null, questionText);
-      
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `ai-msg-${Date.now()}`,
-          role: "ai",
-          content: res.answer || "Maaf, saya tidak dapat memproses jawaban saat ini.",
-          sources: res.sources || [],
-        },
-      ]);
-    } catch (err: any) {
-      toast.error(err?.message || "Gagal memproses pertanyaan.");
+      const res = await askTutorRagAction(courseId ?? "unknown", null, questionText);
+
+      let aiContent: string;
+      if (res.budgetExhausted) {
+        aiContent = "Kuota AI harian telah habis (maks. 30 permintaan). Silakan coba lagi besok, atau gunakan menu buku teks dan kartu hafalan untuk belajar mandiri.";
+      } else if (!res.answer) {
+        aiContent = "Maaf, terjadi gangguan saat memproses jawaban. Silakan coba lagi dalam beberapa saat.";
+      } else {
+        aiContent = res.answer;
+      }
+
+      aiMsg = {
+        id: `ai-msg-${Date.now()}`,
+        role: "ai",
+        content: aiContent,
+        sources: res.answer ? (res.sources || []) : [],
+      };
+    } catch {
+      aiMsg = {
+        id: `ai-err-${Date.now()}`,
+        role: "ai",
+        content: "Maaf, terjadi kesalahan koneksi. Periksa jaringan Anda dan coba lagi.",
+        sources: [],
+      };
     } finally {
       setChatLoading(false);
+    }
+
+    setMessages((prev) => [...prev, aiMsg!]);
+
+    // Persist the exchange to DB (fire-and-forget, never blocks UI)
+    if (courseId) {
+      saveTutorMessagesAction(courseId, [
+        { role: studentMsg.role, content: studentMsg.content },
+        { role: aiMsg!.role, content: aiMsg!.content, sources: aiMsg!.sources },
+      ]).catch(() => {});
     }
   };
 
   return (
-    <TutorContext.Provider value={{ openExplain, openMistake, openStudyPlan, close, isOpen, activeMode }}>
+    <TutorContext.Provider value={{ openExplain, openMistake, openStudyPlan, openChat, close, isOpen, activeMode }}>
       {children}
-      
+
+      {/* Global floating AI Tutor trigger — available on every course surface
+          (overview, quiz, material viewer) regardless of sidebar state. */}
+      {pathname?.startsWith("/courses/") &&
+        !pathname.includes("/live/host") &&
+        !isOpen && (
+          <button
+            type="button"
+            onClick={openChat}
+            aria-label="Tanya Zyra"
+            title="Tanya Zyra"
+            className="group fixed bottom-6 right-6 z-40 flex size-14 items-center justify-center rounded-full bg-brand-primary text-white shadow-lg shadow-brand-primary/30 transition-all hover:scale-105 hover:bg-brand-primary/95 active:scale-95 md:bottom-8 md:right-8"
+          >
+            <Sparkles className="size-6 transition-transform group-hover:rotate-12" />
+            <span className="pointer-events-none absolute right-full mr-3 hidden whitespace-nowrap rounded-lg bg-foreground px-2.5 py-1.5 text-body-xs font-semibold text-background opacity-0 shadow-md transition-opacity group-hover:opacity-100 md:block">
+              Tanya Zyra
+            </span>
+          </button>
+        )}
+
       <Sheet open={isOpen} onOpenChange={(open) => !open && close()}>
-        <SheetContent side="right" className="w-full sm:max-w-md md:max-w-lg p-0 flex flex-col h-full bg-background border-l border-border select-none">
+        <SheetContent
+          side="right"
+          style={{ width: `min(${drawerWidth}px, 100vw)` }}
+          className="p-0 flex flex-col h-full bg-background border-l border-border select-none !max-w-none"
+        >
+          {/* Drag-to-resize handle */}
+          <div
+            onMouseDown={startResize}
+            className="absolute left-0 top-0 h-full w-1.5 cursor-ew-resize bg-transparent hover:bg-brand-primary/30 transition-colors z-50 group"
+            title="Seret untuk mengubah ukuran"
+          >
+            <div className="absolute inset-y-0 left-0 w-px bg-border group-hover:bg-brand-primary/50 transition-colors" />
+          </div>
           
           {/* Header Panel */}
           <SheetHeader className="p-5 border-b border-border/80 flex flex-row items-center gap-3 bg-muted/20">
             <div className="flex size-10 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary">
               <Sparkles className="size-5 animate-pulse" />
             </div>
-            <div className="space-y-0.5 text-left">
+            <div className="space-y-0.5 text-left flex-1 min-w-0">
               <SheetTitle className="font-heading text-body-base font-bold text-foreground">
                 {activeMode === "explain" && "Penjelasan Konsep"}
                 {activeMode === "mistake" && "Analisis Kesalahan Kuis"}
                 {activeMode === "study-plan" && "Rencana Studi Mandiri"}
+                {activeMode === "chat" && "Tanya Zyra"}
               </SheetTitle>
               <SheetDescription className="text-body-xs text-muted-foreground">
-                ZYX Socratic AI Tutor · Asisten Belajar Personal
+                Zyra · Asisten Belajar Zyx
               </SheetDescription>
             </div>
+            {activeMode === "chat" && (
+              <Button
+                variant="ghost"
+                size="xs"
+                className="shrink-0 h-7 text-[11px] text-muted-foreground hover:text-status-error hover:bg-status-error/10"
+                onClick={async () => {
+                  const courseId = pathname?.startsWith("/courses/") ? pathname.split("/")[2] : null;
+                  if (courseId) await clearTutorHistoryAction(courseId).catch(() => {});
+                  setMessages([{
+                    id: "chat-welcome",
+                    role: "ai",
+                    content: "Halo! Aku Zyra, asisten belajar buatan Zyx. Tanyain apa aja seputar mata kuliah ini, aku bakal berusaha jawab sesuai konteks materi yang ada ya!",
+                  }]);
+                  toast.success("Riwayat obrolan dengan Zyra dihapus.");
+                }}
+              >
+                Hapus Riwayat
+              </Button>
+            )}
           </SheetHeader>
 
           {/* Body Content Desk */}
@@ -371,17 +537,17 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
 
             {/* Error Display */}
             {!loading && errors.length > 0 && (
-              <div className="rounded-2xl border border-rose-200/60 bg-rose-500/5 p-4 space-y-3 text-left">
-                <div className="flex items-center gap-2 text-rose-600 font-semibold text-body-sm">
+              <div className="rounded-2xl border border-status-error/30 bg-status-error/5 p-4 space-y-3 text-left">
+                <div className="flex items-center gap-2 text-status-error font-semibold text-body-sm">
                   <AlertTriangle className="size-4 shrink-0" />
                   Batas Penggunaan AI Terlampaui
                 </div>
-                <p className="text-body-xs text-rose-950/80 leading-relaxed">
+                <p className="text-body-xs text-foreground/90 leading-relaxed">
                   {errors[0].includes("DAILY_QUOTA_EXCEEDED") 
                     ? "Kuota harian gratis untuk asisten AI Anda telah habis hari ini (Maksimal 30 permintaan harian)."
                     : errors[0]}
                 </p>
-                <div className="border-t border-rose-200/30 pt-3 text-[11px] text-rose-800 font-mono">
+                <div className="border-t border-status-error/20 pt-3 text-[11px] text-status-error font-mono">
                   <b>Pilihan Belajar Mandiri (Offline Mode):</b>
                   <ul className="mt-1.5 list-disc list-inside space-y-1">
                     <li>Gunakan menu buku teks / PDF secara mandiri.</li>
@@ -402,12 +568,12 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
                       key={msg.id}
                       className={cn(
                         "max-w-[85%] rounded-2xl p-4 text-body-sm leading-relaxed text-left flex flex-col gap-2",
-                        isStudent 
-                          ? "bg-primary text-primary-foreground self-end rounded-tr-none" 
+                        isStudent
+                          ? "bg-primary text-white self-end rounded-tr-none"
                           : "bg-muted text-foreground self-start rounded-tl-none border border-border/60"
                       )}
                     >
-                      <MarkdownRenderer content={msg.content} />
+                      <MarkdownRenderer content={msg.content} className={isStudent ? "text-primary-foreground" : ""} />
                       
                       {/* Citations / Sources */}
                       {!isStudent && msg.sources && msg.sources.length > 0 && (
@@ -443,18 +609,22 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
                       className="rounded-lg h-9 text-body-xs"
                       onClick={async () => {
                         setExplainMode("analogy");
-                        setMessages((prev) => [
-                          ...prev,
-                          { id: `u-ana-${Date.now()}`, role: "student", content: "Berikan analogi untuk konsep ini." }
-                        ]);
+                        const studentMsg: ChatMessage = { id: `u-ana-${Date.now()}`, role: "student", content: "Berikan analogi untuk konsep ini." };
+                        setMessages((prev) => [...prev, studentMsg]);
                         setChatLoading(true);
                         try {
                           const res = await explainConceptAction(koId!, "analogy");
                           if (res.success) {
-                            setMessages((prev) => [
-                              ...prev,
-                              { id: `ai-ana-${Date.now()}`, role: "ai", content: `### Analogi Konsep\n\n> &ldquo;${res.data.analogy}&rdquo;\n\n**Miskonsepsi Umum:**\n${res.data.commonMisconception}` }
-                            ]);
+                            const aiMsg: ChatMessage = { id: `ai-ana-${Date.now()}`, role: "ai", content: `### Analogi Konsep\n\n> &ldquo;${res.data.analogy}&rdquo;\n\n**Miskonsepsi Umum:**\n${res.data.commonMisconception}` };
+                            setMessages((prev) => [...prev, aiMsg]);
+                            
+                            const courseId = pathname?.startsWith("/courses/") ? pathname.split("/")[2] : null;
+                            if (courseId) {
+                              saveTutorMessagesAction(courseId, [
+                                { role: studentMsg.role, content: studentMsg.content },
+                                { role: aiMsg.role, content: aiMsg.content }
+                              ]).catch(() => {});
+                            }
                           }
                         } catch {
                           toast.error("Gagal memuat analogi.");
@@ -471,18 +641,22 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
                       className="rounded-lg h-9 text-body-xs"
                       onClick={async () => {
                         setExplainMode("simplification");
-                        setMessages((prev) => [
-                          ...prev,
-                          { id: `u-simp-${Date.now()}`, role: "student", content: "Sederhanakan penjelasan konsep ini." }
-                        ]);
+                        const studentMsg: ChatMessage = { id: `u-simp-${Date.now()}`, role: "student", content: "Sederhanakan penjelasan konsep ini." };
+                        setMessages((prev) => [...prev, studentMsg]);
                         setChatLoading(true);
                         try {
                           const res = await explainConceptAction(koId!, "simplification");
                           if (res.success) {
-                            setMessages((prev) => [
-                              ...prev,
-                              { id: `ai-simp-${Date.now()}`, role: "ai", content: `### Penjelasan Sederhana\n\n${res.data.simplification}\n\n**Miskonsepsi Umum:**\n${res.data.commonMisconception}` }
-                            ]);
+                            const aiMsg: ChatMessage = { id: `ai-simp-${Date.now()}`, role: "ai", content: `### Penjelasan Sederhana\n\n${res.data.simplification}\n\n**Miskonsepsi Umum:**\n${res.data.commonMisconception}` };
+                            setMessages((prev) => [...prev, aiMsg]);
+                            
+                            const courseId = pathname?.startsWith("/courses/") ? pathname.split("/")[2] : null;
+                            if (courseId) {
+                              saveTutorMessagesAction(courseId, [
+                                { role: studentMsg.role, content: studentMsg.content },
+                                { role: aiMsg.role, content: aiMsg.content }
+                              ]).catch(() => {});
+                            }
                           }
                         } catch {
                           toast.error("Gagal menyederhanakan.");
@@ -670,9 +844,9 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
                               "flex w-full items-center gap-2 rounded-lg border p-3 text-left text-body-xs font-medium transition-colors cursor-pointer",
                               actionQuizSubmitted 
                                 ? isCorrect 
-                                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-950 font-bold"
+                                  ? "border-status-success bg-status-success/10 text-status-success font-bold"
                                   : isSelected 
-                                    ? "border-rose-500 bg-rose-500/10 text-rose-950"
+                                    ? "border-status-error bg-status-error/10 text-status-error"
                                     : "border-border/80 opacity-55"
                                 : isSelected 
                                   ? "border-brand-primary bg-brand-primary/10 text-brand-primary"

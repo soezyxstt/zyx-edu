@@ -32,7 +32,7 @@ export function HeroGraphCard() {
             />
           </label>
           <p className="mt-2 text-xs text-muted-foreground">
-            Geser koefisiennya — semua materi di ZYX interaktif seperti ini.
+            Geser koefisiennya — semua materi di Zyx interaktif seperti ini.
           </p>
         </div>
       </div>

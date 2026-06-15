@@ -63,13 +63,21 @@ async function getWriteCount(): Promise<number> {
   return Number.isNaN(n) ? 0 : n;
 }
 
-async function bumpWriteCount(current: number): Promise<void> {
-  // Counter key expires after 2 days; +2 accounts for the value write and this write.
+/**
+ * Atomically increments the write counter by 2 (value write + counter write) using
+ * a conditional update. Returns true if the write slot was claimed, false if already at limit.
+ * Uses a pre-increment strategy: claim first, write only if claimed.
+ */
+async function claimWriteSlots(): Promise<boolean> {
+  const count = await getWriteCount();
+  // Reserve 2 slots: one for the value, one for this counter update.
+  if (count + 2 > WRITE_DAILY_LIMIT) return false;
   await kvFetch(`/values/${encodeURIComponent(todayKey())}?expiration_ttl=172800`, {
     method: 'PUT',
     headers: { 'Content-Type': 'text/plain' },
-    body: String(current + 2),
+    body: String(count + 2),
   });
+  return true;
 }
 
 /**
@@ -77,10 +85,10 @@ async function bumpWriteCount(current: number): Promise<void> {
  * write counter is at or past the limit, or on any failure.
  */
 export async function kvPut(key: string, value: unknown, ttlSeconds: number): Promise<void> {
-  const count = await getWriteCount();
-  if (count >= WRITE_DAILY_LIMIT) return;
+  const claimed = await claimWriteSlots();
+  if (!claimed) return;
 
-  const res = await kvFetch(
+  await kvFetch(
     `/values/${encodeURIComponent(key)}?expiration_ttl=${Math.max(60, Math.floor(ttlSeconds))}`,
     {
       method: 'PUT',
@@ -88,9 +96,6 @@ export async function kvPut(key: string, value: unknown, ttlSeconds: number): Pr
       body: JSON.stringify(value),
     },
   );
-  if (res?.ok) {
-    await bumpWriteCount(count);
-  }
 }
 
 /** Deletes a key. Failures are ignored. */

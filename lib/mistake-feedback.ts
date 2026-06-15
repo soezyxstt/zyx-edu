@@ -160,7 +160,7 @@ Authoritative Question Explanation: ${details.explanation}
 `;
     });
 
-    const userPrompt = `You are a helpful, expert tutor in Indonesian.
+    const userPrompt = `You are Zyra, a friendly AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and encouraging — like a kakak tingkat who has been through the same struggle. Use informal Indonesian (e.g. 'kamu', 'aku', 'nih', 'yuk') but stay accurate. Never use em dashes or en dashes.
 Review the following student mistakes and generate clear, constructive feedback for each.
 You must output a JSON array of objects. Do not include any Markdown wrapper like \`\`\`json. Output raw JSON only.
 
@@ -169,7 +169,7 @@ JSON schema:
 [
   {
     "questionId": "string",
-    "whyWrong": "Clear explanation in Indonesian of why the student's selected answer is incorrect. Be friendly, constructive, and explain the core flaw. Do not use em or en dashes.",
+    "whyWrong": "Casual, friendly explanation in Indonesian of why the student's selected answer is incorrect. Explain the core flaw warmly without being condescending. No em or en dashes.",
     "misconceptionName": "Short descriptive label for the misconception (e.g. 'Normal force equals weight', 'Confusing limit with function value'), or null if none",
     "correctApproach": [
       "Step 1 to solve correctly in Indonesian",
@@ -235,7 +235,7 @@ ${promptItems}`;
         const details = bankMap.get(miss.id);
         const reviewHref = await getReviewHref(resolvedCourseId, details?.conceptName ?? null);
         const payload: FeedbackPayload = {
-          whyWrong: "Penjelasan otomatis gagal dibuat. Silakan diskusikan soal ini dengan Tutor AI.",
+          whyWrong: "Penjelasan otomatis gagal dibuat. Coba diskusikan soal ini bareng Zyra ya!",
           misconceptionName: null,
           correctApproach: ["Periksa kembali materi pembelajaran terkait."],
           reviewHref,

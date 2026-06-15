@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { TrendingUp, TrendingDown, Minus, Lock } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Lock, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -36,22 +36,42 @@ export function DashboardWeakConcepts({ concepts, courseTitle = "Kuliah" }: Dash
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/65 p-5 shadow-sm backdrop-blur-md text-left">
-      {/* Mock Browser Header */}
-      <div className="mb-4 flex items-center justify-between border-b border-border/40 pb-3 font-mono text-[10px] font-semibold text-muted-foreground select-none">
-        <div className="flex items-center gap-1.5">
-          <span className="flex gap-1.5">
-            <span className="size-2 rounded-full bg-border" />
-            <span className="size-2 rounded-full bg-border" />
-            <span className="size-2 rounded-full bg-border" />
-          </span>
-          <span className="ml-1.5 uppercase tracking-wider">Peta Penguasaan · {courseTitle}</span>
-        </div>
+      {/* Clean Accessible Header */}
+      <div className="mb-4 flex items-center justify-between border-b border-border/40 pb-3">
+        <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2">
+          <Target className="size-5 text-brand-primary" />
+          Peta Penguasaan ({courseTitle})
+        </h2>
       </div>
 
       {displayConcepts.length === 0 ? (
-        <p className="text-body-sm text-muted-foreground py-4">
-          Belum ada data penguasaan. Kerjakan kuis untuk mulai melacak progress Anda.
-        </p>
+        <div className="space-y-4 py-2 text-left">
+          <p className="text-body-xs text-muted-foreground leading-relaxed">
+            Belum ada data penguasaan. Ambil kuis pertama Anda untuk mulai memetakan tingkat pemahaman konsep secara otomatis di sini.
+          </p>
+          
+          {/* Skeleton Preview of Mastery concept bars */}
+          <div className="space-y-3 opacity-30 select-none pointer-events-none">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-body-xs font-semibold text-foreground">
+                <span>Konsep Aljabar Limit</span>
+                <span className="font-mono text-xs">75%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted w-full overflow-hidden">
+                <div className="h-full bg-brand-primary w-3/4 rounded-full" />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-body-xs font-semibold text-foreground">
+                <span>Kekontinuan Fungsi</span>
+                <span className="font-mono text-xs">40%</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted w-full overflow-hidden">
+                <div className="h-full bg-brand-secondary w-2/5 rounded-full" />
+              </div>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="space-y-4">
           {displayConcepts.map((c, index) => (

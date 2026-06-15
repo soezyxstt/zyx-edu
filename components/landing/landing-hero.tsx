@@ -37,7 +37,7 @@ export function LandingHero() {
             <span className="font-bold italic text-primary">satu konsep sekaligus.</span>
           </SectionHeading>
           <p className="mt-4 max-w-prose text-body-md text-muted-foreground">
-            ZYX memetakan apa yang sudah dan belum kamu kuasai, lalu menyusun rencana belajar
+            Zyx memetakan apa yang sudah dan belum kamu kuasai, lalu menyusun rencana belajar
             harian; kuis, flashcard, dan materi yang selaras dengan kuliah ITB.
           </p>
 

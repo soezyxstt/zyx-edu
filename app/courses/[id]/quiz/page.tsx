@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { ClipboardList } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
 import { checkEnrollment } from "@/app/dashboard/actions";
@@ -59,7 +60,11 @@ export default async function CourseQuizListPage({ params }: Props) {
     : [];
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Kuis Latihan: ${course.title}`}
+      description="Uji pemahaman materi Anda dengan kuis AI interaktif."
+      icon={ClipboardList}
+    >
       <Reveal>
         <QuizListClient
           courseId={id}

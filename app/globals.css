@@ -83,6 +83,25 @@
   --color-gray-4: oklch(0.7984 0 0);
   --color-gray-5: oklch(0.9067 0 0);
 
+  /* Reader themes */
+  --color-reader-sepia-desk: #eedfae;
+  --color-reader-sepia-desk-border: #e5d4a1;
+  --color-reader-sepia-paper: #fbf0d9;
+  --color-reader-sepia-text: #433422;
+  --color-reader-sepia-border: #e8dfc7;
+
+  --color-reader-cream-desk: #e5ddd0;
+  --color-reader-cream-desk-border: #d8cdb8;
+  --color-reader-cream-paper: #f7f4eb;
+  --color-reader-cream-text: #2c2d30;
+  --color-reader-cream-border: #eae6da;
+
+  --color-reader-dark-desk: #09090b;
+  --color-reader-dark-desk-border: #27272a;
+  --color-reader-dark-paper: #1e1e20;
+  --color-reader-dark-text: #e0e0e0;
+  --color-reader-dark-border: #2f2f31;
+
   /* Photography / imagery */
   --radius-photo: 0.75rem;
   --radius-photo-lg: 1rem;
@@ -113,6 +132,8 @@
   --text-body-base--line-height: 22.4px;
   --text-body-sm: 14px;
   --text-body-sm--line-height: 19.6px;
+  --text-body-xs: 12px;
+  --text-body-xs--line-height: 16.8px;
 
   /* Section spacing tokens */
   --spacing-section: 5rem;
@@ -149,7 +170,7 @@
   --secondary-foreground: oklch(1 0 0);
 
   --muted: oklch(0.9067 0 0);
-  --muted-foreground: oklch(0.6066 0 0);
+  --muted-foreground: oklch(0.55 0 0);
 
   --accent: oklch(0.9067 0 0);
   --accent-foreground: oklch(0.3211 0 0);
@@ -277,6 +298,19 @@
 
   p + p {
     margin-top: 1em;
+  }
+
+  /* Reader Layout Lock */
+  html.material-viewer-locked,
+  html.material-viewer-locked body,
+  html.material-viewer-locked #main-content,
+  html.material-viewer-locked #main-content > div,
+  html.material-viewer-locked #main-content > div > div {
+    height: 100vh !important;
+    height: 100svh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 }
 

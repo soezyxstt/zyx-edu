@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Lock } from "lucide-react";
+import { Lock, Trophy } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import { pageTitle } from "@/lib/site";
 import { cn } from "@/lib/utils";
 import { getCourseById, LEADERBOARD_SCORE_HINT } from "@/lib/student-course-fixtures";
@@ -38,9 +39,13 @@ export default async function CourseLeaderboardPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell>
+      <CoursePageShell
+        title={`Peringkat Kelas: ${course.title}`}
+        description="Lihat peringkat Anda dan teman sekelas berdasarkan rata-rata nilai."
+        icon={Trophy}
+      >
         <Reveal>
-          <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
+          <div className={studentCardClass()}>
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border">
                 <Lock className="size-5" />
@@ -84,9 +89,13 @@ export default async function CourseLeaderboardPage({ params }: Props) {
   const rankedRows = aiRows.map((r, i) => ({ ...r, rank: i + 1 }));
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Peringkat Kelas: ${course.title}`}
+      description="Lihat peringkat Anda dan teman sekelas berdasarkan rata-rata nilai."
+      icon={Trophy}
+    >
       <Reveal>
-        <div className="overflow-hidden rounded-lg border border-border/70 bg-card/75 backdrop-blur-sm">
+        <div className={studentCardClass("overflow-hidden !p-0")}>
           <div className="overflow-x-auto">
             <table className="w-full min-w-lg text-left text-body-sm">
               <thead>

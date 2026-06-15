@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import Image from "next/image";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { 
   Download, 
   ExternalLink, 
@@ -228,7 +229,7 @@ const getMockPageContent = (pageNum: number, query: string) => {
     case 1:
       return (
         <div className="space-y-8 text-center py-8">
-          <div className="mx-auto size-16 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500 mb-2 font-bold text-h5">ITB</div>
+          <div className="mx-auto size-16 rounded-full bg-brand-primary/10 flex items-center justify-center text-brand-primary mb-2 font-bold text-h5">ITB</div>
           <h2 className="font-heading text-h5 md:text-h4 font-bold tracking-tight">
             {highlight("UJIAN TENGAH SEMESTER (UTS) II")}
           </h2>
@@ -236,7 +237,7 @@ const getMockPageContent = (pageNum: number, query: string) => {
             {highlight("MA1101 KALKULUS I")}
           </h3>
           
-          <div className="w-12 h-0.5 bg-rose-500/30 mx-auto my-6" />
+          <div className="w-12 h-0.5 bg-brand-primary/30 mx-auto my-6" />
 
           <p className="text-body-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
             {highlight("Fakultas Matematika dan Ilmu Pengetahuan Alam (FMIPA)")}<br />
@@ -253,7 +254,7 @@ const getMockPageContent = (pageNum: number, query: string) => {
     case 2:
       return (
         <div className="space-y-4 text-left">
-          <h3 className="font-heading text-body-md font-bold text-rose-500 border-b border-border pb-1">
+          <h3 className="font-heading text-body-md font-bold text-brand-primary border-b border-border pb-1">
             {highlight("1. Limit Fungsi Secara Intuitif")}
           </h3>
           <p className="text-body-sm leading-relaxed">
@@ -279,7 +280,7 @@ const getMockPageContent = (pageNum: number, query: string) => {
     case 3:
       return (
         <div className="space-y-4 text-left">
-          <h3 className="font-heading text-body-md font-bold text-rose-500 border-b border-border pb-1">
+          <h3 className="font-heading text-body-md font-bold text-brand-primary border-b border-border pb-1">
             {highlight("2. Turunan Fungsi (Diferensial)")}
           </h3>
           <p className="text-body-sm leading-relaxed">
@@ -291,19 +292,19 @@ const getMockPageContent = (pageNum: number, query: string) => {
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-body-xs font-mono">
             <div className="bg-muted/30 p-3 rounded-lg border border-border/60">
-              <span className="font-semibold text-rose-500 block text-[10px] uppercase mb-0.5">{highlight("Aturan Pangkat")}</span>
+              <span className="font-semibold text-brand-primary block text-[10px] uppercase mb-0.5">{highlight("Aturan Pangkat")}</span>
               {highlight("d/dx (xⁿ) = n·xⁿ⁻¹")}
             </div>
             <div className="bg-muted/30 p-3 rounded-lg border border-border/60">
-              <span className="font-semibold text-rose-500 block text-[10px] uppercase mb-0.5">{highlight("Aturan Perkalian")}</span>
+              <span className="font-semibold text-brand-primary block text-[10px] uppercase mb-0.5">{highlight("Aturan Perkalian")}</span>
               {highlight("d/dx (u·v) = u'v + uv'")}
             </div>
             <div className="bg-muted/30 p-3 rounded-lg border border-border/60">
-              <span className="font-semibold text-rose-500 block text-[10px] uppercase mb-0.5">{highlight("Aturan Pembagian")}</span>
+              <span className="font-semibold text-brand-primary block text-[10px] uppercase mb-0.5">{highlight("Aturan Pembagian")}</span>
               {highlight("d/dx (u/v) = (u'v - uv') / v²")}
             </div>
             <div className="bg-muted/30 p-3 rounded-lg border border-border/60">
-              <span className="font-semibold text-rose-500 block text-[10px] uppercase mb-0.5">{highlight("Aturan Rantai")}</span>
+              <span className="font-semibold text-brand-primary block text-[10px] uppercase mb-0.5">{highlight("Aturan Rantai")}</span>
               {highlight("d/dx (f(g(x))) = f'(g(x))·g'(x)")}
             </div>
           </div>
@@ -321,7 +322,7 @@ const getMockPageContent = (pageNum: number, query: string) => {
     case 4:
       return (
         <div className="space-y-4 text-left">
-          <h3 className="font-heading text-body-md font-bold text-rose-500 border-b border-border pb-1">
+          <h3 className="font-heading text-body-md font-bold text-brand-primary border-b border-border pb-1">
             {highlight("3. Latihan Soal Evaluatif")}
           </h3>
           
@@ -483,43 +484,85 @@ const getConceptTags = (courseId: string, materialTitle: string) => {
 
 export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialViewerProps) {
   const [done, setDone] = useState(material.completed);
-  const [viewerType, setViewerType] = useState<"custom" | "chrome">("custom");
-
-  // Article states
-  const [activeSectionIdx, setActiveSectionIdx] = useState(0);
+  const [viewerType, setViewerType] = useState<"custom" | "chrome">("chrome");
+  const [showDemoViewer, setShowDemoViewer] = useState(false);
 
   useEffect(() => {
-    setActiveSectionIdx(0);
-  }, [material.id]);
-
-  useEffect(() => {
-    // Lock viewport scrolling when reader is active to fit content in one screen
-    const mainEl = document.getElementById("main-content");
-    
-    document.documentElement.classList.add("overflow-hidden");
-    document.body.classList.add("overflow-hidden");
-    if (mainEl) {
-      mainEl.classList.add("h-screen", "overflow-hidden", "flex", "flex-col");
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const isDev = window.location.hostname === "localhost" || 
+                    window.location.hostname === "127.0.0.1" || 
+                    process.env.NODE_ENV === "development";
+      const hasFlag = params.get("demo") === "true" || params.get("mock") === "true";
+      setShowDemoViewer(isDev || hasFlag);
     }
-    
+  }, []);
+
+  // Lock body scroll and set viewport properties when MaterialViewer is active
+  useEffect(() => {
+    document.documentElement.classList.add("material-viewer-locked");
     return () => {
-      document.documentElement.classList.remove("overflow-hidden");
-      document.body.classList.remove("overflow-hidden");
-      if (mainEl) {
-        mainEl.classList.remove("h-screen", "overflow-hidden", "flex", "flex-col");
-      }
+      document.documentElement.classList.remove("material-viewer-locked");
     };
   }, []);
+
+  // Navigation hooks
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Article states
+  const initialSection = parseInt(searchParams?.get("section") || "0", 10);
+  const [activeSectionIdx, setActiveSectionIdx] = useState(isNaN(initialSection) ? 0 : initialSection);
+  const [showOutlineSheet, setShowOutlineSheet] = useState(false);
+
+  // Sync URL -> State (e.g. back/forward navigation)
+  useEffect(() => {
+    const sectionStr = searchParams?.get("section");
+    const sectionFromUrl = sectionStr ? parseInt(sectionStr, 10) : 0;
+    if (sectionFromUrl !== activeSectionIdx) {
+      setActiveSectionIdx(sectionFromUrl);
+    }
+  }, [searchParams, material.id]);
+
+  // Sync State -> URL
+  useEffect(() => {
+    const currentUrlSection = searchParams?.get("section") || "0";
+    if (currentUrlSection !== activeSectionIdx.toString()) {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      if (activeSectionIdx === 0) {
+        params.delete("section");
+      } else {
+        params.set("section", activeSectionIdx.toString());
+      }
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [activeSectionIdx, pathname, router, searchParams]);
 
   const { chapterTitle, sections: articleSections } = useMemo(() => {
     return parseArticleSections(material.body || "", material.title);
   }, [material.body, material.title]);
   
   // Custom PDF states
-  const [page, setPage] = useState<number>(1);
+  const initialPage = parseInt(searchParams?.get("page") || "1", 10);
+  const [page, setPage] = useState<number>(isNaN(initialPage) ? 1 : initialPage);
   const [zoom, setZoom] = useState<number>(100);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("light");
+  
+  // Sync page state with URL
+  useEffect(() => {
+    const currentUrlPage = searchParams?.get("page");
+    if (currentUrlPage !== page.toString() && !(currentUrlPage == null && page === 1)) {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      if (page === 1) {
+        params.delete("page");
+      } else {
+        params.set("page", page.toString());
+      }
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [page, pathname, router, searchParams]);
   
   // Interactive Sidebar states
   const [showSidebar, setShowSidebar] = useState(true);
@@ -757,28 +800,28 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
   const currentThemeStyle = useMemo(() => {
     const styles: Record<ThemeMode, { deskBg: string; paperBg: string; text: string; border: string }> = {
       light: {
-        deskBg: "bg-zinc-100/70 border-zinc-200/80 dark:bg-zinc-950/20 dark:border-zinc-800/80",
-        paperBg: "bg-white",
-        text: "text-zinc-900",
-        border: "border-zinc-200"
+        deskBg: "bg-muted/50 border-border/80",
+        paperBg: "bg-card",
+        text: "text-foreground",
+        border: "border-border"
       },
       sepia: {
-        deskBg: "bg-[#eedfae]/20 border-[#e5d4a1]/50",
-        paperBg: "bg-[#fbf0d9]",
-        text: "text-[#433422]",
-        border: "border-[#e8dfc7]"
+        deskBg: "bg-reader-sepia-desk/20 border-reader-sepia-desk-border/50",
+        paperBg: "bg-reader-sepia-paper",
+        text: "text-reader-sepia-text",
+        border: "border-reader-sepia-border"
       },
       cream: {
-        deskBg: "bg-[#e5ddd0]/40 border-[#d8cdb8]/60",
-        paperBg: "bg-[#f7f4eb]",
-        text: "text-[#2c2d30]",
-        border: "border-[#eae6da]"
+        deskBg: "bg-reader-cream-desk/40 border-reader-cream-desk-border/60",
+        paperBg: "bg-reader-cream-paper",
+        text: "text-reader-cream-text",
+        border: "border-reader-cream-border"
       },
       dark: {
-        deskBg: "bg-zinc-950 border-zinc-800/80",
-        paperBg: "bg-[#1e1e20]",
-        text: "text-[#e0e0e0]",
-        border: "border-[#2f2f31]"
+        deskBg: "bg-reader-dark-desk border-reader-dark-desk-border/80",
+        paperBg: "bg-reader-dark-paper",
+        text: "text-reader-dark-text",
+        border: "border-reader-dark-border"
       }
     };
     return styles[theme];
@@ -790,50 +833,50 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
       case 1:
         return (
           <div className="flex flex-col items-center justify-between p-1.5 h-full w-full">
-            <div className="w-3.5 h-3.5 rounded-full bg-rose-500/30" />
+            <div className="w-3.5 h-3.5 rounded-full bg-brand-secondary/30" />
             <div className="space-y-1 w-full flex flex-col items-center">
-              <div className="h-[2px] bg-zinc-300 dark:bg-zinc-700 w-10 rounded-xs" />
-              <div className="h-[2px] bg-zinc-300 dark:bg-zinc-700 w-7 rounded-xs" />
+              <div className="h-[2px] bg-muted-foreground/30 w-10 rounded-xs" />
+              <div className="h-[2px] bg-muted-foreground/30 w-7 rounded-xs" />
             </div>
-            <div className="h-[2px] bg-zinc-200 dark:bg-zinc-800 w-5 rounded-xs" />
+            <div className="h-[2px] bg-muted w-5 rounded-xs" />
           </div>
         );
       case 2:
         return (
           <div className="flex flex-col justify-between p-1.5 h-full w-full">
-            <div className="h-[3px] bg-rose-500/30 w-8 rounded-xs" />
+            <div className="h-[3px] bg-brand-secondary/30 w-8 rounded-xs" />
             <div className="space-y-1 flex-1 py-1 flex flex-col justify-center">
-              <div className="h-[2px] bg-zinc-300 dark:bg-zinc-700 w-full rounded-xs" />
-              <div className="h-[2px] bg-zinc-300 dark:bg-zinc-700 w-5/6 rounded-xs" />
-              <div className="h-[8px] bg-zinc-200 dark:bg-zinc-800/80 border border-zinc-300/50 dark:border-zinc-700/50 rounded-xs w-full mt-0.5" />
+              <div className="h-[2px] bg-muted-foreground/30 w-full rounded-xs" />
+              <div className="h-[2px] bg-muted-foreground/30 w-5/6 rounded-xs" />
+              <div className="h-[8px] bg-muted border border-border rounded-xs w-full mt-0.5" />
             </div>
-            <div className="h-[2px] bg-zinc-200 dark:bg-zinc-800 w-4 rounded-xs" />
+            <div className="h-[2px] bg-muted w-4 rounded-xs" />
           </div>
         );
       case 3:
         return (
           <div className="flex flex-col justify-between p-1.5 h-full w-full">
-            <div className="h-[3px] bg-rose-500/30 w-8 rounded-xs" />
+            <div className="h-[3px] bg-brand-secondary/30 w-8 rounded-xs" />
             <div className="space-y-1 flex-1 py-1 flex flex-col justify-center">
-              <div className="h-[2px] bg-zinc-300 dark:bg-zinc-700 w-8 rounded-xs" />
+              <div className="h-[2px] bg-muted-foreground/30 w-8 rounded-xs" />
               <div className="grid grid-cols-2 gap-0.5 mt-0.5">
-                <div className="h-[6px] bg-zinc-200 dark:bg-zinc-800/80 rounded-xs border border-zinc-300/40" />
-                <div className="h-[6px] bg-zinc-200 dark:bg-zinc-800/80 rounded-xs border border-zinc-300/40" />
+                <div className="h-[6px] bg-muted rounded-xs border border-border" />
+                <div className="h-[6px] bg-muted rounded-xs border border-border" />
               </div>
             </div>
-            <div className="h-[2px] bg-zinc-200 dark:bg-zinc-800 w-4 rounded-xs" />
+            <div className="h-[2px] bg-muted w-4 rounded-xs" />
           </div>
         );
       case 4:
         return (
           <div className="flex flex-col justify-between p-1.5 h-full w-full">
-            <div className="h-[3px] bg-rose-500/30 w-8 rounded-xs" />
+            <div className="h-[3px] bg-brand-secondary/30 w-8 rounded-xs" />
             <div className="space-y-1 flex-1 py-1.5 flex flex-col justify-between">
-              <div className="h-[4px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/50 rounded-xs w-full" />
-              <div className="h-[4px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/50 rounded-xs w-full" />
-              <div className="h-[4px] bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/50 rounded-xs w-full" />
+              <div className="h-[4px] bg-muted border border-border rounded-xs w-full" />
+              <div className="h-[4px] bg-muted border border-border rounded-xs w-full" />
+              <div className="h-[4px] bg-muted border border-border rounded-xs w-full" />
             </div>
-            <div className="h-[2px] bg-zinc-200 dark:bg-zinc-800 w-4 rounded-xs" />
+            <div className="h-[2px] bg-muted w-4 rounded-xs" />
           </div>
         );
       default:
@@ -842,6 +885,55 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
   };
 
   const openUrl = material.url ?? "#";
+
+  const tutorPopover = selectionCoords && selectedText ? (
+    <div
+      style={{
+        position: "fixed",
+        top: `${selectionCoords.top}px`,
+        left: `${selectionCoords.left}px`,
+        transform: "translateX(-50%)",
+        zIndex: 9999,
+      }}
+      className="animate-fade-in"
+    >
+      <Button
+        type="button"
+        size="xs"
+        className="rounded-lg bg-brand-primary hover:bg-brand-primary/95 shadow-md flex items-center gap-1.5 h-8 font-sans text-[11px] !text-white px-3 border border-brand-primary/20"
+        onClick={async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const textToQuery = selectedText;
+          // Clear selection to hide button
+          window.getSelection()?.removeAllRanges();
+          setSelectedText("");
+          setSelectionCoords(null);
+          
+          toast.promise(
+            (async () => {
+              const { findKoForMaterialSectionAction } = await import("@/app/actions/tutor");
+              const res = await findKoForMaterialSectionAction(material.courseId, textToQuery);
+              if (res.success && res.koId) {
+                openExplain(res.koId, "content");
+              } else {
+                // Fallback to general explain
+                openExplain("ko-101", "content");
+              }
+            })(),
+            {
+              loading: "Menganalisis konsep...",
+              success: "Zyra siap menjelaskan!",
+              error: "Gagal memproses konsep."
+            }
+          );
+        }}
+      >
+        <Sparkles className="size-3.5" />
+        Tanya Zyra
+      </Button>
+    </div>
+  ) : null;
 
   if (material.kind === "article" && material.body) {
     const course = getCourseById(material.courseId);
@@ -859,6 +951,15 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
           </div>
 
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowOutlineSheet(true)}
+              className="h-7 text-[11px] font-semibold flex items-center gap-1.5 rounded-md"
+            >
+              <BookOpen className="size-3.5" />
+              <span>Daftar Isi</span>
+            </Button>
             {ragEnabled && chapterId && (
               <ChapterSummarySheet chapterId={chapterId} chapterTitle={material.title} />
             )}
@@ -877,6 +978,7 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
 
         {/* Reading Canvas Container */}
         <div 
+          id="article-paper-content"
           ref={articleScrollRef}
           data-theme={theme}
           className="flex-1 bg-background text-foreground transition-colors duration-300 w-full overflow-y-auto"
@@ -942,9 +1044,13 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
             >
               <ChevronLeft className="mr-1 size-3.5" /> Sebelum
             </Button>
-            <span className="text-[11px] font-mono text-muted-foreground font-medium">
-              Subbab {activeSectionIdx + 1} dari {articleSections.length}
-            </span>
+            <button
+              onClick={() => setShowOutlineSheet(true)}
+              className="text-[11px] font-mono text-muted-foreground font-semibold hover:text-foreground flex items-center gap-1.5 h-8 px-2.5 rounded-md hover:bg-muted/60 transition-colors"
+              title="Buka Daftar Subbab"
+            >
+              <span>Subbab {activeSectionIdx + 1} dari {articleSections.length}</span>
+            </button>
             <Button
               variant="outline"
               size="sm"
@@ -959,14 +1065,52 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
             </Button>
           </div>
         )}
+
+        <Sheet open={showOutlineSheet} onOpenChange={setShowOutlineSheet}>
+          <SheetContent side="right" className="w-full sm:max-w-xs overflow-y-auto p-0 flex flex-col h-full bg-card">
+            <SheetHeader className="p-4 border-b border-border">
+              <SheetTitle className="text-body-md font-heading font-bold flex items-center gap-2">
+                <BookOpen className="size-4 text-brand-primary" />
+                Daftar Subbab & Konsep
+              </SheetTitle>
+            </SheetHeader>
+            <div className="flex-1 overflow-y-auto p-3 space-y-1">
+              {articleSections.map((sec, idx) => {
+                const isActive = idx === activeSectionIdx;
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      setActiveSectionIdx(idx);
+                      setShowOutlineSheet(false);
+                      articleScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className={cn(
+                      "w-full text-left p-3 rounded-lg text-body-xs font-sans transition-all border border-transparent flex flex-col gap-1",
+                      isActive
+                        ? "bg-brand-primary/10 text-brand-primary font-semibold border-l-2 border-l-brand-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-muted-foreground/60">
+                      Konsep {idx + 1}
+                    </span>
+                    <span className="line-clamp-2">{sec.title}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </SheetContent>
+        </Sheet>
+        {tutorPopover}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="flex flex-col h-full w-full overflow-hidden bg-background font-sans">
       {/* Sticky Topbar */}
-      <div className="sticky top-0 z-20 h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4">
+      <div className="sticky top-0 z-20 h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
         <div className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
         
         <div className="flex items-center gap-2">
@@ -986,33 +1130,35 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
             disabled={done}
             className="h-7 text-[11px] font-semibold flex items-center gap-1.5 rounded-md interactive"
           >
-            <CheckCircle2 className={cn("size-3.5", done ? "text-emerald-500 fill-emerald-500/10" : "text-muted-foreground")} />
+            <CheckCircle2 className={cn("size-3.5", done ? "text-status-success fill-status-success/10" : "text-muted-foreground")} />
             <span>{done ? "Selesai" : "Tandai Selesai"}</span>
           </Button>
         </div>
       </div>
 
       {/* Main Material Display container */}
-      <div className="rounded-3xl border border-border/80 bg-muted/10 shadow-xs relative overflow-hidden">
+      <div className="flex-1 min-h-0 w-full relative overflow-hidden flex flex-col bg-background">
         
         {/* Render PDF Document (Integrated custom viewer or standard Chrome) */}
         {material.kind === "pdf" ? (
-          <div className="flex flex-col w-full relative bg-background">
+          <div className="flex flex-col w-full h-full relative bg-background overflow-hidden">
             {/* Viewer Engine Toggle (rendered at the top of PDF viewer container) */}
-            <div className="flex items-center justify-between gap-4 p-3 border-b border-border bg-card">
+            <div className="flex items-center justify-between gap-4 p-3 border-b border-border bg-card shrink-0">
               <div className="flex items-center gap-1 bg-muted/60 p-0.5 rounded-lg border border-border">
-                <button
-                  type="button"
-                  onClick={() => setViewerType("custom")}
-                  className={cn(
-                    "px-2.5 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all",
-                    viewerType === "custom"
-                      ? "bg-card text-brand-primary shadow-xs"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  Integrated Viewer
-                </button>
+                {showDemoViewer && (
+                  <button
+                    type="button"
+                    onClick={() => setViewerType("custom")}
+                    className={cn(
+                      "px-2.5 py-1 rounded-md text-[10px] font-semibold flex items-center gap-1 transition-all",
+                      viewerType === "custom"
+                        ? "bg-card text-brand-primary shadow-xs"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    Integrated Viewer (Mock)
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setViewerType("chrome")}
@@ -1037,569 +1183,571 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
             </div>
 
             {viewerType === "custom" ? (
-            <div
-              ref={viewerRef}
-              className={cn(
-                "flex flex-col bg-background border border-border overflow-hidden shadow-sm w-full select-none transition-all duration-300 relative",
-                isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen" : "min-h-[580px] rounded-2xl"
-              )}
-            >
-              {/* Custom minimalist integrated PDF reader shell */}
-              {/* Sleek Reading Progress bar (topmost border) */}
-              <div className="absolute top-0 left-0 right-0 h-1 bg-border/20 z-20 overflow-hidden">
-                <div 
-                  className="h-full bg-brand-primary transition-all duration-500 ease-out" 
-                  style={{ width: `${readingProgress}%` }}
-                />
-              </div>
+              <div
+                ref={viewerRef}
+                className={cn(
+                  "flex flex-1 min-h-0 bg-background overflow-hidden w-full select-none transition-all duration-300 relative",
+                  isFullscreen ? "fixed inset-0 z-50 rounded-none w-screen h-screen" : "rounded-none"
+                )}
+              >
+                {/* Custom minimalist integrated PDF reader shell */}
+                {/* Sleek Reading Progress bar (topmost border) */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-border/20 z-20 overflow-hidden">
+                  <div 
+                    className="h-full bg-brand-primary transition-all duration-500 ease-out" 
+                    style={{ width: `${readingProgress}%` }}
+                  />
+                </div>
 
-              {/* PDF Document Shell split in Sidebar and Page Desk */}
-              <div className="flex flex-1 overflow-hidden relative">
-                
-                {/* Collapsible Interactive Sidebar */}
-                <div 
-                  className={cn(
-                    "border-r border-border bg-card/95 backdrop-blur-xs flex flex-col shrink-0 transition-all duration-350 z-10",
-                    showSidebar 
-                      ? "w-80 translate-x-0 relative" 
-                      : "w-0 -translate-x-full absolute md:relative overflow-hidden border-r-0"
-                  )}
-                >
-                  {/* Sidebar Header with dynamic controls */}
-                  <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
-                    <span className="text-body-xs font-heading font-bold text-foreground">
-                      Index & Dokumen
-                    </span>
-                    <button
-                      onClick={handleSidebarToggle}
-                      className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground md:hidden"
-                      title="Sembunyikan Sidebar"
-                    >
-                      <X className="size-4" />
-                    </button>
-                  </div>
-
-                  {/* Sidebar Navigation Tabs */}
-                  <div className="grid grid-cols-4 border-b border-border p-1 bg-muted/40 gap-0.5">
-                    <button
-                      onClick={() => setSidebarTab("outline")}
-                      className={cn(
-                        "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5",
-                        sidebarTab === "outline" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title="Daftar Isi"
-                    >
-                      <BookOpen className="size-3.5" />
-                      <span>Outline</span>
-                    </button>
-                    <button
-                      onClick={() => setSidebarTab("thumbnails")}
-                      className={cn(
-                        "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5",
-                        sidebarTab === "thumbnails" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title="Miniatur Halaman"
-                    >
-                      <Layers className="size-3.5" />
-                      <span>Miniatur</span>
-                    </button>
-                    <button
-                      onClick={() => setSidebarTab("search")}
-                      className={cn(
-                        "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5 relative",
-                        sidebarTab === "search" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title="Cari Kata"
-                    >
-                      <Search className="size-3.5" />
-                      <span>Cari</span>
-                      {activeHighlightQuery && (
-                        <span className="absolute top-1 right-3 size-1.5 rounded-full bg-rose-500 animate-pulse" />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => setSidebarTab("notes")}
-                      className={cn(
-                        "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5 relative",
-                        sidebarTab === "notes" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
-                      )}
-                      title="Catatan & Penanda"
-                    >
-                      <NotebookPen className="size-3.5" />
-                      <span>Catatan</span>
-                      {(Object.keys(notes).length > 0 || bookmarks.length > 0) && (
-                        <span className="absolute top-1 right-2 bg-brand-secondary/90 text-white rounded-md px-1 text-[8px] font-mono leading-none scale-85">
-                          {Object.keys(notes).length + bookmarks.length}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Sidebar Tab Content panels */}
-                  <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                    
-                    {/* Outline Tab */}
-                    {sidebarTab === "outline" && (
-                      <div className="space-y-1.5">
-                        <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block mb-2 px-1">
-                          Struktur Materi
-                        </span>
-                        <TooltipProvider>
-                          {MOCK_PAGES_META.map((p) => {
-                            const IconComp = p.icon;
-                            const hasNote = notes[p.pageNum];
-                            const hasBookmark = bookmarks.includes(p.pageNum);
-
-                            return (
-                              <Tooltip key={p.pageNum}>
-                                <TooltipTrigger asChild>
-                                  <button
-                                    onClick={() => setPage(p.pageNum)}
-                                    className={cn(
-                                      "w-full text-left p-2.5 rounded-md text-sm font-medium flex items-center justify-between border transition-all duration-200",
-                                      page === p.pageNum
-                                        ? "bg-accent text-accent-foreground font-medium border-border"
-                                        : "border-transparent text-muted-foreground hover:bg-accent/50"
-                                    )}
-                                  >
-                                    <div className="flex items-center gap-2 truncate pr-1">
-                                      <IconComp className={cn("size-3.5 shrink-0", page === p.pageNum ? "text-accent-foreground" : "text-muted-foreground")} />
-                                      <span className="truncate">{shortenSubbabLabel(p.title)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1 text-[9px] shrink-0">
-                                      {hasBookmark && <Bookmark className="size-3 text-brand-secondary fill-brand-secondary shrink-0" />}
-                                      {hasNote && <NotebookPen className="size-3 text-sky-500 shrink-0" />}
-                                      <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-semibold">
-                                        H{p.pageNum}
-                                      </span>
-                                    </div>
-                                  </button>
-                                </TooltipTrigger>
-                                <TooltipContent side="right">
-                                  <p>{p.title}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            );
-                          })}
-                        </TooltipProvider>
-                      </div>
+                {/* PDF Document Shell split in Sidebar and Page Desk */}
+                <div className="flex flex-1 overflow-hidden relative">
+                  
+                  {/* Collapsible Interactive Sidebar */}
+                  <div 
+                    className={cn(
+                      "border-r border-border bg-card/95 backdrop-blur-xs flex flex-col shrink-0 transition-all duration-350 z-10",
+                      showSidebar 
+                        ? "w-80 translate-x-0 relative" 
+                        : "w-0 -translate-x-full absolute md:relative overflow-hidden border-r-0"
                     )}
+                  >
+                    {/* Sidebar Header with dynamic controls */}
+                    <div className="px-4 pt-4 pb-3 border-b border-border flex items-center justify-between">
+                      <span className="text-body-xs font-heading font-bold text-foreground">
+                        Index & Dokumen
+                      </span>
+                      <button
+                        onClick={handleSidebarToggle}
+                        className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground md:hidden"
+                        title="Sembunyikan Sidebar"
+                      >
+                        <X className="size-4" />
+                      </button>
+                    </div>
 
-                    {/* Thumbnails Tab */}
-                    {sidebarTab === "thumbnails" && (
-                      <div className="grid grid-cols-2 gap-3 p-1">
-                        {MOCK_PAGES_META.map((p) => (
-                          <button
-                            key={p.pageNum}
-                            onClick={() => setPage(p.pageNum)}
-                            className={cn(
-                              "flex flex-col items-center p-1.5 rounded-xl border transition-all duration-200 group text-center gap-1",
-                              page === p.pageNum
-                                ? "border-brand-primary bg-brand-primary/5 ring-2 ring-brand-primary/20 shadow-md"
-                                : "border-border hover:border-border-strong hover:bg-muted/30"
-                            )}
-                          >
-                            <div className="h-20 w-16 overflow-hidden rounded-md bg-muted/40 border border-border/80 shadow-xs relative">
-                              {renderThumbnailPreview(p.pageNum)}
-                              {visitedPages.has(p.pageNum) && (
-                                <span className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 scale-75 shadow-xs">
-                                  <Check className="size-2 stroke-[3px]" />
-                                </span>
-                              )}
-                            </div>
-                            <span className={cn(
-                              "text-[10px] font-mono font-bold mt-1 tracking-wide",
-                              page === p.pageNum ? "text-brand-primary" : "text-muted-foreground group-hover:text-foreground"
-                            )}>
-                              Halaman {p.pageNum}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Search / Indexing Tab */}
-                    {sidebarTab === "search" && (
-                      <div className="space-y-3">
-                        <div className="space-y-1">
-                          <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-1">
-                            Indeks Pencarian Kata
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              value={searchQuery}
-                              onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setActiveHighlightQuery(e.target.value);
-                              }}
-                              placeholder="Ketik kata kunci (e.g. limit, turunan)..."
-                              className="w-full bg-muted/60 text-body-xs border border-border rounded-xl pl-8 pr-8 py-2 focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground text-foreground"
-                            />
-                            <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
-                            {searchQuery && (
-                              <button
-                                onClick={() => {
-                                  setSearchQuery("");
-                                  setActiveHighlightQuery("");
-                                }}
-                                className="absolute right-2.5 top-2.5 p-0.5 rounded-full hover:bg-muted text-muted-foreground"
-                                title="Bersihkan Pencarian"
-                              >
-                                <X className="size-3" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Search Matches list */}
-                        {searchQuery.trim() ? (
-                          <div className="space-y-2">
-                            <span className="text-[9px] font-semibold text-muted-foreground px-1 block">
-                              Ditemukan {searchResults.length} halaman yang cocok:
-                            </span>
-                            {searchResults.length > 0 ? (
-                              <div className="space-y-1.5">
-                                {searchResults.map((r) => (
-                                  <button
-                                    key={r.pageNum}
-                                    onClick={() => {
-                                      setPage(r.pageNum);
-                                      setActiveHighlightQuery(searchQuery);
-                                    }}
-                                    className={cn(
-                                      "w-full text-left p-2.5 rounded-xl border text-body-xs transition-all hover:bg-muted/50 border-border/80 flex flex-col gap-1",
-                                      page === r.pageNum && "bg-brand-primary/5 border-brand-primary/20"
-                                    )}
-                                  >
-                                    <div className="flex items-center justify-between w-full font-bold">
-                                      <span className="text-foreground font-heading text-[11px] truncate max-w-[180px]">
-                                        {r.title}
-                                      </span>
-                                      <span className="font-mono text-[9px] bg-muted px-1 py-0.5 rounded text-muted-foreground">
-                                        Hal {r.pageNum}
-                                      </span>
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed bg-muted/20 p-1.5 rounded-lg border border-border/40 font-mono">
-                                      <Highlight text={r.searchText} query={searchQuery} />
-                                    </p>
-                                  </button>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-6 text-body-xs text-muted-foreground border border-dashed border-border rounded-xl">
-                                Tidak ada kata pencarian yang cocok.
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center py-6 text-body-xs text-muted-foreground/80 border border-dashed border-border rounded-xl font-mono leading-relaxed px-2 bg-muted/10">
-                            Masukkan kata kunci di atas untuk mencari istilah penting dalam dokumen secara instan.
-                          </div>
+                    {/* Sidebar Navigation Tabs */}
+                    <div className="grid grid-cols-4 border-b border-border p-1 bg-muted/40 gap-0.5">
+                      <button
+                        onClick={() => setSidebarTab("outline")}
+                        className={cn(
+                          "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5",
+                          sidebarTab === "outline" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
                         )}
-
+                        title="Daftar Isi"
+                      >
+                        <BookOpen className="size-3.5" />
+                        <span>Outline</span>
+                      </button>
+                      <button
+                        onClick={() => setSidebarTab("thumbnails")}
+                        className={cn(
+                          "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5",
+                          sidebarTab === "thumbnails" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title="Miniatur Halaman"
+                      >
+                        <Layers className="size-3.5" />
+                        <span>Miniatur</span>
+                      </button>
+                      <button
+                        onClick={() => setSidebarTab("search")}
+                        className={cn(
+                          "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5 relative",
+                          sidebarTab === "search" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title="Cari Kata"
+                      >
+                        <Search className="size-3.5" />
+                        <span>Cari</span>
                         {activeHighlightQuery && (
-                          <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-2xl flex items-center justify-between gap-1">
-                            <div className="text-[10px] text-amber-900 dark:text-amber-200">
-                              Sorotan kata <b className="font-mono font-bold bg-amber-500/20 px-1 rounded">&ldquo;{activeHighlightQuery}&rdquo;</b> aktif di halaman.
-                            </div>
-                            <button
-                              onClick={() => setActiveHighlightQuery("")}
-                              className="text-[10px] text-rose-500 font-semibold hover:underline flex items-center gap-0.5 shrink-0"
-                            >
-                              Hapus
-                            </button>
-                          </div>
+                          <span className="absolute top-1 right-3 size-1.5 rounded-full bg-brand-secondary animate-pulse" />
                         )}
-                      </div>
-                    )}
-
-                    {/* Notes & Bookmarks Tab */}
-                    {sidebarTab === "notes" && (
-                      <div className="space-y-4">
-                        
-                        {/* Bookmarks Section */}
-                        <div className="space-y-2">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block px-1">
-                            Penanda Halaman (Bookmarks)
+                      </button>
+                      <button
+                        onClick={() => setSidebarTab("notes")}
+                        className={cn(
+                          "py-1.5 rounded-lg flex flex-col items-center justify-center text-[10px] font-semibold transition-all gap-0.5 relative",
+                          sidebarTab === "notes" ? "bg-card text-brand-primary shadow-xs" : "text-muted-foreground hover:text-foreground"
+                        )}
+                        title="Catatan & Penanda"
+                      >
+                        <NotebookPen className="size-3.5" />
+                        <span>Catatan</span>
+                        {(Object.keys(notes).length > 0 || bookmarks.length > 0) && (
+                          <span className="absolute top-1 right-2 bg-brand-secondary/90 text-white rounded-md px-1 text-[8px] font-mono leading-none scale-85">
+                            {Object.keys(notes).length + bookmarks.length}
                           </span>
-                          {bookmarks.length > 0 ? (
-                            <div className="flex flex-wrap gap-1.5 p-1">
-                              {bookmarks.map((pNum) => (
-                                <div
-                                  key={pNum}
-                                  className={cn(
-                                    "flex items-center gap-1.5 text-body-xs font-medium pl-2.5 pr-1.5 py-1 rounded-md border shadow-2xs transition-all",
-                                    page === pNum
-                                      ? "bg-brand-primary text-white border-brand-primary"
-                                      : "bg-card text-foreground border-border hover:border-border-strong"
-                                  )}
-                                >
-                                  <button onClick={() => setPage(pNum)} className="font-mono font-bold">
-                                    Hal {pNum}
-                                  </button>
-                                  <button
-                                    onClick={() => toggleBookmark(pNum)}
-                                    className={cn(
-                                      "p-0.5 rounded-full hover:bg-black/10 text-muted-foreground",
-                                      page === pNum ? "text-white/80 hover:text-white" : "hover:text-rose-500"
-                                    )}
-                                    title="Hapus Penanda"
-                                  >
-                                    <X className="size-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-4 text-body-xs text-muted-foreground border border-dashed border-border rounded-xl">
-                              Belum ada halaman yang ditandai.
-                            </div>
-                          )}
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Sidebar Tab Content panels */}
+                    <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                      
+                      {/* Outline Tab */}
+                      {sidebarTab === "outline" && (
+                        <div className="space-y-1.5">
+                          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block mb-2 px-1">
+                            Struktur Materi
+                          </span>
+                          <TooltipProvider>
+                            {MOCK_PAGES_META.map((p) => {
+                              const IconComp = p.icon;
+                              const hasNote = notes[p.pageNum];
+                              const hasBookmark = bookmarks.includes(p.pageNum);
+
+                              return (
+                                <Tooltip key={p.pageNum}>
+                                  <TooltipTrigger asChild>
+                                    <button
+                                      onClick={() => setPage(p.pageNum)}
+                                      className={cn(
+                                        "w-full text-left p-2.5 rounded-md text-sm font-medium flex items-center justify-between border transition-all duration-200",
+                                        page === p.pageNum
+                                          ? "bg-accent text-accent-foreground font-medium border-border"
+                                          : "border-transparent text-muted-foreground hover:bg-accent/50"
+                                      )}
+                                    >
+                                      <div className="flex items-center gap-2 truncate pr-1">
+                                        <IconComp className={cn("size-3.5 shrink-0", page === p.pageNum ? "text-accent-foreground" : "text-muted-foreground")} />
+                                        <span className="truncate">{shortenSubbabLabel(p.title)}</span>
+                                      </div>
+                                      <div className="flex items-center gap-1 text-[9px] shrink-0">
+                                        {hasBookmark && <Bookmark className="size-3 text-brand-secondary fill-brand-secondary shrink-0" />}
+                                        {hasNote && <NotebookPen className="size-3 text-sky-500 shrink-0" />}
+                                        <span className="font-mono bg-muted px-1.5 py-0.5 rounded text-muted-foreground font-semibold">
+                                          H{p.pageNum}
+                                        </span>
+                                      </div>
+                                    </button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="right">
+                                    <p>{p.title}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
+                          </TooltipProvider>
                         </div>
+                      )}
 
-                        {/* Page Notes Manager */}
-                        <div className="space-y-2.5 pt-2 border-t border-border/80">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block px-1">
-                            Catatan Halaman {page}
-                          </span>
-                          
-                          <div className="space-y-1.5">
-                            <textarea
-                              value={activeNoteText}
-                              onChange={(e) => {
-                                setActiveNoteText(e.target.value);
-                                saveNote(e.target.value);
-                              }}
-                              placeholder="Tulis catatan penting untuk halaman ini..."
-                              rows={4}
-                              className="w-full bg-muted/40 text-body-xs border border-border rounded-xl p-2.5 focus:bg-card focus:outline-none focus:ring-1 focus:ring-brand-primary transition-all text-foreground resize-none leading-relaxed"
-                            />
-                            <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
-                              <span>{isSavingNote ? "Menyimpan catatan..." : "Tersimpan di browser"}</span>
-                              {notes[page] && (
+                      {/* Thumbnails Tab */}
+                      {sidebarTab === "thumbnails" && (
+                        <div className="grid grid-cols-2 gap-3 p-1">
+                          {MOCK_PAGES_META.map((p) => (
+                            <button
+                              key={p.pageNum}
+                              onClick={() => setPage(p.pageNum)}
+                              className={cn(
+                                "flex flex-col items-center p-1.5 rounded-xl border transition-all duration-200 group text-center gap-1",
+                                page === p.pageNum
+                                  ? "border-brand-primary bg-brand-primary/5 ring-2 ring-brand-primary/20 shadow-md"
+                                  : "border-border hover:border-border-strong hover:bg-muted/30"
+                              )}
+                            >
+                              <div className="h-20 w-16 overflow-hidden rounded-md bg-muted/40 border border-border/80 shadow-xs relative">
+                                {renderThumbnailPreview(p.pageNum)}
+                                {visitedPages.has(p.pageNum) && (
+                                  <span className="absolute top-1 right-1 bg-emerald-500 text-white rounded-full p-0.5 scale-75 shadow-xs">
+                                    <Check className="size-2 stroke-[3px]" />
+                                  </span>
+                                )}
+                              </div>
+                              <span className={cn(
+                                "text-[10px] font-mono font-bold mt-1 tracking-wide",
+                                page === p.pageNum ? "text-brand-primary" : "text-muted-foreground group-hover:text-foreground"
+                              )}>
+                                Halaman {p.pageNum}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Search / Indexing Tab */}
+                      {sidebarTab === "search" && (
+                        <div className="space-y-3">
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground px-1">
+                              Indeks Pencarian Kata
+                            </label>
+                            <div className="relative">
+                              <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => {
+                                  setSearchQuery(e.target.value);
+                                  setActiveHighlightQuery(e.target.value);
+                                }}
+                                placeholder="Ketik kata kunci (e.g. limit, turunan)..."
+                                className="w-full bg-muted/60 text-body-xs border border-border rounded-xl pl-8 pr-8 py-2 focus:bg-card focus:outline-none transition-all placeholder:text-muted-foreground text-foreground"
+                              />
+                              <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+                              {searchQuery && (
                                 <button
-                                  onClick={() => deleteNote(page)}
-                                  className="text-rose-500 hover:text-rose-600 font-semibold flex items-center gap-0.5 transition-colors"
+                                  onClick={() => {
+                                    setSearchQuery("");
+                                    setActiveHighlightQuery("");
+                                  }}
+                                  className="absolute right-2.5 top-2.5 p-0.5 rounded-full hover:bg-muted text-muted-foreground"
+                                  title="Bersihkan Pencarian"
                                 >
-                                  <Trash2 className="size-3" /> Hapus
+                                  <X className="size-3" />
                                 </button>
                               )}
                             </div>
                           </div>
-                        </div>
 
-                        {/* All Stored Notes List */}
-                        <div className="space-y-2 pt-2 border-t border-border/80">
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block px-1">
-                            Semua Catatan Anda ({Object.keys(notes).length})
-                          </span>
-                          {Object.keys(notes).length > 0 ? (
+                          {/* Search Matches list */}
+                          {searchQuery.trim() ? (
                             <div className="space-y-2">
-                              {Object.entries(notes).map(([pStr, text]) => {
-                                const pNum = parseInt(pStr);
-                                return (
-                                  <div
-                                    key={pNum}
-                                    className={cn(
-                                      "p-2.5 rounded-xl border text-body-xs transition-all flex flex-col gap-1 hover:bg-muted/30",
-                                      page === pNum ? "bg-brand-primary/5 border-brand-primary/20" : "border-border/80 bg-card"
-                                    )}
-                                  >
-                                    <div className="flex items-center justify-between">
-                                      <button
-                                        onClick={() => setPage(pNum)}
-                                        className="font-semibold text-brand-primary hover:underline font-mono text-[10px]"
-                                      >
-                                        Halaman {pNum}
-                                      </button>
-                                      <button
-                                        onClick={() => deleteNote(pNum)}
-                                        className="p-1 text-muted-foreground hover:text-rose-500 rounded-md hover:bg-muted"
-                                        title="Hapus Catatan"
-                                      >
-                                        <Trash2 className="size-3.5" />
-                                      </button>
-                                    </div>
-                                    <p className="text-muted-foreground line-clamp-3 leading-relaxed whitespace-pre-wrap">
-                                      {text}
-                                    </p>
-                                  </div>
-                                );
-                              })}
+                              <span className="text-[9px] font-semibold text-muted-foreground px-1 block">
+                                Ditemukan {searchResults.length} halaman yang cocok:
+                              </span>
+                              {searchResults.length > 0 ? (
+                                <div className="space-y-1.5">
+                                  {searchResults.map((r) => (
+                                    <button
+                                      key={r.pageNum}
+                                      onClick={() => {
+                                        setPage(r.pageNum);
+                                        setActiveHighlightQuery(searchQuery);
+                                      }}
+                                      className={cn(
+                                        "w-full text-left p-2.5 rounded-xl border text-body-xs transition-all hover:bg-muted/50 border-border/80 flex flex-col gap-1",
+                                        page === r.pageNum && "bg-brand-primary/5 border-brand-primary/20"
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between w-full font-bold">
+                                        <span className="text-foreground font-heading text-[11px] truncate max-w-[180px]">
+                                          {r.title}
+                                        </span>
+                                        <span className="font-mono text-[9px] bg-muted px-1 py-0.5 rounded text-muted-foreground">
+                                          Hal {r.pageNum}
+                                        </span>
+                                      </div>
+                                      <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed bg-muted/20 p-1.5 rounded-lg border border-border/40 font-mono">
+                                        <Highlight text={r.searchText} query={searchQuery} />
+                                      </p>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-center py-6 text-body-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                                  Tidak ada kata pencarian yang cocok.
+                                </div>
+                              )}
                             </div>
                           ) : (
-                            <div className="text-center py-4 text-body-xs text-muted-foreground border border-dashed border-border rounded-xl">
-                              Belum ada catatan yang ditulis.
+                            <div className="text-center py-6 text-body-xs text-muted-foreground/80 border border-dashed border-border rounded-xl font-mono leading-relaxed px-2 bg-muted/10">
+                              Masukkan kata kunci di atas untuk mencari istilah penting dalam dokumen secara instan.
+                            </div>
+                          )}
+
+                          {activeHighlightQuery && (
+                            <div className="bg-amber-500/10 border border-amber-500/25 p-3 rounded-2xl flex items-center justify-between gap-1">
+                              <div className="text-[10px] text-amber-900 dark:text-amber-200">
+                                Sorotan kata <b className="font-mono font-bold bg-amber-500/20 px-1 rounded">&ldquo;{activeHighlightQuery}&rdquo;</b> aktif di halaman.
+                              </div>
+                              <button
+                                onClick={() => setActiveHighlightQuery("")}
+                                className="text-[10px] text-destructive font-semibold hover:underline flex items-center gap-0.5 shrink-0"
+                              >
+                                Hapus
+                              </button>
                             </div>
                           )}
                         </div>
+                      )}
 
-                      </div>
+                      {/* Notes & Bookmarks Tab */}
+                      {sidebarTab === "notes" && (
+                        <div className="space-y-4">
+                          
+                          {/* Bookmarks Section */}
+                          <div className="space-y-2">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block px-1">
+                              Penanda Halaman (Bookmarks)
+                            </span>
+                            {bookmarks.length > 0 ? (
+                              <div className="flex flex-wrap gap-1.5 p-1">
+                                {bookmarks.map((pNum) => (
+                                  <div
+                                    key={pNum}
+                                    className={cn(
+                                      "flex items-center gap-1.5 text-body-xs font-medium pl-2.5 pr-1.5 py-1 rounded-md border shadow-2xs transition-all",
+                                      page === pNum
+                                        ? "bg-brand-primary text-white border-brand-primary"
+                                        : "bg-card text-foreground border-border hover:border-border-strong"
+                                    )}
+                                  >
+                                    <button onClick={() => setPage(pNum)} className="font-mono font-bold">
+                                      Hal {pNum}
+                                    </button>
+                                    <button
+                                      onClick={() => toggleBookmark(pNum)}
+                                      className={cn(
+                                        "p-0.5 rounded-full hover:bg-black/10 text-muted-foreground",
+                                        page === pNum ? "text-white/80 hover:text-white" : "hover:text-destructive"
+                                      )}
+                                      title="Hapus Penanda"
+                                    >
+                                      <X className="size-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-body-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                                Belum ada halaman yang ditandai.
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Page Notes Manager */}
+                          <div className="space-y-2.5 pt-2 border-t border-border/80">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block px-1">
+                              Catatan Halaman {page}
+                            </span>
+                            
+                            <div className="space-y-1.5">
+                              <textarea
+                                value={activeNoteText}
+                                onChange={(e) => {
+                                  setActiveNoteText(e.target.value);
+                                  saveNote(e.target.value);
+                                }}
+                                placeholder="Tulis catatan penting untuk halaman ini..."
+                                rows={4}
+                                className="w-full bg-muted/40 text-body-xs border border-border rounded-xl p-2.5 focus:bg-card focus:outline-none focus:ring-1 focus:ring-brand-primary transition-all text-foreground resize-none leading-relaxed"
+                              />
+                              <div className="flex items-center justify-between text-[10px] text-muted-foreground px-1">
+                                <span>{isSavingNote ? "Menyimpan catatan..." : "Tersimpan di browser"}</span>
+                                {notes[page] && (
+                                  <button
+                                    onClick={() => deleteNote(page)}
+                                    className="text-destructive hover:text-destructive/90 font-semibold flex items-center gap-0.5 transition-colors"
+                                  >
+                                    <Trash2 className="size-3" /> Hapus
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* All Stored Notes List */}
+                          <div className="space-y-2 pt-2 border-t border-border/80">
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block px-1">
+                              Semua Catatan Anda ({Object.keys(notes).length})
+                            </span>
+                            {Object.keys(notes).length > 0 ? (
+                              <div className="space-y-2">
+                                {Object.entries(notes).map(([pStr, text]) => {
+                                  const pNum = parseInt(pStr);
+                                  return (
+                                    <div
+                                      key={pNum}
+                                      className={cn(
+                                        "p-2.5 rounded-xl border text-body-xs transition-all flex flex-col gap-1 hover:bg-muted/30",
+                                        page === pNum ? "bg-brand-primary/5 border-brand-primary/20" : "border-border/80 bg-card"
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <button
+                                          onClick={() => setPage(pNum)}
+                                          className="font-semibold text-brand-primary hover:underline font-mono text-[10px]"
+                                        >
+                                          Halaman {pNum}
+                                        </button>
+                                        <button
+                                          onClick={() => deleteNote(pNum)}
+                                          className="p-1 text-muted-foreground hover:text-destructive rounded-md hover:bg-muted"
+                                          title="Hapus Catatan"
+                                        >
+                                          <Trash2 className="size-3.5" />
+                                        </button>
+                                      </div>
+                                      <p className="text-muted-foreground line-clamp-3 leading-relaxed whitespace-pre-wrap">
+                                        {text}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-body-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                                Belum ada catatan yang ditulis.
+                              </div>
+                            )}
+                          </div>
+
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                  {/* Main PDF Canvas reader desk */}
+                  <div className={cn("flex-1 overflow-auto flex flex-col items-center justify-start py-8 px-4 md:px-8 relative min-w-0 transition-colors duration-350 border-l", currentThemeStyle.deskBg)}>
+                    
+                    {/* Floating Toggle Sidebar button for desktop */}
+                    {!showSidebar && (
+                      <button
+                        onClick={handleSidebarToggle}
+                        className="absolute top-4 left-4 p-2.5 rounded-xl bg-card border border-border shadow-md text-foreground hover:bg-muted transition-all duration-200 z-10"
+                        title="Tampilkan Sidebar"
+                      >
+                        <PanelLeft className="size-4" />
+                      </button>
                     )}
 
-                  </div>
-                </div>
+                    {/* Bookmark Button directly overlaying the page canvas */}
+                    <div className="w-full max-w-[620px] flex justify-end mb-2">
+                        <button
+                          type="button"
+                          onClick={() => toggleBookmark(page)}
+                          className={cn(
+                            "p-1.5 rounded-md border shadow-2xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 text-body-xs font-semibold px-3.5 h-7",
+                            bookmarks.includes(page)
+                              ? "bg-brand-secondary text-white border-brand-secondary"
+                              : "bg-card text-muted-foreground border-border hover:text-foreground"
+                          )}
+                          title={bookmarks.includes(page) ? "Hapus Penanda" : "Tandai Halaman Ini"}
+                        >
+                          {bookmarks.includes(page) ? (
+                            <>
+                              <BookmarkCheck className="size-3.5 text-white" />
+                              <span>Ditandai</span>
+                            </>
+                          ) : (
+                            <>
+                              <Bookmark className="size-3.5" />
+                              <span>Tandai Halaman</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
 
-                {/* Main PDF Canvas reader desk */}
-                <div className="flex-1 overflow-auto flex flex-col items-center justify-start py-8 px-4 md:px-8 relative min-w-0 transition-colors duration-300 bg-zinc-100 dark:bg-zinc-950/20">
-                  
-                  {/* Floating Toggle Sidebar button for desktop */}
-                  {!showSidebar && (
-                    <button
-                      onClick={handleSidebarToggle}
-                      className="absolute top-4 left-4 p-2.5 rounded-xl bg-card border border-border shadow-md text-foreground hover:bg-muted transition-all duration-200 z-10"
-                      title="Tampilkan Sidebar"
-                    >
-                      <PanelLeft className="size-4" />
-                    </button>
-                  )}
-
-                  {/* Bookmark Button directly overlaying the page canvas */}
-                  <div className="w-full max-w-[620px] flex justify-end mb-2">
-                      <button
-                        type="button"
-                        onClick={() => toggleBookmark(page)}
+                    {/* Dynamic Scaling viewport container */}
+                    <div className="flex-1 flex items-center justify-center w-full min-h-[480px]">
+                      <div
                         className={cn(
-                          "p-1.5 rounded-md border shadow-2xs hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5 text-body-xs font-semibold px-3.5 h-7",
-                          bookmarks.includes(page)
-                            ? "bg-brand-secondary text-white border-brand-secondary"
-                            : "bg-card text-muted-foreground border-border hover:text-foreground"
+                          "transition-all duration-250 ease-out origin-center rounded-2xl shadow-xl overflow-hidden border border-solid p-6 md:p-10",
+                          currentThemeStyle.paperBg,
+                          currentThemeStyle.text,
+                          currentThemeStyle.border
                         )}
-                        title={bookmarks.includes(page) ? "Hapus Penanda" : "Tandai Halaman Ini"}
+                        style={{
+                          transform: `scale(${zoom / 100})`,
+                          transformOrigin: "center center",
+                          width: "600px",
+                          maxWidth: "100%"
+                        }}
                       >
-                        {bookmarks.includes(page) ? (
-                          <>
-                            <BookmarkCheck className="size-3.5 text-white" />
-                            <span>Ditandai</span>
-                          </>
-                        ) : (
-                          <>
-                            <Bookmark className="size-3.5" />
-                            <span>Tandai Halaman</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                  {/* Dynamic Scaling viewport container */}
-                  <div className="flex-1 flex items-center justify-center w-full min-h-[480px]">
-                    <div
-                      className={cn(
-                        "transition-all duration-250 ease-out origin-center rounded-2xl shadow-xl overflow-hidden border border-solid p-6 md:p-10",
-                        currentThemeStyle.paperBg,
-                        currentThemeStyle.text,
-                        currentThemeStyle.border
-                      )}
-                      style={{
-                        transform: `scale(${zoom / 100})`,
-                        transformOrigin: "center center",
-                        width: "600px",
-                        maxWidth: "100%"
-                      }}
-                    >
-                      <div className="h-full flex flex-col justify-between min-h-[400px]">
-                        {/* Render customized page body */}
-                        <div className="flex-1">
-                          {getMockPageContent(page, activeHighlightQuery)}
-                        </div>
-                        
-                        {/* Elegant minimalist academic footer */}
-                        <div className="border-t border-border/60 pt-4 mt-6 flex items-center justify-between text-[10px] text-muted-foreground font-mono">
-                          <span className="truncate max-w-[150px] sm:max-w-xs">{material.title}</span>
-                          <span className="shrink-0">Halaman {page} dari {MOCK_PAGES_META.length}</span>
+                        <div className="h-full flex flex-col justify-between min-h-[400px]">
+                          {/* Render customized page body */}
+                          <div className="flex-1">
+                            {getMockPageContent(page, activeHighlightQuery)}
+                          </div>
+                          
+                          {/* Elegant minimalist academic footer */}
+                          <div className="border-t border-border/60 pt-4 mt-6 flex items-center justify-between text-[10px] text-muted-foreground font-mono">
+                            <span className="truncate max-w-[150px] sm:max-w-xs">{material.title}</span>
+                            <span className="shrink-0">Halaman {page} dari {MOCK_PAGES_META.length}</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Spacer for Toolbar */}
-                  <div className="h-20" />
+                    {/* Spacer for Toolbar */}
+                    <div className="h-20" />
 
-                  {/* Floating Glassmorphic Control Toolbar */}
-                  <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-2xl px-4 py-2 flex items-center gap-3.5 z-10 transition-all duration-200 hover:bg-card hover:shadow-xl w-max max-w-[90vw]">
-                    
-                    {/* Toggle Sidebar */}
-                    <button
-                      onClick={handleSidebarToggle}
-                      className={cn(
-                        "p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors hidden md:block",
-                        showSidebar && "text-brand-primary"
-                      )}
-                      title={showSidebar ? "Sembunyikan Menu" : "Tampilkan Menu"}
-                    >
-                      <PanelLeftClose className="size-4" />
-                    </button>
-
-                    <span className="w-px h-4 bg-border hidden md:block" />
-
-                    {/* Page Controller */}
-                    <div className="flex items-center gap-2">
+                    {/* Floating Glassmorphic Control Toolbar */}
+                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-2xl px-4 py-2 flex items-center gap-3.5 z-10 transition-all duration-200 hover:bg-card hover:shadow-xl w-max max-w-[90vw]">
+                      
+                      {/* Toggle Sidebar */}
                       <button
-                        disabled={page === 1}
-                        onClick={() => setPage(page - 1)}
-                        className="p-1 rounded-full bg-muted/60 hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                        title="Halaman Sebelumnya"
+                        onClick={handleSidebarToggle}
+                        className={cn(
+                          "p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors hidden md:block",
+                          showSidebar && "text-brand-primary"
+                        )}
+                        title={showSidebar ? "Sembunyikan Menu" : "Tampilkan Menu"}
                       >
-                        <ChevronLeft className="size-4 text-foreground" />
+                        <PanelLeftClose className="size-4" />
                       </button>
-                      <span className="text-body-xs font-mono font-bold text-foreground select-none shrink-0">
-                        {page} <span className="text-muted-foreground">/</span> {MOCK_PAGES_META.length}
-                      </span>
-                      <button
-                        disabled={page === MOCK_PAGES_META.length}
-                        onClick={() => setPage(page + 1)}
-                        className="p-1 rounded-full bg-muted/60 hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
-                        title="Halaman Selanjutnya"
-                      >
-                        <ChevronRight className="size-4 text-foreground" />
-                      </button>
-                    </div>
 
-                    <span className="w-px h-4 bg-border" />
+                      <span className="w-px h-4 bg-border hidden md:block" />
 
-                    {/* Zoom Engine */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setZoom(Math.max(50, zoom - 25))}
-                        className="p-1 rounded-full bg-muted/60 hover:bg-muted transition-all"
-                        title="Perkecil"
-                      >
-                        <ZoomOut className="size-3.5 text-foreground" />
-                      </button>
-                      <span className="font-mono text-[10px] font-bold text-foreground w-10 text-center select-none">
-                        {zoom}%
-                      </span>
-                      <button
-                        onClick={() => setZoom(Math.min(150, zoom + 25))}
-                        className="p-1 rounded-full bg-muted/60 hover:bg-muted transition-all"
-                        title="Perbesar"
-                      >
-                        <ZoomIn className="size-3.5 text-foreground" />
-                      </button>
-                    </div>
-
-                    <span className="w-px h-4 bg-border" />
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={toggleFullscreen}
-                        className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                        title={isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}
-                      >
-                        {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
-                      </button>
-                      {material.url && (
-                        <a
-                          href={material.url}
-                          download
-                          className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
-                          title="Unduh Berkas PDF"
+                      {/* Page Controller */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          disabled={page === 1}
+                          onClick={() => setPage(page - 1)}
+                          className="p-1 rounded-md bg-muted/60 hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          title="Halaman Sebelumnya"
                         >
-                          <Download className="size-4" />
-                        </a>
-                      )}
+                          <ChevronLeft className="size-4 text-foreground" />
+                        </button>
+                        <span className="text-body-xs font-mono font-bold text-foreground select-none shrink-0">
+                          {page} <span className="text-muted-foreground">/</span> {MOCK_PAGES_META.length}
+                        </span>
+                        <button
+                          disabled={page === MOCK_PAGES_META.length}
+                          onClick={() => setPage(page + 1)}
+                          className="p-1 rounded-md bg-muted/60 hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                          title="Halaman Selanjutnya"
+                        >
+                          <ChevronRight className="size-4 text-foreground" />
+                        </button>
+                      </div>
+
+                      <span className="w-px h-4 bg-border" />
+
+                      {/* Zoom Engine */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => setZoom(Math.max(50, zoom - 25))}
+                          className="p-1 rounded-md bg-muted/60 hover:bg-muted transition-all"
+                          title="Perkecil"
+                        >
+                          <ZoomOut className="size-3.5 text-foreground" />
+                        </button>
+                        <span className="font-mono text-[10px] font-bold text-foreground w-10 text-center select-none">
+                          {zoom}%
+                        </span>
+                        <button
+                          onClick={() => setZoom(Math.min(150, zoom + 25))}
+                          className="p-1 rounded-md bg-muted/60 hover:bg-muted transition-all"
+                          title="Perbesar"
+                        >
+                          <ZoomIn className="size-3.5 text-foreground" />
+                        </button>
+                      </div>
+
+                      <span className="w-px h-4 bg-border" />
+
+                      {/* Actions */}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={toggleFullscreen}
+                          className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                          title={isFullscreen ? "Keluar Layar Penuh" : "Layar Penuh"}
+                        >
+                          {isFullscreen ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
+                        </button>
+                        {material.url && (
+                          <a
+                            href={material.url}
+                            download
+                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-all"
+                            title="Unduh Berkas PDF"
+                          >
+                            <Download className="size-4" />
+                          </a>
+                        )}
+                      </div>
+
                     </div>
 
                   </div>
@@ -1607,137 +1755,99 @@ export function MaterialViewer({ material, chapterId, ragEnabled }: MaterialView
                 </div>
 
               </div>
-
-            </div>
-          ) : (
-            <div className="space-y-4 font-sans p-4">
-              {/* Chrome Native Browser PDF Viewer (iframe fallback) */}
-              <p className="text-body-sm text-muted-foreground">
-                Pratinjau PDF bawaan browser di bawah ini. Gunakan tombol unduh jika tidak termuat.
-              </p>
-              <div className="w-full aspect-video overflow-hidden border border-border bg-[#333] rounded-2xl relative shadow-md">
-                <iframe
-                  title={material.title}
-                  src={material.url}
-                  className="w-full h-full border-0"
-                />
+            ) : (
+              <div className="flex-1 min-h-0 w-full flex flex-col p-4 bg-background">
+                {/* Chrome Native Browser PDF Viewer (iframe fallback) */}
+                <p className="text-body-sm text-muted-foreground mb-3 shrink-0">
+                  Pratinjau PDF bawaan browser di bawah ini. Gunakan tombol unduh jika tidak termuat.
+                </p>
+                <div className="flex-1 w-full overflow-hidden border border-border bg-[#333] rounded-2xl relative shadow-md">
+                  <iframe
+                    title={material.title}
+                    src={material.url}
+                    className="w-full h-full border-0"
+                  />
+                </div>
+                <div className="mt-4 shrink-0">
+                  <Button asChild variant="outline">
+                    <a href={material.url} download target="_blank" rel="noopener noreferrer">
+                      <Download className="mr-2 size-4" aria-hidden />
+                      Unduh Dokumen PDF
+                    </a>
+                  </Button>
+                </div>
               </div>
-              <Button asChild variant="outline">
-                <a href={material.url} download target="_blank" rel="noopener noreferrer">
-                  <Download className="mr-2 size-4" aria-hidden />
-                  Unduh Dokumen PDF
-                </a>
-              </Button>
-            </div>
             )}
           </div>
         ) : null}
 
-
-        {/* Image Reader */}
-        {material.kind === "image" && material.url ? (
-          <div className="relative mx-auto max-w-2xl aspect-video w-full rounded-2xl overflow-hidden shadow-md bg-card/60 p-2 my-4">
-            <div className="relative w-full h-full rounded-xl overflow-hidden">
-              <Image
-                src={material.url}
-                alt={material.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 42rem"
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {/* Video Player */}
-        {material.kind === "video" && material.url ? (
-          <div className="space-y-4 max-w-3xl mx-auto p-4 my-2">
-            {(() => {
-              const embed = getYoutubeEmbedUrl(material.url);
-              if (embed) {
-                return (
-                  <div className="aspect-video w-full overflow-hidden rounded-2xl border border-border shadow-md">
-                    <iframe
-                      title={material.title}
-                      src={embed}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full h-full"
+        {/* Fallback Material Type view (image, video, link) centered in a scrollable block */}
+        {material.kind !== "pdf" && (
+          <div className="flex-1 overflow-y-auto p-6 flex items-center justify-center">
+            <div className="w-full max-w-3xl">
+              {/* Image Reader */}
+              {material.kind === "image" && material.url ? (
+                <div className="relative mx-auto max-w-2xl aspect-video w-full rounded-2xl overflow-hidden shadow-md bg-card/60 p-2 my-4">
+                  <div className="relative w-full h-full rounded-xl overflow-hidden">
+                    <Image
+                      src={material.url}
+                      alt={material.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 42rem"
                     />
                   </div>
-                );
-              }
-              return (
-                <p className="text-body-base text-muted-foreground">
-                  Video tidak didukung untuk sematan langsung. Buka di tab baru.
-                </p>
-              );
-            })()}
-          </div>
-        ) : null}
+                </div>
+              ) : null}
 
-        {/* External Link */}
-        {material.kind === "link" && material.url ? (
-          <div className="bg-card p-8 rounded-2xl border border-border flex flex-col sm:flex-row items-center justify-between gap-4 max-w-2xl mx-auto my-6 shadow-2xs">
-            <p className="text-body-sm text-muted-foreground text-center sm:text-left">
-              Dokumen eksternal berada di luar platform Zyx.
-            </p>
-            <Button asChild className="bg-brand-primary text-white hover:bg-brand-primary/95 shrink-0">
-              <a href={material.url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="mr-1.5 size-4" />
-                Buka Tautan Sumber
-              </a>
-            </Button>
+              {/* Video Player */}
+              {material.kind === "video" && material.url ? (
+                <div className="space-y-4 max-w-3xl mx-auto p-4 my-2">
+                  {(() => {
+                    const embed = getYoutubeEmbedUrl(material.url);
+                    if (embed) {
+                      return (
+                        <div className="aspect-video w-full overflow-hidden rounded-2xl border border-border shadow-md">
+                          <iframe
+                            title={material.title}
+                            src={embed}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowFullScreen
+                            className="w-full h-full"
+                          />
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="text-body-base text-muted-foreground">
+                        Video tidak didukung untuk sematan langsung. Buka di tab baru.
+                      </p>
+                    );
+                  })()}
+                </div>
+              ) : null}
+
+              {/* External Link */}
+              {material.kind === "link" && material.url ? (
+                <div className="bg-card p-8 rounded-2xl border border-border flex flex-col sm:flex-row items-center justify-between gap-4 max-w-2xl mx-auto my-6 shadow-2xs">
+                  <p className="text-body-sm text-muted-foreground text-center sm:text-left">
+                    Dokumen eksternal berada di luar platform Zyx.
+                  </p>
+                  <Button asChild className="bg-brand-primary text-white hover:bg-brand-primary/95 shrink-0">
+                    <a href={material.url} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="mr-1.5 size-4" />
+                      Buka Tautan Sumber
+                    </a>
+                  </Button>
+                </div>
+              ) : null}
+            </div>
           </div>
-        ) : null}
+        )}
 
       </div>
 
-      {selectionCoords && selectedText && (
-        <div
-          style={{
-            position: "fixed",
-            top: `${selectionCoords.top}px`,
-            left: `${selectionCoords.left}px`,
-            transform: "translateX(-50%)",
-            zIndex: 9999,
-          }}
-          className="animate-fade-in"
-        >
-          <Button
-            size="xs"
-            className="rounded-lg bg-brand-primary text-white hover:bg-brand-primary/95 shadow-md flex items-center gap-1.5 h-8 font-sans text-body-2xs px-3 border border-brand-primary/20"
-            onClick={async () => {
-              const textToQuery = selectedText;
-              // Clear selection to hide button
-              window.getSelection()?.removeAllRanges();
-              setSelectedText("");
-              setSelectionCoords(null);
-              
-              toast.promise(
-                (async () => {
-                  const { findKoForMaterialSectionAction } = await import("@/app/actions/tutor");
-                  const res = await findKoForMaterialSectionAction(material.courseId, textToQuery);
-                  if (res.success && res.koId) {
-                    openExplain(res.koId, "content");
-                  } else {
-                    // Fallback to general explain
-                    openExplain("ko-101", "content");
-                  }
-                })(),
-                {
-                  loading: "Menganalisis konsep...",
-                  success: "Tutor AI siap menjelaskan!",
-                  error: "Gagal memproses konsep."
-                }
-              );
-            }}
-          >
-            <Sparkles className="size-3.5" />
-            Tanya Tutor AI
-          </Button>
-        </div>
-      )}
+      {tutorPopover}
     </div>
   );
 }

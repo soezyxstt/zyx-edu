@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Lock } from "lucide-react";
 import { checkEnrollment } from "@/app/dashboard/actions";
@@ -12,6 +13,7 @@ import { db } from "@/db";
 import { aiMaterialInstances, diktats } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
+import { storage } from "@/lib/storage";
 
 type Props = { params: Promise<{ id: string; materialId: string }> };
 
@@ -34,7 +36,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         kind: "pdf",
         docCategory: "diktat",
         fileSize: "PDF File",
-        url: diktatRecord.fileUrl || undefined,
+        url: diktatRecord.fileUrl ? storage.getUrl(diktatRecord.fileUrl) : undefined,
         completed: false,
         isPastYear: false,
         isPreview: true,
@@ -133,14 +135,12 @@ export default async function CourseMaterialDetailPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell title={material.title} description={`${course.title} · materi`} hideHeader fullWidth className="h-full">
-      <Reveal className="flex-1 flex flex-col min-h-0 w-full h-full">
-        <MaterialViewer
-          material={material}
-          chapterId={material.chapterId}
-          ragEnabled={env.FEATURE_TUTOR_RAG === "1"}
-        />
-      </Reveal>
-    </CoursePageShell>
+    <Suspense fallback={<div className="p-8 flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>}>
+      <MaterialViewer
+        material={material}
+        chapterId={material.chapterId}
+        ragEnabled={env.FEATURE_TUTOR_RAG === "1"}
+      />
+    </Suspense>
   );
 }

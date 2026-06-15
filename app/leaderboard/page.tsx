@@ -15,6 +15,8 @@ import {
 import { and, eq, sql, gt, inArray } from "drizzle-orm";
 import { pageTitle } from "@/lib/site";
 import { Reveal } from "@/components/ui/reveal";
+import { PageHeader } from "@/components/page-header";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -88,20 +90,14 @@ export default async function LeaderboardPage() {
 
   return (
     <Reveal className="marketing-container mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-10 flex items-center gap-3 pb-6 border-b border-border">
-        <div className="flex size-12 items-center justify-center rounded-xl bg-brand-primary/10 text-brand-primary shrink-0">
-          <Trophy className="size-6 shrink-0" aria-hidden />
-        </div>
-        <div>
-          <h1 className="font-heading text-h4 font-bold text-foreground">Papan Peringkat</h1>
-          <p className="mt-1 text-body-sm text-muted-foreground">
-            Peringkat kuis AI berdasarkan rata-rata skor tiap kelas bimbingan.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Papan Peringkat"
+        description="Peringkat kuis AI berdasarkan rata-rata skor tiap kelas bimbingan."
+        icon={Trophy}
+      />
 
       {allCourses.length === 0 ? (
-        <div className="py-16 text-center max-w-md mx-auto rounded-2xl border border-border bg-card/50 p-8 shadow-xs">
+        <div className={studentCardClass("py-16 text-center max-w-md mx-auto bg-card/50 p-8 shadow-xs")}>
           <Trophy className="size-10 text-muted-foreground/30 mx-auto mb-4" />
           <p className="text-body-sm text-muted-foreground">
             Kamu belum terdaftar di kelas manapun.{" "}
@@ -121,7 +117,7 @@ export default async function LeaderboardPage() {
             const others = rows.filter((r) => r.rank > 3);
 
             return (
-              <section key={course.id} className="rounded-2xl border border-border bg-card/45 p-6 shadow-xs backdrop-blur-md">
+              <section key={course.id} className={studentCardClass("bg-card/45")}>
                 <div className="mb-6 flex items-center justify-between">
                   <h2 className="font-heading text-h5 font-bold text-foreground">
                     {course.title}

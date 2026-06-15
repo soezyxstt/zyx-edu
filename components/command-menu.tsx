@@ -181,7 +181,7 @@ export function CommandMenuProvider({ children }: { children: React.ReactNode })
             >
             <Dialog.Title className="sr-only">Pencarian situs</Dialog.Title>
             <Dialog.Description className="sr-only">
-              Cari halaman, course, materi, soal, dan topik di ZYX Academy.
+              Cari halaman, course, materi, soal, dan topik di Zyx Academy.
             </Dialog.Description>
             <Command
               shouldFilter={false}

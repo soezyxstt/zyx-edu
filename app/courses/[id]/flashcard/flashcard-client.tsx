@@ -400,7 +400,7 @@ export function FlashcardClient({ courseId, initialQueue, studentId }: Flashcard
               type="button"
               disabled={loading}
               onClick={() => handleGrade(1)}
-              className="w-full rounded-md border border-transparent bg-rose-500/10 text-rose-600 hover:bg-rose-500/20 active:scale-[0.98] text-body-xs font-bold py-3.5 h-auto transition-all"
+              className="w-full rounded-md border border-transparent bg-status-error/10 text-status-error hover:bg-status-error/20 active:scale-[0.98] text-body-xs font-bold py-3.5 h-auto transition-all"
             >
               Ulangi (SM-2: 1)
             </Button>
@@ -408,7 +408,7 @@ export function FlashcardClient({ courseId, initialQueue, studentId }: Flashcard
               type="button"
               disabled={loading}
               onClick={() => handleGrade(2)}
-              className="w-full rounded-md border border-transparent bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 active:scale-[0.98] text-body-xs font-bold py-3.5 h-auto transition-all"
+              className="w-full rounded-md border border-transparent bg-status-warning/10 text-status-warning hover:bg-status-warning/20 active:scale-[0.98] text-body-xs font-bold py-3.5 h-auto transition-all"
             >
               Sulit (SM-2: 2)
             </Button>
@@ -424,7 +424,7 @@ export function FlashcardClient({ courseId, initialQueue, studentId }: Flashcard
               type="button"
               disabled={loading}
               onClick={() => handleGrade(4)}
-              className="w-full rounded-md border border-transparent bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 active:scale-[0.98] text-body-xs font-bold py-3.5 h-auto transition-all"
+              className="w-full rounded-md border border-transparent bg-status-success/10 text-status-success hover:bg-status-success/20 active:scale-[0.98] text-body-xs font-bold py-3.5 h-auto transition-all"
             >
               Mudah (SM-2: 4)
             </Button>

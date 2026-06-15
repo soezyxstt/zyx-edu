@@ -1,21 +1,7 @@
 import { db } from "@/db";
 import { courses, chapters, knowledgeObjects } from "@/db/schema";
 import { generateContentWithFallback } from "@/lib/gemini";
-import { eq, asc } from "drizzle-orm";
-
-// ─── STABLE BACKEND SLUGIFIER ────────────────────────────────────────────────
-
-/**
- * Standard utility to convert text into stable, URL-safe, machine-readable slugs.
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+import { eq, asc, and } from "drizzle-orm";
 
 // ─── GEMINI PROMPT BUILDER ───────────────────────────────────────────────────
 
@@ -28,7 +14,11 @@ export function buildMaterialGenerationPrompt(
   chapterOrderIndex: number,
   kos: (typeof knowledgeObjects.$inferSelect)[]
 ): string {
+  const MAX_KO_CONTENT_CHARS = 2000;
   const kosFormatted = kos.map(ko => {
+    const content = ko.content.length > MAX_KO_CONTENT_CHARS
+      ? ko.content.slice(0, MAX_KO_CONTENT_CHARS) + "\n...[truncated]"
+      : ko.content;
     return `### Knowledge Object
 - ID: ${ko.id}
 - Title: ${ko.title}
@@ -37,7 +27,7 @@ export function buildMaterialGenerationPrompt(
 - Bloom Level: ${ko.bloomLevel}
 - Importance: ${ko.importance}
 - Original Content:
-${ko.content}`;
+${content}`;
   }).join("\n\n-------------------\n\n");
 
   return `You are a senior curriculum developer in engineering and physics. Your task is to compile a single, cohesive Website Material chapter in Markdown format by synthesizing an ordered list of input Knowledge Objects (KOs).
@@ -128,11 +118,11 @@ export async function generateMarkdownForChapter(chapterId: string): Promise<str
     throw new Error(`Parent course not found for chapter ID: ${chapterId}`);
   }
 
-  // 3. Fetch constituent KOs sorted by order index
+  // 3. Fetch constituent active KOs sorted by order index
   const kos = await db
     .select()
     .from(knowledgeObjects)
-    .where(eq(knowledgeObjects.chapterId, chapterId))
+    .where(and(eq(knowledgeObjects.chapterId, chapterId), eq(knowledgeObjects.status, "active")))
     .orderBy(asc(knowledgeObjects.learningOrder));
 
   if (kos.length === 0) {

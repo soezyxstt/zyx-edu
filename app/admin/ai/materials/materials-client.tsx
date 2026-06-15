@@ -991,7 +991,7 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
               Laporan Ekstraksi Objek Pengetahuan (KO)
             </DialogTitle>
             <DialogDescription className="text-body-sm leading-relaxed mt-1">
-              Visualisasi struktur dekomposisi teks materi pelajaran menjadi modul konsep pembelajaran ZYX Academy.
+              Visualisasi struktur dekomposisi teks materi pelajaran menjadi modul konsep pembelajaran Zyx Academy.
             </DialogDescription>
           </DialogHeader>
           

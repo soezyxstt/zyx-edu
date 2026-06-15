@@ -4,8 +4,9 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { TutorActionService } from "@/lib/tutor-actions";
 import { db } from "@/db";
-import { aiQuestionBank, knowledgeObjects } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { aiQuestionBank, knowledgeObjects, tutorChatMessages } from "@/db/schema";
+import { eq, and, asc, desc, sql } from "drizzle-orm";
+import { randomUUID } from "node:crypto";
 import { exams } from "@/lib/student-course-fixtures";
 import { askTutorRag } from "@/lib/tutor-rag";
 
@@ -169,4 +170,83 @@ export async function askTutorRagAction(
     chapterId,
     question,
   });
+}
+
+const CHAT_HISTORY_LIMIT = 100;
+
+export async function saveTutorMessagesAction(
+  courseId: string,
+  messages: Array<{ role: "student" | "ai"; content: string; sources?: unknown }>
+) {
+  const user = await requireUser();
+
+  if (!messages.length) return { success: true };
+
+  await db.insert(tutorChatMessages).values(
+    messages.map((m) => ({
+      id: randomUUID(),
+      studentId: user.id,
+      courseId,
+      role: m.role,
+      content: m.content,
+      sources: m.sources ?? null,
+    }))
+  );
+
+  // Keep only the most recent CHAT_HISTORY_LIMIT rows per (student, course)
+  const rows = await db
+    .select({ id: tutorChatMessages.id })
+    .from(tutorChatMessages)
+    .where(
+      and(
+        eq(tutorChatMessages.studentId, user.id),
+        eq(tutorChatMessages.courseId, courseId)
+      )
+    )
+    .orderBy(desc(tutorChatMessages.createdAt));
+
+  if (rows.length > CHAT_HISTORY_LIMIT) {
+    const toDelete = rows.slice(CHAT_HISTORY_LIMIT).map((r) => r.id);
+    for (const id of toDelete) {
+      await db.delete(tutorChatMessages).where(eq(tutorChatMessages.id, id));
+    }
+  }
+
+  return { success: true };
+}
+
+export async function loadTutorHistoryAction(courseId: string) {
+  const user = await requireUser();
+
+  const rows = await db
+    .select()
+    .from(tutorChatMessages)
+    .where(
+      and(
+        eq(tutorChatMessages.studentId, user.id),
+        eq(tutorChatMessages.courseId, courseId)
+      )
+    )
+    .orderBy(asc(tutorChatMessages.createdAt))
+    .limit(CHAT_HISTORY_LIMIT);
+
+  return rows.map((r) => ({
+    id: r.id,
+    role: r.role as "student" | "ai",
+    content: r.content,
+    sources: r.sources as Array<{ type: string; id: string; label: string; href: string }> | undefined,
+  }));
+}
+
+export async function clearTutorHistoryAction(courseId: string) {
+  const user = await requireUser();
+  await db
+    .delete(tutorChatMessages)
+    .where(
+      and(
+        eq(tutorChatMessages.studentId, user.id),
+        eq(tutorChatMessages.courseId, courseId)
+      )
+    );
+  return { success: true };
 }

@@ -222,13 +222,13 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                       key={q.id}
                       className={cn(
                         "rounded-xl border border-border/80 bg-card p-5 shadow-2xs transition-all relative overflow-hidden",
-                        isCorrect ? "border-emerald-500/30 bg-emerald-500/2" : "border-rose-500/20 bg-rose-500/1"
+                        isCorrect ? "border-status-success/30 bg-status-success/5" : "border-status-error/20 bg-status-error/5"
                       )}
                     >
                       <div
                         className={cn(
                           "absolute top-0 left-0 w-1 h-full",
-                          isCorrect ? "bg-emerald-500" : "bg-rose-500"
+                          isCorrect ? "bg-status-success" : "bg-status-error"
                         )}
                       />
                       
@@ -236,7 +236,7 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                         <div className="flex items-start gap-2.5">
                           <span className={cn(
                             "flex size-7 shrink-0 items-center justify-center rounded-lg text-body-sm font-bold text-white shadow-xs",
-                            isCorrect ? "bg-emerald-500" : "bg-rose-500"
+                            isCorrect ? "bg-status-success" : "bg-status-error"
                           )}>
                             {idx + 1}
                           </span>
@@ -244,18 +244,18 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                             <div className="flex items-center gap-2">
                               <span className={cn(
                                 "text-[11px] font-semibold uppercase tracking-wider",
-                                q.difficulty === "easy" && "text-emerald-500",
-                                q.difficulty === "medium" && "text-amber-500",
-                                q.difficulty === "hard" && "text-rose-500"
+                                q.difficulty === "easy" && "text-status-success",
+                                q.difficulty === "medium" && "text-status-warning",
+                                q.difficulty === "hard" && "text-status-error"
                               )}>
                                 {q.difficulty}
                               </span>
                               {isCorrect ? (
-                                <span className="inline-flex items-center gap-0.5 text-xs text-emerald-600 font-semibold">
+                                <span className="inline-flex items-center gap-0.5 text-xs text-status-success font-semibold">
                                   <CheckCircle2 className="size-3.5" /> Benar
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-0.5 text-xs text-rose-600 font-semibold">
+                                <span className="inline-flex items-center gap-0.5 text-xs text-status-error font-semibold">
                                   <XCircle className="size-3.5" /> Salah
                                 </span>
                               )}
@@ -279,22 +279,22 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                               className={cn(
                                 "flex items-center gap-3 rounded-lg border px-4 py-2.5 text-body-sm font-medium leading-normal",
                                 isStudentChoice && isCorrectChoice
-                                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-950 dark:text-emerald-50"
+                                  ? "border-status-success bg-status-success/10 text-status-success"
                                   : isStudentChoice && !isCorrectChoice
-                                  ? "border-rose-500 bg-rose-500/10 text-rose-950 dark:text-rose-50"
+                                  ? "border-status-error bg-status-error/10 text-status-error"
                                   : !isStudentChoice && isCorrectChoice
-                                  ? "border-emerald-500/50 border-dashed bg-emerald-500/5 text-foreground"
+                                  ? "border-status-success/50 border-dashed bg-status-success/5 text-foreground"
                                   : "border-border bg-background/50 text-muted-foreground"
                               )}
                             >
                               <span className={cn(
                                 "flex size-6 shrink-0 items-center justify-center rounded-full text-body-xs font-bold font-sans",
                                 isStudentChoice && isCorrectChoice
-                                  ? "bg-emerald-500 text-white"
+                                  ? "bg-status-success text-white"
                                   : isStudentChoice && !isCorrectChoice
-                                  ? "bg-rose-500 text-white"
+                                  ? "bg-status-error text-white"
                                   : isCorrectChoice
-                                  ? "border border-emerald-500 text-emerald-500"
+                                  ? "border border-status-success text-status-success"
                                   : "bg-muted text-muted-foreground"
                               )}>
                                 {String.fromCharCode(65 + i)}
@@ -433,7 +433,7 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                     </Link>
                   </Button>
                 ) : template.maxAttempts && attemptsLeft !== null && attemptsLeft <= 0 ? (
-                  <div className="flex items-center gap-2 text-rose-500 font-semibold text-body-sm bg-rose-500/10 p-3 rounded-lg border border-rose-500/20 w-full justify-center">
+                  <div className="flex items-center gap-2 text-status-error font-semibold text-body-sm bg-status-error/10 p-3 rounded-lg border border-status-error/20 w-full justify-center">
                     <AlertTriangle className="size-4" />
                     Batas percobaan maksimal telah tercapai. Anda tidak dapat memulai kuis ini lagi.
                   </div>

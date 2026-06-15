@@ -7,7 +7,7 @@ import { enrollWithToken } from "@/app/dashboard/actions";
 import { Button } from "@/components/ui/button";
 import { KeyRound } from "lucide-react";
 
-export function EnrollmentForm({ className }: { className?: string }) {
+export function EnrollmentForm({ className, onSuccess }: { className?: string; onSuccess?: () => void }) {
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -26,6 +26,7 @@ export function EnrollmentForm({ className }: { className?: string }) {
       if (res.success) {
         toast.success("Berhasil mendaftar ke kelas!");
         setToken("");
+        onSuccess?.();
         router.refresh();
       } else {
         toast.error(res.error || "Pendaftaran gagal");

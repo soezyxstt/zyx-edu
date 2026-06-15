@@ -27,7 +27,7 @@ export default function TestimonialPage() {
           sectionId="testimonial"
           eyebrow="Zyx Academy"
           title="Testimoni"
-          description="Cerita dari siswa ZYX Academy tentang proses belajar yang mereka jalani."
+          description="Cerita dari siswa Zyx Academy tentang proses belajar yang mereka jalani."
         />
       </Reveal>
 

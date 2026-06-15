@@ -58,9 +58,9 @@ function createClients(apiKey: string, gatewayUrl?: string) {
         apiKey,
         httpOptions: {
           baseUrl: gatewayUrl,
-          headers: {
-            Authorization: `Bearer ${env.CF_AI_GATEWAY_TOKEN}`,
-          },
+          headers: env.CF_AI_GATEWAY_TOKEN
+            ? { 'cf-aig-authorization': `Bearer ${env.CF_AI_GATEWAY_TOKEN}` }
+            : {},
         },
       })
     : null;
@@ -225,6 +225,11 @@ export class GeminiKeyPool {
         }
       }
 
+      // Skip CLOSED keys still in a temporary cooldown window
+      if (state.circuitState === 'CLOSED' && now < state.cooldownUntil) {
+        continue;
+      }
+
       // Check HALF_OPEN active probe limit
       if (state.circuitState === 'HALF_OPEN') {
         const activeCount = this.cleanAndGetActiveCount(state, now);
@@ -311,17 +316,16 @@ export class GeminiKeyPool {
       console.warn(`[GeminiKeyPool] Key ${keyId} model ${modelId} rate limited. New limit: ${newLimit}. Current RPM: ${currentRpm}`);
 
       const retryAfterMs = this.extractRetryAfterMs(error);
+      state.consecutiveFailures++;
       if (retryAfterMs > 0) {
         state.cooldownUntil = now + retryAfterMs;
         console.warn(`[GeminiKeyPool] Key ${keyId} model ${modelId} cooling down for ${retryAfterMs / 1000}s (retry-after)`);
       } else {
-        state.consecutiveFailures++;
         const backoffMs = Math.min(1000 * Math.pow(2, state.consecutiveFailures) + Math.random() * 500, 300000);
         state.cooldownUntil = now + backoffMs;
         console.warn(`[GeminiKeyPool] Key ${keyId} model ${modelId} cooling down for ${backoffMs / 1000}s (exponential backoff)`);
       }
 
-      state.consecutiveFailures++;
       if (state.consecutiveFailures >= CIRCUIT_BREAKER_THRESHOLD) {
         state.circuitState = 'OPEN';
         state.cooldownUntil = Math.max(state.cooldownUntil, now + CIRCUIT_BREAKER_COOLDOWN_MS);

@@ -600,7 +600,7 @@ export function QuizzesCurationClient({ initialTemplates, courses, courseMap, pr
           
           <div className="space-y-4">
             <p className="text-body-sm text-muted-foreground leading-relaxed">
-              Untuk melindungi rekam nilai siswa dari perubahan/penghapusan soal di bank soal di masa depan, sistem database ZYX Academy mengambil <strong>deep snapshot</strong> seluruh konten soal saat sesi pengerjaan diaktifkan.
+              Untuk melindungi rekam nilai siswa dari perubahan/penghapusan soal di bank soal di masa depan, sistem database Zyx Academy mengambil <strong>deep snapshot</strong> seluruh konten soal saat sesi pengerjaan diaktifkan.
             </p>
 
             <div className="rounded-lg border border-border overflow-hidden bg-muted/20 p-4 font-mono text-xs max-h-[350px] overflow-y-auto leading-relaxed text-foreground/90">

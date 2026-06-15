@@ -4,21 +4,11 @@ import { generateContentWithFallback, embedText, withGeminiRetry } from "@/lib/g
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { eq, and } from "drizzle-orm";
-import { preprocessMarkdown, safeParseJson } from "./ko-utils";
+import { preprocessMarkdown, safeParseJson, slugify } from "./ko-utils";
 
 // ─── UTILITIES FOR CONCEPT RESOLUTION & MATCHING ──────────────────────────────
 
-/**
- * Standard utility to convert text into stable, URL-safe, machine-readable slugs.
- */
-export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
+export { slugify } from "./ko-utils";
 
 /**
  * Standardizes a concept name by lowercasing, stripping punctuation, and compressing spacing.
@@ -423,7 +413,8 @@ async function validateForeignKeys(params: {
 
 export async function canonicalizeConcepts(
   candidateNames: string[],
-  existingConcepts: string[]
+  existingConcepts: string[],
+  context?: { courseId?: string; chapterId?: string }
 ): Promise<Record<string, string>> {
   if (candidateNames.length === 0) return {};
 
@@ -507,8 +498,8 @@ Respond ONLY with valid JSON matching this schema:
   } catch (err: any) {
     console.error("Failed to canonicalize concepts, attempting retry:", err);
     await saveParsingFailure({
-      courseId: null,
-      chapterId: null,
+      courseId: context?.courseId ?? null,
+      chapterId: context?.chapterId ?? null,
       step: "canonicalization",
       rawOutput: rawText || "(No LLM Output)",
       errorMessage: err?.message || String(err),
@@ -547,8 +538,8 @@ Respond ONLY with valid JSON matching this schema:
     } catch (retryErr: any) {
       console.error("Failed canonicalization retry, returning identity mapping:", retryErr);
       await saveParsingFailure({
-        courseId: null,
-        chapterId: null,
+        courseId: context?.courseId ?? null,
+        chapterId: context?.chapterId ?? null,
         step: "canonicalization",
         rawOutput: retryRaw || "(No LLM Output)",
         errorMessage: `[Retry Failed] ${retryErr?.message || String(retryErr)}`,
@@ -567,7 +558,8 @@ Respond ONLY with valid JSON matching this schema:
 
 export async function validateConcepts(
   canonicalNames: string[],
-  existingConcepts: string[]
+  existingConcepts: string[],
+  context?: { courseId?: string; chapterId?: string }
 ): Promise<Record<string, { isValid: boolean; issues: string[] }>> {
   const results: Record<string, { isValid: boolean; issues: string[] }> = {};
   if (canonicalNames.length === 0) return results;
@@ -658,8 +650,8 @@ Respond ONLY with valid JSON matching this schema:
   } catch (err: any) {
     console.error("Failed to run semantic concept validation LLM check, attempting retry:", err);
     await saveParsingFailure({
-      courseId: null,
-      chapterId: null,
+      courseId: context?.courseId ?? null,
+      chapterId: context?.chapterId ?? null,
       step: "validation",
       rawOutput: rawText || "(No LLM Output)",
       errorMessage: err?.message || String(err),
@@ -734,11 +726,14 @@ export async function extractKnowledgeObjectsForChapter(
 
   const existingConcepts = Array.from(new Set(registeredLocalizations.map(l => l.displayName.trim()))).filter(Boolean);
 
-  // 2. Preprocess PDF-derived markdown
-  const preprocessedMarkdown = preprocessMarkdown(chapterMarkdown);
+  // 2. Preprocess PDF-derived markdown; cap at ~30K chars to stay within Gemini's safe input range
+  const preprocessedMarkdown = preprocessMarkdown(chapterMarkdown).slice(0, 30_000);
+
+  // Cap existing concepts list sent to model — too many concepts bloat the prompt
+  const existingConceptsCapped = existingConcepts.slice(0, 300);
 
   // 3. Candidate Extraction Call with Retry Hierarchy
-  const prompt = buildKoExtractionPrompt(chapterTitle, preprocessedMarkdown, existingConcepts);
+  const prompt = buildKoExtractionPrompt(chapterTitle, preprocessedMarkdown, existingConceptsCapped);
   let candidateBatch: any[] = [];
   let rawOutput = "";
 
@@ -908,7 +903,7 @@ export async function extractKnowledgeObjectsForChapter(
       // Step C: Fallback LLM Alignment (score range 0.75 - 0.90)
       if (bestMatchLoc && highestScore >= 0.75) {
         console.log(`Potential semantic match: "${origName}" ~ "${bestMatchLoc.displayName}" (Score: ${highestScore.toFixed(3)}). Consulting LLM...`);
-        const mapping = await canonicalizeConcepts([origName], [bestMatchLoc.displayName]);
+        const mapping = await canonicalizeConcepts([origName], [bestMatchLoc.displayName], { courseId, chapterId });
         const canonicalName = mapping[origName] || origName;
         if (canonicalName === bestMatchLoc.displayName) {
           console.log(`LLM aligned: "${origName}" -> "${canonicalName}"`);
@@ -932,7 +927,7 @@ export async function extractKnowledgeObjectsForChapter(
 
   // 5. Concept Validation Stage
   const uniqueCanonicalNames = Array.from(new Set(Object.values(conceptResolutionMap).map(r => r.canonicalName))).filter(Boolean);
-  const validationResults = await validateConcepts(uniqueCanonicalNames, existingConcepts);
+  const validationResults = await validateConcepts(uniqueCanonicalNames, existingConcepts, { courseId, chapterId });
 
   // 6. Gather New Registry Concepts to insert
   const newConceptsToRegister: { id: string; canonicalSlug: string; isVerified: boolean }[] = [];

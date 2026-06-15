@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
+import { Brain } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
+import { studentCardClass } from "@/components/course/course-surfaces";
 import { pageTitle } from "@/lib/site";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { FlashcardClient } from "./flashcard-client";
@@ -57,10 +59,14 @@ export default async function CourseFlashcardPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Flashcards: ${course.title}`}
+      description="Hafalkan konsep-konsep kunci dengan metode pengulangan jeda."
+      icon={Brain}
+    >
       <Reveal>
         {!isEnrolled ? (
-          <div className="mx-auto max-w-2xl rounded-2xl border border-border/60 bg-card p-6 shadow-sm text-center">
+          <div className={studentCardClass("mx-auto max-w-2xl text-center")}>
             <h3 className="font-heading text-body-lg font-bold text-foreground">
               Akses Terkunci
             </h3>

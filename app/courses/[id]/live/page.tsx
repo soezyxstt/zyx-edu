@@ -5,10 +5,12 @@ import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, Play } from "lucide-react";
 import { useLiveQuizSocket } from "@/components/live/use-live-quiz-socket";
 import { quizOptionClasses, quizOptionLetterClasses } from "@/components/course/quiz-option-styles";
 import type { QuizOptionState } from "@/components/course/quiz-option-styles";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { getCourseById } from "@/lib/student-course-fixtures";
 import { cn } from "@/lib/utils";
 
 interface JoinResponse {
@@ -22,6 +24,8 @@ type ViewPhase = "join" | "live";
 
 export default function LiveStudentPage() {
   const { id: courseId } = useParams<{ id: string }>();
+  const course = getCourseById(courseId);
+  const title = course ? `Kuis Langsung: ${course.title}` : "Kuis Langsung";
 
   const [phase, setPhase] = useState<ViewPhase>("join");
   const [code, setCode] = useState("");
@@ -60,43 +64,49 @@ export default function LiveStudentPage() {
 
   if (!process.env.NEXT_PUBLIC_REALTIME_URL) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center">
-        <AlertTriangle className="mx-auto mb-3 size-8 text-status-warning" />
-        <p className="text-body-sm text-muted-foreground">Live quiz is not available right now.</p>
-      </div>
+      <CoursePageShell title={title} description="Ikuti kuis langsung bersama teman sekelas." icon={Play}>
+        <div className="mx-auto max-w-xl px-4 py-16 text-center">
+          <AlertTriangle className="mx-auto mb-3 size-8 text-status-warning" />
+          <p className="text-body-sm text-muted-foreground">Live quiz is not available right now.</p>
+        </div>
+      </CoursePageShell>
     );
   }
 
   if (phase === "join") {
     return (
-      <div className="mx-auto flex max-w-xs flex-col items-center gap-6 px-4 py-20">
-        <h1 className="font-heading text-h4 font-semibold text-foreground">Join live quiz</h1>
-        <Input
-          className="rounded-lg text-center font-heading text-h5 tracking-widest uppercase"
-          placeholder="ABC123"
-          maxLength={6}
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          onKeyDown={(e) => e.key === "Enter" && handleJoin()}
-          autoFocus
-        />
-        <Button
-          onClick={handleJoin}
-          disabled={joining || code.trim().length === 0}
-          className="w-full rounded-lg"
-        >
-          {joining ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
-          Join
-        </Button>
-      </div>
+      <CoursePageShell title={title} description="Ikuti kuis langsung bersama teman sekelas." icon={Play}>
+        <div className="mx-auto flex max-w-xs flex-col items-center gap-6 px-4 py-20">
+          <h1 className="font-heading text-h4 font-semibold text-foreground">Join live quiz</h1>
+          <Input
+            className="rounded-lg text-center font-heading text-h5 tracking-widest uppercase"
+            placeholder="ABC123"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && handleJoin()}
+            autoFocus
+          />
+          <Button
+            onClick={handleJoin}
+            disabled={joining || code.trim().length === 0}
+            className="w-full rounded-lg"
+          >
+            {joining ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
+            Join
+          </Button>
+        </div>
+      </CoursePageShell>
     );
   }
 
   return (
-    <LiveView
-      state={state}
-      sendAnswer={sendAnswer}
-    />
+    <CoursePageShell title={title} description="Ikuti kuis langsung bersama teman sekelas." icon={Play}>
+      <LiveView
+        state={state}
+        sendAnswer={sendAnswer}
+      />
+    </CoursePageShell>
   );
 }
 

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, Lock } from "lucide-react";
+import { ChevronRight, Lock, History } from "lucide-react";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { CoursePageShell } from "@/components/course/course-page-shell";
-import { courseListRowClass } from "@/components/course/course-surfaces";
+import { courseListRowClass, studentCardClass } from "@/components/course/course-surfaces";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
@@ -55,9 +55,13 @@ export default async function CourseMyResultsPage({ params }: Props) {
 
   if (!isEnrolled) {
     return (
-      <CoursePageShell>
+      <CoursePageShell
+        title={`Hasil Ujian: ${course.title}`}
+        description="Riwayat nilai kuis, tryout, dan review jawaban lengkap."
+        icon={History}
+      >
         <Reveal>
-          <div className="rounded-lg border border-border/70 bg-card/75 p-4 backdrop-blur-sm">
+          <div className={studentCardClass()}>
             <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border">
                 <Lock className="size-5" />
@@ -152,7 +156,11 @@ export default async function CourseMyResultsPage({ params }: Props) {
   }
 
   return (
-    <CoursePageShell>
+    <CoursePageShell
+      title={`Hasil Ujian: ${course.title}`}
+      description="Riwayat nilai kuis, tryout, dan review jawaban lengkap."
+      icon={History}
+    >
       <Reveal>
         <ul className="space-y-2">
           {allSubmissions.map((submission) => (

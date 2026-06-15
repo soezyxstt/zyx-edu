@@ -545,7 +545,7 @@ export function MaterialDetailClient({
               )}
 
               {currentProgress.status === "failed" && currentProgress.error && (
-                <div className="p-3.5 bg-rose-500/5 border border-rose-500/15 rounded-lg text-xs text-rose-600 leading-relaxed font-mono">
+                <div className="p-3.5 bg-status-error/5 border border-status-error/20 rounded-lg text-xs text-status-error leading-relaxed font-mono">
                   Error: {currentProgress.error}
                 </div>
               )}
@@ -578,12 +578,12 @@ export function MaterialDetailClient({
 
         {/* Diff/Stale Warning box if stale */}
         {isStale && (
-          <div className="p-4 rounded-lg bg-rose-500/10 border border-rose-500/20 text-left space-y-3">
-            <div className="flex gap-2 text-rose-700">
+          <div className="p-4 rounded-lg bg-status-error/10 border border-status-error/20 text-left space-y-3">
+            <div className="flex gap-2 text-status-error">
               <AlertTriangle className="size-4 shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-body-sm font-bold">Aset Website Out-of-Sync</h4>
-                <p className="text-xs text-rose-600/90 mt-0.5 leading-relaxed">
+                <p className="text-xs text-status-error/90 mt-0.5 leading-relaxed">
                   Tutor melakukan perubahan pada Objek Pengetahuan (KO) di bab ini. Modul ajar siswa saat ini menggunakan data lama. Klik &quot;Bandingkan &amp; Sinkronkan&quot; untuk menyelaraskan.
                 </p>
               </div>
@@ -647,10 +647,10 @@ export function MaterialDetailClient({
                           <span className={cn(
                             "text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase border",
                             mu.difficulty === "easy"
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                              ? "bg-status-success/10 text-status-success border-status-success/20"
                               : mu.difficulty === "medium"
-                                ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                                : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                                ? "bg-status-warning/10 text-status-warning border-status-warning/20"
+                                : "bg-status-error/10 text-status-error border-status-error/20"
                           )}>
                             {mu.difficulty}
                           </span>
@@ -881,10 +881,10 @@ export function MaterialDetailClient({
                         <span className={cn(
                           "inline-block font-mono text-[9px] px-1.5 py-0.5 rounded border uppercase",
                           ko.difficulty === "easy"
-                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                            ? "bg-status-success/10 text-status-success border-status-success/20"
                             : ko.difficulty === "medium"
-                              ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                              : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                              ? "bg-status-warning/10 text-status-warning border-status-warning/20"
+                              : "bg-status-error/10 text-status-error border-status-error/20"
                         )}>
                           {ko.difficulty}
                         </span>
@@ -985,12 +985,12 @@ export function MaterialDetailClient({
               </div>
             </div>
 
-            {/* Alur Kerja Tutor ZYX */}
+            {/* Alur Kerja Tutor Zyx */}
             <div className="p-4 bg-muted/20 border border-border rounded-xl text-left space-y-3">
               <div className="flex gap-2 text-muted-foreground">
                 <Info className="size-4 shrink-0 mt-0.5 text-primary" />
                 <div>
-                  <h4 className="text-xs font-bold text-foreground">Alur Kerja Tutor ZYX</h4>
+                  <h4 className="text-xs font-bold text-foreground">Alur Kerja Tutor Zyx</h4>
                   <p className="text-[11px] leading-relaxed mt-1">
                     1. Perbaiki kesalahan pengetikan atau visualisasi rumus LaTeX langsung di Inspeksi KO.<br />
                     2. Mengubah KO secara otomatis memicu tanda stale pada Website Material agar tidak terjadi inkonsistensi.<br />
@@ -1112,10 +1112,10 @@ export function MaterialDetailClient({
                       </div>
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md uppercase border ${
                         ko.difficulty === "easy"
-                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                          ? "bg-status-success/10 text-status-success border-status-success/20"
                           : ko.difficulty === "medium"
-                            ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                            : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                            ? "bg-status-warning/10 text-status-warning border-status-warning/20"
+                            : "bg-status-error/10 text-status-error border-status-error/20"
                       }`}>
                         {ko.difficulty}
                       </span>
