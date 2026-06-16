@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
-import { getCourseById } from "@/lib/student-course-fixtures";
+import { getCourse } from "@/lib/course-utils";
 
 type Props = {
   children: ReactNode;
@@ -9,9 +9,10 @@ type Props = {
 
 export default async function CourseLayout({ children, params }: Props) {
   const { id } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
   if (!course) notFound();
 
   return <>{children}</>;
 }
+
 

@@ -127,6 +127,20 @@
       "when": 1781526104709,
       "tag": "0017_organic_peter_parker",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1789999999998,
+      "tag": "0018_add_submissions_snapshot_columns",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1789999999999,
+      "tag": "0019_add_submissions_questions_snapshot",
+      "breakpoints": true
     }
   ]
 }

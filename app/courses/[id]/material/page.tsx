@@ -3,7 +3,8 @@ import { FileText } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { studentCardClass } from "@/components/course/course-surfaces";
 import { pageTitle } from "@/lib/site";
-import { getCourseById, getMaterialsForCourse } from "@/lib/student-course-fixtures";
+import { getMaterialsForCourse } from "@/lib/student-course-fixtures";
+import { getCourse } from "@/lib/course-utils";
 import { DocumentListClient } from "./document-list-client";
 import { Reveal } from "@/components/ui/reveal";
 import { db } from "@/db";
@@ -16,7 +17,7 @@ type Props = { params: Promise<{ id: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
 
   return {
     title: pageTitle(course ? `${course.title} - Materi` : "Materi"),
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CourseMaterialListPage({ params }: Props) {
   const { id } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
   if (!course) return null;
 
   // Fetch db-backed materials

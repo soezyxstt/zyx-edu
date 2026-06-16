@@ -9,6 +9,7 @@ import { auditRenderedPDF } from "./diktat-pdf-auditor";
 import { eq, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { storage } from "@/lib/storage";
+import { env } from "@/lib/env";
 
 /**
  * Extracts the unique file key from an UploadThing CDN URL.
@@ -203,47 +204,31 @@ export async function executeDiktatPDFGeneration(
   const compiledHTML = renderDiktatToHTML(enrichedStructure, overrides);
 
   let pdfBuffer: Buffer;
-  const isMock = process.env.MOCK_GEMINI === "true";
+  const rendererUrl = env.DIKTAT_RENDERER_URL;
+  const rendererSecret = env.DIKTAT_RENDERER_SECRET;
 
-  if (isMock) {
-    // Generate simulated PDF text buffer for headless environments
+  if (rendererUrl && rendererSecret) {
+    const res = await fetch(`${rendererUrl}/render`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${rendererSecret}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ html: compiledHTML }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      return {
+        success: false,
+        errors: [`PDF renderer worker failed (${res.status}): ${text}`],
+      };
+    }
+    pdfBuffer = Buffer.from(await res.arrayBuffer());
+  } else {
+    // Fallback to mock PDF for local dev (no Docker needed)
     pdfBuffer = Buffer.from(
       `%PDF-1.4\n%MOCK_PDF_FILE\nTitle: ${structure.title}\nHash: ${diktat.generationHash}\n`
     );
-  } else {
-    // Attempt live Puppeteer compile
-    let puppeteer: any;
-    try {
-      const puppeteerModule = await import("puppeteer");
-      puppeteer = puppeteerModule.default || puppeteerModule;
-    } catch (err: any) {
-      return {
-        success: false,
-        errors: [
-          `Puppeteer package not installed or failed to load. Run NPM install or toggle MOCK_GEMINI=true to run mock compilers. Detail: ${err.message}`,
-        ],
-      };
-    }
-
-    let browser: any = null;
-    try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"],
-      });
-      const page = await browser.newPage();
-      await page.setContent(compiledHTML, { waitUntil: "networkidle0" });
-      pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        scale: 1.0,
-        margin: { top: "15mm", bottom: "15mm", left: "15mm", right: "15mm" },
-      });
-    } catch (err: any) {
-      return { success: false, errors: [`Puppeteer PDF compiler crash: ${err.message}`] };
-    } finally {
-      if (browser) await browser.close();
-    }
   }
 
   // 7. PDF Audit (non-blocking, AI only)

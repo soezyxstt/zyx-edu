@@ -1,0 +1,13 @@
+{
+  "name": "diktat-renderer",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "puppeteer": "^24.0.0"
+  }
+}

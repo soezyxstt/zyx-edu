@@ -8,7 +8,8 @@ import { MaterialViewer } from "@/components/course/material-viewer";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
-import { getCourseById, getMaterial, type CourseMaterial } from "@/lib/student-course-fixtures";
+import { getMaterial, type CourseMaterial } from "@/lib/student-course-fixtures";
+import { getCourse } from "@/lib/course-utils";
 import { db } from "@/db";
 import { aiMaterialInstances, diktats } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -92,7 +93,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, materialId } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
   const material = await fetchMaterial(id, materialId);
   return {
     title: pageTitle(course && material ? `${course.title} - ${material.title}` : "Materi"),
@@ -102,7 +103,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CourseMaterialDetailPage({ params }: Props) {
   const { id, materialId } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
   const material = await fetchMaterial(id, materialId);
   if (!course || !material) notFound();
 

@@ -7,7 +7,8 @@ import { TryoutForm } from "@/components/course/tryout-form";
 import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
-import { getCourseById, getExamById } from "@/lib/student-course-fixtures";
+import { getExamById } from "@/lib/student-course-fixtures";
+import { getCourse } from "@/lib/course-utils";
 import { db } from "@/db";
 import { exams, questions } from "@/db/schema";
 import { and, eq, asc } from "drizzle-orm";
@@ -16,7 +17,7 @@ type Props = { params: Promise<{ id: string; tryoutId: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, tryoutId } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
   
   let examTitle = "Tryout";
   const fixtureExam = getExamById(id, tryoutId);
@@ -35,7 +36,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CourseTryoutTakePage({ params }: Props) {
   const { id, tryoutId } = await params;
-  const course = getCourseById(id);
+  const course = await getCourse(id);
   if (!course) notFound();
 
   let exam = getExamById(id, tryoutId);

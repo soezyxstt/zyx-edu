@@ -22,11 +22,20 @@ export const metadata: Metadata = {
 export default async function CoursesPage() {
   // Fetch courses from DB (authoritative) and fall back to fixtures for missing entries
   const dbCourses = await db.select().from(coursesTable);
-  const fixtureCourses = listCourses();
+  const TEST_COURSE_IDS = new Set([
+    "embed-test-course",
+    "miscon-test-course",
+    "remed-test-course",
+    "term-test-course",
+    "graph-test-course",
+  ]);
+  const fixtureCourses = listCourses().filter((c) => !TEST_COURSE_IDS.has(c.id));
   const courseMap = new Map(dbCourses.map((c) => [c.id, c] as [string, any]));
   const merged: typeof dbCourses = [];
   // Add DB courses first
-  merged.push(...dbCourses);
+  for (const c of dbCourses) {
+    if (!TEST_COURSE_IDS.has(c.id)) merged.push(c);
+  }
   // Add any fixture courses not present in DB
   for (const fc of fixtureCourses) {
     if (!courseMap.has(fc.id)) merged.push(fc as any);

@@ -8,9 +8,9 @@ Grading:
 - In-syllabus: pass when the answer is correct AND cites at least one correct source.
 - Out-of-syllabus: pass when `grounded: false` and zero fabricated citations.
 - Personalization: pass when a weak student gets the addendum (and Tier 3 in budget)
-  and a strong student gets a clean answer, both sharing one Tier 1 cache entry.
+ and a strong student gets a clean answer, both sharing one Tier 1 cache entry.
 
-## A. In-syllabus (20) — expect grounded answer + >=1 correct source
+## A. In-syllabus (20) ; expect grounded answer + >=1 correct source
 
 | # | Question | Expected concept | Expected source kind |
 |---|----------|------------------|----------------------|
@@ -35,7 +35,7 @@ Grading:
 | 19 | Apa laju perubahan dan kaitannya dengan turunan? | Laju perubahan | ko |
 | 20 | Bagaimana membuktikan limit dengan definisi epsilon-delta? | Bukti epsilon-delta | chapter |
 
-## B. Out-of-syllabus (5) — expect grounded:false, no fabricated citations
+## B. Out-of-syllabus (5) ; expect grounded:false, no fabricated citations
 
 | # | Question |
 |---|----------|
@@ -48,7 +48,7 @@ Grading:
 ## C. Personalization (2)
 
 1. **Weak student**: seed `student_concept_mastery` with `Aturan rantai` at score 40 for
-   the test student. Ask question #11. Expect: Tier 2 addendum ("Berkaitan dengan Aturan rantai",
-   "You scored 40 here recently."), Tier 3 personalized guidance when budget allows.
+ the test student. Ask question #11. Expect: Tier 2 addendum ("Berkaitan dengan Aturan rantai",
+ "You scored 40 here recently."), Tier 3 personalized guidance when budget allows.
 2. **Strong student**: seed `Aturan rantai` at score 90. Ask question #11. Expect: clean answer,
-   no addendum. The Tier 1 cache entry is identical to the weak student's (same normalized question).
+ no addendum. The Tier 1 cache entry is identical to the weak student's (same normalized question).

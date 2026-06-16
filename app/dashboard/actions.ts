@@ -344,3 +344,13 @@ export async function getDailyTrivia(courseId: string) {
   }
 }
 
+/**
+ * Fetch a course by ID (checks database and fallbacks to fixtures)
+ */
+export async function getCourseAction(courseId: string) {
+  await requireUser();
+  const { getCourse } = await import("@/lib/course-utils");
+  return getCourse(courseId);
+}
+
+

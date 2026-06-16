@@ -2,7 +2,7 @@
  * AI Question Generation Pipeline (Knowledge Object Architecture)
  *
  * Workflow:
- *   Tutor Request → Create Job → Fetch KOs → Generate questions for each KO → Complete Job
+ * Tutor Request → Create Job → Fetch KOs → Generate questions for each KO → Complete Job
  *
  * Runs asynchronously; the HTTP handler returns the job ID immediately.
  * The pipeline updates ai_generation_jobs status as it progresses.
@@ -15,179 +15,179 @@ import { eq, and } from 'drizzle-orm';
 import { generateQuestionsForKO, generateQuestionsForKOBatch } from '@/lib/question-generator';
 
 export interface GenerationJobParams {
-  courseId: string;
-  tutorId: string;
-  chapterId: string;
-  koId?: string;
-  targetCount: number;
+ courseId: string;
+ tutorId: string;
+ chapterId: string;
+ koId?: string;
+ targetCount: number;
 }
 
-/** In-memory log buffer per job — flushed by flushJobProgress to avoid N+1 DB round trips. */
+/** In-memory log buffer per job ; flushed by flushJobProgress to avoid N+1 DB round trips. */
 const progressBuffers = new Map<string, string[]>();
 
 /** Buffers a progress step in memory. Call flushJobProgress to persist. */
 export function bufferJobProgress(jobId: string, step: string): void {
-  const buf = progressBuffers.get(jobId) ?? [];
-  buf.push(`[${new Date().toLocaleString("id-ID")}] ${step}`);
-  progressBuffers.set(jobId, buf);
+ const buf = progressBuffers.get(jobId) ?? [];
+ buf.push(`[${new Date().toLocaleString("id-ID")}] ${step}`);
+ progressBuffers.set(jobId, buf);
 }
 
 /** Flushes buffered log entries into the DB with a single read-modify-write. */
 export async function flushJobProgress(jobId: string): Promise<void> {
-  const buf = progressBuffers.get(jobId);
-  if (!buf || buf.length === 0) return;
-  progressBuffers.set(jobId, []);
+ const buf = progressBuffers.get(jobId);
+ if (!buf || buf.length === 0) return;
+ progressBuffers.set(jobId, []);
 
-  const [job] = await db
-    .select({ promptParameters: aiGenerationJobs.promptParameters })
-    .from(aiGenerationJobs)
-    .where(eq(aiGenerationJobs.id, jobId))
-    .limit(1);
+ const [job] = await db
+ .select({ promptParameters: aiGenerationJobs.promptParameters })
+ .from(aiGenerationJobs)
+ .where(eq(aiGenerationJobs.id, jobId))
+ .limit(1);
 
-  if (job) {
-    const params = (job.promptParameters as Record<string, any>) || {};
-    const logs = [...((params.logs as string[]) || []), ...buf];
-    await db
-      .update(aiGenerationJobs)
-      .set({ promptParameters: { ...params, logs }, updatedAt: new Date() })
-      .where(eq(aiGenerationJobs.id, jobId));
-  }
+ if (job) {
+ const params = (job.promptParameters as Record<string, any>) || {};
+ const logs = [...((params.logs as string[]) || []), ...buf];
+ await db
+ .update(aiGenerationJobs)
+ .set({ promptParameters: { ...params, logs }, updatedAt: new Date() })
+ .where(eq(aiGenerationJobs.id, jobId));
+ }
 }
 
-/** Buffers a step and immediately flushes — backward-compatible for callers that need instant persistence. */
+/** Buffers a step and immediately flushes ; backward-compatible for callers that need instant persistence. */
 export async function updateJobProgress(jobId: string, step: string): Promise<void> {
-  bufferJobProgress(jobId, step);
-  await flushJobProgress(jobId);
+ bufferJobProgress(jobId, step);
+ await flushJobProgress(jobId);
 }
 
 /** Creates a job row and kicks off the background pipeline. Returns the job ID. */
 export async function startGenerationJob(params: GenerationJobParams): Promise<string> {
-  const jobId = randomUUID();
-  const { courseId, tutorId, chapterId, koId, targetCount } = params;
+ const jobId = randomUUID();
+ const { courseId, tutorId, chapterId, koId, targetCount } = params;
 
-  await db.insert(aiGenerationJobs).values({
-    id: jobId,
-    tutorId,
-    courseId,
-    status: 'pending',
-    promptParameters: { 
-      chapterId, 
-      koId, 
-      logs: [`[${new Date().toLocaleString("id-ID")}] Job dibuat.`] 
-    } as Record<string, unknown>,
-    targetCount,
-    generatedCount: 0,
-    tokenUsage: 0,
-  });
+ await db.insert(aiGenerationJobs).values({
+ id: jobId,
+ tutorId,
+ courseId,
+ status: 'pending',
+ promptParameters: { 
+ chapterId, 
+ koId, 
+ logs: [`[${new Date().toLocaleString("id-ID")}] Job dibuat.`] 
+ } as Record<string, unknown>,
+ targetCount,
+ generatedCount: 0,
+ tokenUsage: 0,
+ });
 
-  // Fire-and-forget: don't await the pipeline
-  runPipeline(jobId, params).catch(async (err) => {
-    try {
-      await updateJobProgress(jobId, `Error pipeline: ${String(err)}`);
-    } catch (_) {}
-    await db
-      .update(aiGenerationJobs)
-      .set({ status: 'failed', errorMessage: String(err), updatedAt: new Date() })
-      .where(eq(aiGenerationJobs.id, jobId));
-  });
+ // Fire-and-forget: don't await the pipeline
+ runPipeline(jobId, params).catch(async (err) => {
+ try {
+ await updateJobProgress(jobId, `Error pipeline: ${String(err)}`);
+ } catch (_) {}
+ await db
+ .update(aiGenerationJobs)
+ .set({ status: 'failed', errorMessage: String(err), updatedAt: new Date() })
+ .where(eq(aiGenerationJobs.id, jobId));
+ });
 
-  return jobId;
+ return jobId;
 }
 
 async function runPipeline(jobId: string, params: GenerationJobParams): Promise<void> {
-  const { courseId, chapterId, koId } = params;
+ const { courseId, chapterId, koId } = params;
 
-  // Mark as processing
-  await db
-    .update(aiGenerationJobs)
-    .set({ status: 'processing', updatedAt: new Date() })
-    .where(eq(aiGenerationJobs.id, jobId));
+ // Mark as processing
+ await db
+ .update(aiGenerationJobs)
+ .set({ status: 'processing', updatedAt: new Date() })
+ .where(eq(aiGenerationJobs.id, jobId));
 
-  bufferJobProgress(jobId, 'Status diubah ke processing. Memulai pipeline generasi berbasis Knowledge Objects.');
+ bufferJobProgress(jobId, 'Status diubah ke processing. Memulai pipeline generasi berbasis Knowledge Objects.');
 
-  // Fetch KOs to generate questions for
-  const conditions = [
-    eq(knowledgeObjects.courseId, courseId),
-    eq(knowledgeObjects.chapterId, chapterId),
-    eq(knowledgeObjects.status, 'active'),
-  ];
-  if (koId && koId !== 'all') {
-    conditions.push(eq(knowledgeObjects.id, koId));
-  }
+ // Fetch KOs to generate questions for
+ const conditions = [
+ eq(knowledgeObjects.courseId, courseId),
+ eq(knowledgeObjects.chapterId, chapterId),
+ eq(knowledgeObjects.status, 'active'),
+ ];
+ if (koId && koId !== 'all') {
+ conditions.push(eq(knowledgeObjects.id, koId));
+ }
 
-  const activeKOs = await db
-    .select({ id: knowledgeObjects.id, title: knowledgeObjects.title })
-    .from(knowledgeObjects)
-    .where(and(...conditions));
+ const activeKOs = await db
+ .select({ id: knowledgeObjects.id, title: knowledgeObjects.title })
+ .from(knowledgeObjects)
+ .where(and(...conditions));
 
-  if (activeKOs.length === 0) {
-    bufferJobProgress(jobId, 'Tidak ada Objek Pengetahuan aktif ditemukan.');
-    await flushJobProgress(jobId);
-    await db
-      .update(aiGenerationJobs)
-      .set({ status: 'failed', errorMessage: 'Tidak ada Objek Pengetahuan aktif untuk diproses.', updatedAt: new Date() })
-      .where(eq(aiGenerationJobs.id, jobId));
-    return;
-  }
+ if (activeKOs.length === 0) {
+ bufferJobProgress(jobId, 'Tidak ada Objek Pengetahuan aktif ditemukan.');
+ await flushJobProgress(jobId);
+ await db
+ .update(aiGenerationJobs)
+ .set({ status: 'failed', errorMessage: 'Tidak ada Objek Pengetahuan aktif untuk diproses.', updatedAt: new Date() })
+ .where(eq(aiGenerationJobs.id, jobId));
+ return;
+ }
 
-  bufferJobProgress(jobId, `Menemukan ${activeKOs.length} Objek Pengetahuan aktif untuk diproses.`);
+ bufferJobProgress(jobId, `Menemukan ${activeKOs.length} Objek Pengetahuan aktif untuk diproses.`);
 
-  let successCount = 0;
-  const errors: string[] = [];
+ let successCount = 0;
+ const errors: string[] = [];
 
-  const BATCH_SIZE = 5;
-  for (let i = 0; i < activeKOs.length; i += BATCH_SIZE) {
-    const koBatch = activeKOs.slice(i, i + BATCH_SIZE);
-    const koIds = koBatch.map(ko => ko.id);
+ const BATCH_SIZE = 5;
+ for (let i = 0; i < activeKOs.length; i += BATCH_SIZE) {
+ const koBatch = activeKOs.slice(i, i + BATCH_SIZE);
+ const koIds = koBatch.map(ko => ko.id);
 
-    try {
-      bufferJobProgress(jobId, `Memulai batch generasi soal kuis untuk ${koIds.length} Objek Pengetahuan.`);
-      const res = await generateQuestionsForKOBatch(koIds);
+ try {
+ bufferJobProgress(jobId, `Memulai batch generasi soal kuis untuk ${koIds.length} Objek Pengetahuan.`);
+ const res = await generateQuestionsForKOBatch(koIds);
 
-      for (const result of res.results) {
-        const koTitle = activeKOs.find(k => k.id === result.koId)?.title || result.koId;
-        if (result.success) {
-          successCount += result.insertedCount;
-          bufferJobProgress(jobId, `Berhasil membuat soal untuk KO: "${koTitle}" (${result.insertedCount} soal dimasukkan).`);
-        } else {
-          const koError = result.errors.join('; ');
-          errors.push(`KO "${koTitle}": ${koError}`);
-          bufferJobProgress(jobId, `Gagal membuat soal untuk KO: "${koTitle}". Detail: ${koError}`);
-        }
-      }
+ for (const result of res.results) {
+ const koTitle = activeKOs.find(k => k.id === result.koId)?.title || result.koId;
+ if (result.success) {
+ successCount += result.insertedCount;
+ bufferJobProgress(jobId, `Berhasil membuat soal untuk KO: "${koTitle}" (${result.insertedCount} soal dimasukkan).`);
+ } else {
+ const koError = result.errors.join('; ');
+ errors.push(`KO "${koTitle}": ${koError}`);
+ bufferJobProgress(jobId, `Gagal membuat soal untuk KO: "${koTitle}". Detail: ${koError}`);
+ }
+ }
 
-      // Flush logs and update generatedCount once per batch
-      await flushJobProgress(jobId);
-      await db
-        .update(aiGenerationJobs)
-        .set({ generatedCount: successCount, updatedAt: new Date() })
-        .where(eq(aiGenerationJobs.id, jobId));
-    } catch (err: any) {
-      const errMsg = err?.message || String(err);
-      errors.push(`Batch KOs [${koIds.join(', ')}]: ${errMsg}`);
-      bufferJobProgress(jobId, `Error saat memproses batch KO. Detail: ${errMsg}`);
-      await flushJobProgress(jobId);
-    }
-  }
+ // Flush logs and update generatedCount once per batch
+ await flushJobProgress(jobId);
+ await db
+ .update(aiGenerationJobs)
+ .set({ generatedCount: successCount, updatedAt: new Date() })
+ .where(eq(aiGenerationJobs.id, jobId));
+ } catch (err: any) {
+ const errMsg = err?.message || String(err);
+ errors.push(`Batch KOs [${koIds.join(', ')}]: ${errMsg}`);
+ bufferJobProgress(jobId, `Error saat memproses batch KO. Detail: ${errMsg}`);
+ await flushJobProgress(jobId);
+ }
+ }
 
-  if (errors.length > 0) {
-    bufferJobProgress(jobId, `Generasi selesai dengan beberapa kesalahan. Jumlah kesalahan: ${errors.length}.`);
-  } else {
-    bufferJobProgress(jobId, 'Generasi selesai untuk semua Objek Pengetahuan.');
-  }
+ if (errors.length > 0) {
+ bufferJobProgress(jobId, `Generasi selesai dengan beberapa kesalahan. Jumlah kesalahan: ${errors.length}.`);
+ } else {
+ bufferJobProgress(jobId, 'Generasi selesai untuk semua Objek Pengetahuan.');
+ }
 
-  bufferJobProgress(jobId, 'Status job diperbarui. Pipeline selesai.');
-  await flushJobProgress(jobId);
+ bufferJobProgress(jobId, 'Status job diperbarui. Pipeline selesai.');
+ await flushJobProgress(jobId);
 
-  // Mark job as completed
-  await db
-    .update(aiGenerationJobs)
-    .set({
-      status: errors.length === activeKOs.length ? 'failed' : 'completed',
-      generatedCount: successCount,
-      errorMessage: errors.length > 0 ? `Beberapa KO gagal diproses:\n${errors.slice(0, 3).join('\n')}` : null,
-      updatedAt: new Date(),
-    })
-    .where(eq(aiGenerationJobs.id, jobId));
+ // Mark job as completed
+ await db
+ .update(aiGenerationJobs)
+ .set({
+ status: errors.length === activeKOs.length ? 'failed' : 'completed',
+ generatedCount: successCount,
+ errorMessage: errors.length > 0 ? `Beberapa KO gagal diproses:\n${errors.slice(0, 3).join('\n')}` : null,
+ updatedAt: new Date(),
+ })
+ .where(eq(aiGenerationJobs.id, jobId));
 }
 

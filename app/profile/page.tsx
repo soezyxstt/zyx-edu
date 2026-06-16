@@ -11,381 +11,381 @@ import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { eq, and, gt } from "drizzle-orm";
 import {
-  enrollments,
-  courses,
-  progress,
-  submissions,
-  bookings,
-  tutorSlots,
-  groupMembers,
-  groups,
-  user as userTable,
+ enrollments,
+ courses,
+ progress,
+ submissions,
+ bookings,
+ tutorSlots,
+ groupMembers,
+ groups,
+ user as userTable,
 } from "@/db/schema";
 
 export const metadata: Metadata = {
-  title: pageTitle("Profil Pengguna"),
-  description: "Profil akademis, statistik belajar, kelompok belajar, dan jadwal bimbingan Anda di Zyx Academy.",
+ title: pageTitle("Profil Pengguna"),
+ description: "Profil akademis, statistik belajar, kelompok belajar, dan jadwal bimbingan Anda di Zyx Academy.",
 };
 
 export default async function ProfilePage() {
-  const h = await headers();
-  const session = await auth.api.getSession({ headers: h });
-  
-  if (!session?.user) {
-    redirect("/sign-in?next=/profile");
-  }
+ const h = await headers();
+ const session = await auth.api.getSession({ headers: h });
+ 
+ if (!session?.user) {
+ redirect("/sign-in?next=/profile");
+ }
 
-  const user = session.user;
-  const now = new Date();
+ const user = session.user;
+ const now = new Date();
 
-  let activeEnrollments: any[] = [];
-  let completedCount = 0;
-  let submissionCount = 0;
-  let averageScore: number | null = null;
-  let userGroups: any[] = [];
-  let studentBookings: any[] = [];
+ let activeEnrollments: any[] = [];
+ let completedCount = 0;
+ let submissionCount = 0;
+ let averageScore: number | null = null;
+ let userGroups: any[] = [];
+ let studentBookings: any[] = [];
 
-  try {
-    if (process.env.NODE_ENV === "development" && user.role === "admin") {
-      const all = await db.select().from(courses);
-      activeEnrollments = all.map((c) => ({
-        id: c.id,
-        title: c.title,
-        category: c.category,
-        enrolledAt: now,
-        expiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
-      }));
-    } else {
-      activeEnrollments = await db
-        .select({
-          id: courses.id,
-          title: courses.title,
-          category: courses.category,
-          enrolledAt: enrollments.enrolledAt,
-          expiresAt: enrollments.expiresAt,
-        })
-        .from(enrollments)
-        .innerJoin(courses, eq(enrollments.courseId, courses.id))
-        .where(
-          and(
-            eq(enrollments.userId, user.id),
-            gt(enrollments.expiresAt, now)
-          )
-        );
-    }
-  } catch (err) {
-    console.error("Failed to fetch enrollments:", err);
-  }
+ try {
+ if (process.env.NODE_ENV === "development" && user.role === "admin") {
+ const all = await db.select().from(courses);
+ activeEnrollments = all.map((c) => ({
+ id: c.id,
+ title: c.title,
+ category: c.category,
+ enrolledAt: now,
+ expiresAt: new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000),
+ }));
+ } else {
+ activeEnrollments = await db
+ .select({
+ id: courses.id,
+ title: courses.title,
+ category: courses.category,
+ enrolledAt: enrollments.enrolledAt,
+ expiresAt: enrollments.expiresAt,
+ })
+ .from(enrollments)
+ .innerJoin(courses, eq(enrollments.courseId, courses.id))
+ .where(
+ and(
+ eq(enrollments.userId, user.id),
+ gt(enrollments.expiresAt, now)
+ )
+ );
+ }
+ } catch (err) {
+ console.error("Failed to fetch enrollments:", err);
+ }
 
-  try {
-    const progressRes = await db
-      .select()
-      .from(progress)
-      .where(
-        and(
-          eq(progress.userId, user.id),
-          eq(progress.status, "completed")
-        )
-      );
-    completedCount = progressRes.length;
-  } catch (err) {
-    console.error("Failed to fetch progress:", err);
-  }
+ try {
+ const progressRes = await db
+ .select()
+ .from(progress)
+ .where(
+ and(
+ eq(progress.userId, user.id),
+ eq(progress.status, "completed")
+ )
+ );
+ completedCount = progressRes.length;
+ } catch (err) {
+ console.error("Failed to fetch progress:", err);
+ }
 
-  try {
-    const submissionsRes = await db
-      .select()
-      .from(submissions)
-      .where(eq(submissions.userId, user.id));
-    submissionCount = submissionsRes.length;
-    const graded = submissionsRes.filter((s) => s.score !== null);
-    averageScore = graded.length > 0
-      ? Math.round(graded.reduce((acc, curr) => acc + (curr.score || 0), 0) / graded.length)
-      : null;
-  } catch (err) {
-    console.error("Failed to fetch submissions:", err);
-  }
+ try {
+ const submissionsRes = await db
+ .select()
+ .from(submissions)
+ .where(eq(submissions.userId, user.id));
+ submissionCount = submissionsRes.length;
+ const graded = submissionsRes.filter((s) => s.score !== null);
+ averageScore = graded.length > 0
+ ? Math.round(graded.reduce((acc, curr) => acc + (curr.score || 0), 0) / graded.length)
+ : null;
+ } catch (err) {
+ console.error("Failed to fetch submissions:", err);
+ }
 
-  try {
-    userGroups = await db
-      .select({
-        id: groups.id,
-        name: groups.name,
-        joinedAt: groupMembers.joinedAt,
-      })
-      .from(groupMembers)
-      .innerJoin(groups, eq(groupMembers.groupId, groups.id))
-      .where(eq(groupMembers.userId, user.id));
-  } catch (err) {
-    console.error("Failed to fetch groups:", err);
-  }
+ try {
+ userGroups = await db
+ .select({
+ id: groups.id,
+ name: groups.name,
+ joinedAt: groupMembers.joinedAt,
+ })
+ .from(groupMembers)
+ .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+ .where(eq(groupMembers.userId, user.id));
+ } catch (err) {
+ console.error("Failed to fetch groups:", err);
+ }
 
-  try {
-    studentBookings = await db
-      .select({
-        id: bookings.id,
-        bookedAt: bookings.bookedAt,
-        courseTitle: courses.title,
-        dayOfWeek: tutorSlots.dayOfWeek,
-        startTime: tutorSlots.startTime,
-        endTime: tutorSlots.endTime,
-        tutorName: userTable.name,
-      })
-      .from(bookings)
-      .innerJoin(tutorSlots, eq(bookings.slotId, tutorSlots.id))
-      .innerJoin(courses, eq(bookings.courseId, courses.id))
-      .innerJoin(userTable, eq(tutorSlots.tutorId, userTable.id))
-      .where(eq(bookings.studentId, user.id));
-  } catch (err) {
-    console.error("Failed to fetch bookings:", err);
-  }
+ try {
+ studentBookings = await db
+ .select({
+ id: bookings.id,
+ bookedAt: bookings.bookedAt,
+ courseTitle: courses.title,
+ dayOfWeek: tutorSlots.dayOfWeek,
+ startTime: tutorSlots.startTime,
+ endTime: tutorSlots.endTime,
+ tutorName: userTable.name,
+ })
+ .from(bookings)
+ .innerJoin(tutorSlots, eq(bookings.slotId, tutorSlots.id))
+ .innerJoin(courses, eq(bookings.courseId, courses.id))
+ .innerJoin(userTable, eq(tutorSlots.tutorId, userTable.id))
+ .where(eq(bookings.studentId, user.id));
+ } catch (err) {
+ console.error("Failed to fetch bookings:", err);
+ }
 
-  return (
-    <ShellPage
-      title="Profil Saya"
-      description="Akun personal belajar Anda di Zyx Academy."
-    >
-      <div className="max-w-5xl mx-auto pb-12">
-        {/* Profile Header */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 md:gap-8">
-          <div className="relative size-24 md:size-28 shrink-0">
-            {user.image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.image}
-                alt={user.name}
-                className="size-full rounded-full object-cover border-2 border-background ring-4 ring-brand-primary/20 shadow-sm"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <span className="flex size-full items-center justify-center rounded-full bg-brand-primary text-h4 font-bold text-white shadow-sm ring-4 ring-brand-primary/20 border-2 border-background">
-                {user.name?.charAt(0)?.toUpperCase() ?? "?"}
-              </span>
-            )}
-            <span
-              className="absolute bottom-1 right-1 flex size-4 items-center justify-center rounded-full bg-status-success ring-2 ring-background"
-              title="Akun Google Aktif"
-            />
-          </div>
+ return (
+ <ShellPage
+ title="Profil Saya"
+ description="Akun personal belajar Anda di Zyx Academy."
+ >
+ <div className="max-w-5xl mx-auto pb-12">
+ {/* Profile Header */}
+ <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 md:gap-8">
+ <div className="relative size-24 md:size-28 shrink-0">
+ {user.image ? (
+ // eslint-disable-next-line @next/next/no-img-element
+ <img
+ src={user.image}
+ alt={user.name}
+ className="size-full rounded-full object-cover border-2 border-background ring-4 ring-brand-primary/20 shadow-sm"
+ referrerPolicy="no-referrer"
+ />
+ ) : (
+ <span className="flex size-full items-center justify-center rounded-full bg-brand-primary text-h4 font-bold text-white shadow-sm ring-4 ring-brand-primary/20 border-2 border-background">
+ {user.name?.charAt(0)?.toUpperCase() ?? "?"}
+ </span>
+ )}
+ <span
+ className="absolute bottom-1 right-1 flex size-4 items-center justify-center rounded-full bg-status-success ring-2 ring-background"
+ title="Akun Google Aktif"
+ />
+ </div>
 
-          <div className="flex-1 text-center sm:text-left min-w-0">
-            <span className="inline-flex items-center gap-1 rounded-md border border-brand-primary/20 bg-brand-primary/5 px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary uppercase tracking-wider">
-              {user.role || "student"}
-            </span>
+ <div className="flex-1 text-center sm:text-left min-w-0">
+ <span className="inline-flex items-center gap-1 rounded-md border border-brand-primary/20 bg-brand-primary/5 px-2.5 py-0.5 text-[10px] font-semibold text-brand-primary uppercase tracking-wider">
+ {user.role || "student"}
+ </span>
 
-            <h2 className="font-heading text-h3 md:text-h2 font-bold tracking-tight text-foreground mt-2 truncate bg-gradient-to-r from-brand-primary via-primary-hover to-brand-secondary bg-clip-text text-transparent">
-              {user.name}
-            </h2>
+ <h2 className="font-heading text-h3 md:text-h2 font-bold tracking-tight text-foreground mt-2 truncate bg-gradient-to-r from-brand-primary via-primary-hover to-brand-secondary bg-clip-text text-transparent">
+ {user.name}
+ </h2>
 
-            <div className="flex flex-wrap justify-center sm:justify-start items-center gap-x-4 gap-y-2 mt-3 text-body-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5 min-w-0">
-                <Mail className="size-4 text-muted-foreground/75 shrink-0" />
-                <span className="truncate">{user.email}</span>
-              </span>
-              <span className="flex items-center gap-1.5 text-status-success font-medium shrink-0">
-                <ShieldCheck className="size-4 shrink-0" />
-                Google Connected
-              </span>
-              {env.FEATURE_REFLECTION === "1" && (
-                <Link
-                  href="/profile/reflections"
-                  className="flex items-center gap-1.5 text-brand-primary font-semibold hover:underline shrink-0"
-                >
-                  <ClipboardList className="size-4 shrink-0" />
-                  Weekly reflections
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
+ <div className="flex flex-wrap justify-center sm:justify-start items-center gap-x-4 gap-y-2 mt-3 text-body-sm text-muted-foreground">
+ <span className="flex items-center gap-1.5 min-w-0">
+ <Mail className="size-4 text-muted-foreground/75 shrink-0" />
+ <span className="truncate">{user.email}</span>
+ </span>
+ <span className="flex items-center gap-1.5 text-status-success font-medium shrink-0">
+ <ShieldCheck className="size-4 shrink-0" />
+ Google Connected
+ </span>
+ {env.FEATURE_REFLECTION === "1" && (
+ <Link
+ href="/profile/reflections"
+ className="flex items-center gap-1.5 text-brand-primary font-semibold hover:underline shrink-0"
+ >
+ <ClipboardList className="size-4 shrink-0" />
+ Weekly reflections
+ </Link>
+ )}
+ </div>
+ </div>
+ </div>
 
-        {/* Stats Section: Cardless, Dividers Grid */}
-        <div className="border-y border-border py-8 my-10 grid grid-cols-2 md:grid-cols-4 gap-y-6 md:gap-y-0 divide-y md:divide-y-0 md:divide-x divide-border">
-          <div className="flex flex-col items-center md:items-start md:px-6 first:pl-0">
-            <span className="font-heading text-h3 md:text-h2 font-bold text-brand-primary">
-              {activeEnrollments.length}
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
-              Kelas Aktif
-            </span>
-          </div>
+ {/* Stats Section: Cardless, Dividers Grid */}
+ <div className="border-y border-border py-8 my-10 grid grid-cols-2 md:grid-cols-4 gap-y-6 md:gap-y-0 divide-y md:divide-y-0 md:divide-x divide-border">
+ <div className="flex flex-col items-center md:items-start md:px-6 first:pl-0">
+ <span className="font-heading text-h3 md:text-h2 font-bold text-brand-primary">
+ {activeEnrollments.length}
+ </span>
+ <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
+ Kelas Aktif
+ </span>
+ </div>
 
-          <div className="flex flex-col items-center md:items-start md:px-6 pt-6 md:pt-0">
-            <span className="font-heading text-h3 md:text-h2 font-bold text-brand-primary">
-              {completedCount}
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
-              Materi Selesai
-            </span>
-          </div>
+ <div className="flex flex-col items-center md:items-start md:px-6 pt-6 md:pt-0">
+ <span className="font-heading text-h3 md:text-h2 font-bold text-brand-primary">
+ {completedCount}
+ </span>
+ <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
+ Materi Selesai
+ </span>
+ </div>
 
-          <div className="flex flex-col items-center md:items-start md:px-6 pt-6 md:pt-0">
-            <span className="font-heading text-h3 md:text-h2 font-bold text-brand-primary">
-              {submissionCount}
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
-              Ujian Selesai
-            </span>
-          </div>
+ <div className="flex flex-col items-center md:items-start md:px-6 pt-6 md:pt-0">
+ <span className="font-heading text-h3 md:text-h2 font-bold text-brand-primary">
+ {submissionCount}
+ </span>
+ <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
+ Ujian Selesai
+ </span>
+ </div>
 
-          <div className="flex flex-col items-center md:items-start md:px-6 pt-6 md:pt-0 last:pr-0">
-            <span className="font-heading text-h3 md:text-h2 font-bold text-brand-secondary">
-              {averageScore !== null ? `${averageScore}%` : "—"}
-            </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
-              Rata-rata Nilai
-            </span>
-          </div>
-        </div>
+ <div className="flex flex-col items-center md:items-start md:px-6 pt-6 md:pt-0 last:pr-0">
+ <span className="font-heading text-h3 md:text-h2 font-bold text-brand-secondary">
+ {averageScore !== null ? `${averageScore}%` : ""}
+ </span>
+ <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mt-1.5">
+ Rata-rata Nilai
+ </span>
+ </div>
+ </div>
 
-        {/* Main Content Info Row */}
-        <div className="grid gap-12 lg:grid-cols-12 mt-12">
-          {/* Left Side: Learning and Bookings */}
-          <div className="lg:col-span-7 space-y-10">
-            {/* Active Classes list */}
-            <div>
-              <h3 className="font-heading text-h5 font-semibold text-foreground flex items-center gap-2 mb-5">
-                <GraduationCap className="size-5 text-brand-primary shrink-0" />
-                Kelas yang Diikuti
-              </h3>
-              {activeEnrollments.length > 0 ? (
-                <div className="divide-y divide-border/60">
-                  {activeEnrollments.map((course) => (
-                    <div key={course.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4 border-b border-border/40 last:border-b-0 text-left">
-                      <div className="min-w-0 flex-1 text-left">
-                        <div className="flex items-center gap-2 flex-wrap text-left">
-                          <span className="inline-flex rounded-md bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary uppercase tracking-wider ring-1 ring-brand-primary/20">
-                            {course.category}
-                          </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            Terdaftar: {new Date(course.enrolledAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
-                          </span>
-                        </div>
-                        <h4 className="font-heading text-body-md font-semibold text-foreground mt-1.5 truncate text-left">
-                          {course.title}
-                        </h4>
-                      </div>
-                      <Link
-                        href={`/courses/${course.id}`}
-                        className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-semibold text-foreground hover:bg-muted/70 hover:border-border-strong transition-colors h-9 shrink-0"
-                      >
-                        Buka Kelas
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-body-sm text-muted-foreground py-2 italic border-t border-border/40">
-                  Belum ada kelas aktif yang diikuti saat ini. Silakan hubungi dosen/admin Anda untuk token aktivasi kelas.
-                </p>
-              )}
-            </div>
+ {/* Main Content Info Row */}
+ <div className="grid gap-12 lg:grid-cols-12 mt-12">
+ {/* Left Side: Learning and Bookings */}
+ <div className="lg:col-span-7 space-y-10">
+ {/* Active Classes list */}
+ <div>
+ <h3 className="font-heading text-h5 font-semibold text-foreground flex items-center gap-2 mb-5">
+ <GraduationCap className="size-5 text-brand-primary shrink-0" />
+ Kelas yang Diikuti
+ </h3>
+ {activeEnrollments.length > 0 ? (
+ <div className="divide-y divide-border/60">
+ {activeEnrollments.map((course) => (
+ <div key={course.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-4 border-b border-border/40 last:border-b-0 text-left">
+ <div className="min-w-0 flex-1 text-left">
+ <div className="flex items-center gap-2 flex-wrap text-left">
+ <span className="inline-flex rounded-md bg-brand-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-brand-primary uppercase tracking-wider ring-1 ring-brand-primary/20">
+ {course.category}
+ </span>
+ <span className="text-[11px] text-muted-foreground">
+ Terdaftar: {new Date(course.enrolledAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
+ </span>
+ </div>
+ <h4 className="font-heading text-body-md font-semibold text-foreground mt-1.5 truncate text-left">
+ {course.title}
+ </h4>
+ </div>
+ <Link
+ href={`/courses/${course.id}`}
+ className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-semibold text-foreground hover:bg-muted/70 hover:border-border-strong transition-colors h-9 shrink-0"
+ >
+ Buka Kelas
+ </Link>
+ </div>
+ ))}
+ </div>
+ ) : (
+ <p className="text-body-sm text-muted-foreground py-2 italic border-t border-border/40">
+ Belum ada kelas aktif yang diikuti saat ini. Silakan hubungi dosen/admin Anda untuk token aktivasi kelas.
+ </p>
+ )}
+ </div>
 
-            {/* Bookings list */}
-            <div className="border-t border-border/60 pt-8">
-              <h3 className="font-heading text-h5 font-semibold text-foreground flex items-center gap-2 mb-5">
-                <CalendarDays className="size-5 text-brand-secondary shrink-0" />
-                Jadwal Tutorial Mendatang
-              </h3>
-              {studentBookings.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {studentBookings.map((booking) => (
-                    <div key={booking.id} className="flex items-start gap-3 p-3.5 rounded-lg border border-border/50 bg-muted/15">
-                      <div className="size-8 shrink-0 flex items-center justify-center rounded bg-brand-secondary/10 text-brand-secondary">
-                        <User2 className="size-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="text-body-sm font-semibold text-foreground truncate">
-                          Tutorial {booking.courseTitle}
-                        </h4>
-                        <p className="text-body-xs text-muted-foreground mt-0.5 truncate">
-                          Tutor: <span className="font-medium text-foreground">{booking.tutorName}</span>
-                        </p>
-                        <p className="text-body-xs font-semibold text-brand-secondary mt-2 flex items-center gap-1">
-                          <span className="capitalize">{booking.dayOfWeek}</span>, {booking.startTime} - {booking.endTime}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-body-sm text-muted-foreground py-2 italic">
-                  Tidak ada jadwal tutorial terdaftar untuk minggu ini.
-                </p>
-              )}
-            </div>
-          </div>
+ {/* Bookings list */}
+ <div className="border-t border-border/60 pt-8">
+ <h3 className="font-heading text-h5 font-semibold text-foreground flex items-center gap-2 mb-5">
+ <CalendarDays className="size-5 text-brand-secondary shrink-0" />
+ Jadwal Tutorial Mendatang
+ </h3>
+ {studentBookings.length > 0 ? (
+ <div className="grid gap-3 sm:grid-cols-2">
+ {studentBookings.map((booking) => (
+ <div key={booking.id} className="flex items-start gap-3 p-3.5 rounded-lg border border-border/50 bg-muted/15">
+ <div className="size-8 shrink-0 flex items-center justify-center rounded bg-brand-secondary/10 text-brand-secondary">
+ <User2 className="size-4" />
+ </div>
+ <div className="min-w-0 flex-1">
+ <h4 className="text-body-sm font-semibold text-foreground truncate">
+ Tutorial {booking.courseTitle}
+ </h4>
+ <p className="text-body-xs text-muted-foreground mt-0.5 truncate">
+ Tutor: <span className="font-medium text-foreground">{booking.tutorName}</span>
+ </p>
+ <p className="text-body-xs font-semibold text-brand-secondary mt-2 flex items-center gap-1">
+ <span className="capitalize">{booking.dayOfWeek}</span>, {booking.startTime} - {booking.endTime}
+ </p>
+ </div>
+ </div>
+ ))}
+ </div>
+ ) : (
+ <p className="text-body-sm text-muted-foreground py-2 italic">
+ Tidak ada jadwal tutorial terdaftar untuk minggu ini.
+ </p>
+ )}
+ </div>
+ </div>
 
-          {/* Right Side: Account details and groups */}
-          <div className="lg:col-span-5 space-y-10">
-            {/* Google Identity info */}
-            <div>
-              <h3 className="font-heading text-h5 font-semibold text-foreground mb-4">
-                Google Identity Account
-              </h3>
-              <dl className="text-body-sm divide-y divide-border/40 border-t border-border/40">
-                <div className="py-3 flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Hubungan Akun</dt>
-                  <dd className="font-semibold text-foreground flex items-center gap-1.5">
-                    <svg className="size-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
-                    </svg>
-                    Google
-                  </dd>
-                </div>
-                <div className="py-3 flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Status Email</dt>
-                  <dd className="font-semibold text-status-success">
-                    Terverifikasi
-                  </dd>
-                </div>
-                <div className="py-3 flex justify-between gap-4">
-                  <dt className="text-muted-foreground">Tanggal Terdaftar</dt>
-                  <dd className="font-semibold text-foreground">
-                    {new Date(user.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
-                  </dd>
-                </div>
-                {user.lastActivityAt && (
-                  <div className="py-3 flex justify-between gap-4">
-                    <dt className="text-muted-foreground">Aktivitas Terakhir</dt>
-                    <dd className="font-semibold text-foreground">
-                      {new Date(user.lastActivityAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
+ {/* Right Side: Account details and groups */}
+ <div className="lg:col-span-5 space-y-10">
+ {/* Google Identity info */}
+ <div>
+ <h3 className="font-heading text-h5 font-semibold text-foreground mb-4">
+ Google Identity Account
+ </h3>
+ <dl className="text-body-sm divide-y divide-border/40 border-t border-border/40">
+ <div className="py-3 flex justify-between gap-4">
+ <dt className="text-muted-foreground">Hubungan Akun</dt>
+ <dd className="font-semibold text-foreground flex items-center gap-1.5">
+ <svg className="size-4 shrink-0" viewBox="0 0 24 24" aria-hidden="true">
+ <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+ <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+ <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+ <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+ </svg>
+ Google
+ </dd>
+ </div>
+ <div className="py-3 flex justify-between gap-4">
+ <dt className="text-muted-foreground">Status Email</dt>
+ <dd className="font-semibold text-status-success">
+ Terverifikasi
+ </dd>
+ </div>
+ <div className="py-3 flex justify-between gap-4">
+ <dt className="text-muted-foreground">Tanggal Terdaftar</dt>
+ <dd className="font-semibold text-foreground">
+ {new Date(user.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}
+ </dd>
+ </div>
+ {user.lastActivityAt && (
+ <div className="py-3 flex justify-between gap-4">
+ <dt className="text-muted-foreground">Aktivitas Terakhir</dt>
+ <dd className="font-semibold text-foreground">
+ {new Date(user.lastActivityAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+ </dd>
+ </div>
+ )}
+ </dl>
+ </div>
 
-            {/* Groups list */}
-            <div>
-              <h3 className="font-heading text-h5 font-semibold text-foreground mb-4">
-                Kelompok Belajar
-              </h3>
-              {userGroups.length > 0 ? (
-                <div className="divide-y divide-border/40 border-t border-border/40">
-                  {userGroups.map((grp) => (
-                    <div key={grp.id} className="py-3 flex items-center justify-between gap-4">
-                      <span className="font-semibold text-body-sm text-foreground">
-                        {grp.name}
-                      </span>
-                      <span className="text-body-xs text-muted-foreground">
-                        Bergabung: {new Date(grp.joinedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-body-xs text-muted-foreground italic pt-2 border-t border-border/40">
-                  Belum terdaftar di kelompok belajar mana pun. Kelompok akan otomatis dibuat saat melakukan pendaftaran kelas dengan token.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </ShellPage>
-  );
+ {/* Groups list */}
+ <div>
+ <h3 className="font-heading text-h5 font-semibold text-foreground mb-4">
+ Kelompok Belajar
+ </h3>
+ {userGroups.length > 0 ? (
+ <div className="divide-y divide-border/40 border-t border-border/40">
+ {userGroups.map((grp) => (
+ <div key={grp.id} className="py-3 flex items-center justify-between gap-4">
+ <span className="font-semibold text-body-sm text-foreground">
+ {grp.name}
+ </span>
+ <span className="text-body-xs text-muted-foreground">
+ Bergabung: {new Date(grp.joinedAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' })}
+ </span>
+ </div>
+ ))}
+ </div>
+ ) : (
+ <p className="text-body-xs text-muted-foreground italic pt-2 border-t border-border/40">
+ Belum terdaftar di kelompok belajar mana pun. Kelompok akan otomatis dibuat saat melakukan pendaftaran kelas dengan token.
+ </p>
+ )}
+ </div>
+ </div>
+ </div>
+ </div>
+ </ShellPage>
+ );
 }

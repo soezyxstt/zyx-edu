@@ -11,6 +11,7 @@ import { quizOptionClasses, quizOptionLetterClasses } from "@/components/course/
 import type { QuizOptionState } from "@/components/course/quiz-option-styles";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { getCourseById } from "@/lib/student-course-fixtures";
+import { getCourseAction } from "@/app/dashboard/actions";
 import { cn } from "@/lib/utils";
 
 interface JoinResponse {
@@ -24,7 +25,17 @@ type ViewPhase = "join" | "live";
 
 export default function LiveStudentPage() {
   const { id: courseId } = useParams<{ id: string }>();
-  const course = getCourseById(courseId);
+  const [course, setCourse] = useState<any>(undefined);
+
+  useEffect(() => {
+    const fixtureCourse = getCourseById(courseId);
+    if (fixtureCourse) {
+      setCourse(fixtureCourse);
+    } else {
+      getCourseAction(courseId).then(setCourse).catch(console.error);
+    }
+  }, [courseId]);
+
   const title = course ? `Kuis Langsung: ${course.title}` : "Kuis Langsung";
 
   const [phase, setPhase] = useState<ViewPhase>("join");

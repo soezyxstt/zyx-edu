@@ -6,15 +6,15 @@ import { headers } from 'next/headers';
 /**
  * GET /api/admin/ai-analytics
  * Returns AI request stats for the admin dashboard.
- * Admin-only — requires an active admin session.
+ * Admin-only ; requires an active admin session.
  */
 export async function GET() {
-  const session = await auth.api.getSession({ headers: await headers() });
+ const session = await auth.api.getSession({ headers: await headers() });
 
-  if (!session?.user || session.user.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  }
+ if (!session?.user || session.user.role !== 'admin') {
+ return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+ }
 
-  const stats = getAiStats();
-  return NextResponse.json(stats);
+ const stats = getAiStats();
+ return NextResponse.json(stats);
 }
