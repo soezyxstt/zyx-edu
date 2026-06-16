@@ -10,7 +10,7 @@ import { db } from '@/db';
 import { quizTemplates, aiQuestionBank, studentQuizAttempts, knowledgeObjects, studentConceptMastery } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { and, eq, asc, inArray, sql, desc, notInArray } from 'drizzle-orm';
+import { and, or, eq, asc, inArray, sql, desc, notInArray } from 'drizzle-orm';
 import { env } from '@/lib/env';
 
 const StartSchema = z.object({
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
  const tagConditions = tags.map(
  (tag) => sql`exists (select 1 from json_each(${aiQuestionBank.tags}) where json_each.value = ${tag})`
  );
- const tagCondition = tags.length > 0 ? and(...tagConditions) : undefined;
+ const tagCondition = tags.length > 0 ? or(...tagConditions) : undefined;
 
  // Build question set from bank using difficulty proportions
  const questionsByDifficulty = await Promise.all(

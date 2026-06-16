@@ -37,6 +37,8 @@ export default async function DiktatCompilerPage() {
   const serializedDiktats = allDiktats.map((d) => ({
     ...d,
     fileUrl: d.fileUrl ? storage.getUrl(d.fileUrl) : null,
+    createdAt: d.createdAt.toISOString(),
+    updatedAt: d.updatedAt.toISOString(),
   }));
 
   const courseMap = Object.fromEntries(allCourses.map((c) => [c.id, c.title]));

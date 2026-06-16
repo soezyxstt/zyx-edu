@@ -40,7 +40,8 @@ interface Diktat {
   chapterIds: unknown;
   fileUrl: string | null;
   status: string; // 'draft', 'generating', 'ready', 'failed'
-  createdAt: Date;
+  createdAt: string;
+  updatedAt: string;
   settings: unknown;
 }
 
@@ -141,7 +142,8 @@ export function DiktatCompilerClient({
           chapterIds: chapterIdsArray,
           fileUrl: res.url || null,
           status: res.warning ? "failed" : "ready",
-          createdAt: new Date(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           settings: {}
         };
         
@@ -172,9 +174,10 @@ export function DiktatCompilerClient({
       const res = await compileDiktatAction(diktatId);
       if (res.success) {
         toast.success("PDF Diktat berhasil diperbarui!");
-        setDiktatsList(prev => prev.map(d => d.id === diktatId ? { ...d, fileUrl: res.url || null, status: "ready" } : d));
+        setDiktatsList(prev => prev.map(d => d.id === diktatId ? { ...d, fileUrl: res.url || null, status: "ready", updatedAt: new Date().toISOString() } : d));
       } else {
         toast.error(`Gagal kompilasi ulang: ${res.error}`);
+        setDiktatsList(prev => prev.map(d => d.id === diktatId ? { ...d, status: "failed", updatedAt: new Date().toISOString() } : d));
       }
     } catch (e) {
       toast.error("Terjadi kesalahan jaringan.");

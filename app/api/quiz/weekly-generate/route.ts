@@ -13,7 +13,7 @@ import { db } from '@/db';
 import { aiQuestionBank, quizTemplates, chapters, knowledgeObjects } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { and, eq, count, sql } from 'drizzle-orm';
+import { and, or, eq, count, sql } from 'drizzle-orm';
 import { startGenerationJob } from '@/lib/generation-pipeline';
 
 const Schema = z.object({
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
  .where(eq(quizTemplates.courseId, courseId));
 
  const hasDuplicateTags = existingTemplates.some((t) => {
- const tRules = t.selectionRules as Record<string, any>;
+ const tRules = t.selectionRules as Record<string, unknown>;
  const tTags = tRules?.tags as string[] | undefined;
  if (!tTags) return false;
  return validationTags.some((tag) => tTags.includes(tag));
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
  const tagConditions = validationTags.map(
  (tag) => sql`exists (select 1 from json_each(${aiQuestionBank.tags}) where json_each.value = ${tag})`
  );
- const tagCondition = validationTags.length > 0 ? and(...tagConditions) : undefined;
+ const tagCondition = validationTags.length > 0 ? or(...tagConditions) : undefined;
 
  const [{ total }] = await db
  .select({ total: count() })

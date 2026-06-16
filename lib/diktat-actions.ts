@@ -16,6 +16,10 @@ import { env } from "@/lib/env";
  */
 export function extractFileKeyFromUrl(url: string): string | null {
   if (!url) return null;
+  if (url.includes("/api/storage/file/")) {
+    const parts = url.split("/api/storage/file/");
+    return parts[parts.length - 1];
+  }
   const parts = url.split("/f/");
   return parts.length > 1 ? parts[1] : url;
 }
@@ -35,7 +39,7 @@ export async function generateDiktatDraft(
     const activeKOs = await db
       .select()
       .from(knowledgeObjects)
-      .where(and(eq(knowledgeObjects.chapterId, chapterIds[0]), eq(knowledgeObjects.status, "active")));
+      .where(and(inArray(knowledgeObjects.chapterId, chapterIds), eq(knowledgeObjects.status, "active")));
 
     if (activeKOs.length === 0) {
       return { success: false, errors: ["No active KOs found to link MTD information."] };
@@ -303,13 +307,6 @@ export async function publishDiktat(
       .update(diktats)
       .set({
         status: "failed",
-      })
-      .where(eq(diktats.id, diktatId));
-  } else {
-    await db
-      .update(diktats)
-      .set({
-        status: "ready",
       })
       .where(eq(diktats.id, diktatId));
   }

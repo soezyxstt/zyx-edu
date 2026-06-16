@@ -51,6 +51,21 @@ export async function GET(
     // Enable browser caching for 1 hour to reduce R2 egress operations
     headers.set("Cache-Control", "public, max-age=3600");
 
+    // Extract clean filename (remove UUID prefix)
+    let filename = key;
+    const uuidMatch = key.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-/i);
+    if (uuidMatch) {
+      filename = key.substring(uuidMatch[0].length);
+    }
+
+    const urlObj = new URL(req.url);
+    const isDownload = urlObj.searchParams.get("download") === "1" || urlObj.searchParams.get("download") === "true";
+    
+    headers.set(
+      "Content-Disposition",
+      `${isDownload ? "attachment" : "inline"}; filename="${filename.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+    );
+
     return new Response(stream, {
       headers,
     });
