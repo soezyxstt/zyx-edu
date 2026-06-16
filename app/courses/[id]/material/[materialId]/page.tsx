@@ -11,7 +11,7 @@ import { pageTitle } from "@/lib/site";
 import { getMaterial, type CourseMaterial } from "@/lib/student-course-fixtures";
 import { getCourse } from "@/lib/course-utils";
 import { db } from "@/db";
-import { aiMaterialInstances, diktats } from "@/db/schema";
+import { aiMaterialInstances, diktats, courseMaterials } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
@@ -48,6 +48,31 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
     console.error("Error fetching diktat record:", error);
   }
 
+  // Check in course_materials table
+  try {
+    const [matRecord] = await db
+      .select()
+      .from(courseMaterials)
+      .where(eq(courseMaterials.id, materialId));
+
+    if (matRecord) {
+      return {
+        id: matRecord.id,
+        courseId,
+        title: matRecord.title,
+        kind: "pdf",
+        docCategory: matRecord.type === "contoh_soal" ? "soal" : "materi",
+        fileSize: "PDF File",
+        url: matRecord.fileUrl ? storage.getUrl(matRecord.fileUrl) : undefined,
+        completed: false,
+        isPastYear: false,
+        isPreview: true,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching course material record:", error);
+  }
+
   try {
     const dbMaterial = await db.query.aiMaterialInstances.findFirst({
       where: eq(aiMaterialInstances.id, materialId),
@@ -78,7 +103,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         title: dbMaterial.title.replace(/^\[DRAF\]\s*/, ""),
         kind: "article",
         docCategory: "materi",
-        fileSize: "AI Generated",
+        fileSize: "Disusun otomatis",
         body,
         completed: false,
         isPastYear: false,

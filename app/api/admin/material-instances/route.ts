@@ -19,6 +19,7 @@ import { headers } from 'next/headers';
 import { parseMaterialIntoSections } from '@/lib/ingestion-parser';
 import { upsertChunkVector } from '@/lib/pinecone';
 import { extractKnowledgeObjectsForChapter } from '@/lib/ko-extractor';
+import { validateCanonicalMarkdown } from '@/lib/canonical-validator';
 
 const BodySchema = z.object({
   courseId: z.string().min(1),
@@ -28,6 +29,8 @@ const BodySchema = z.object({
   summary: z.string().min(1),
   learningObjectives: z.array(z.string()).default([]),
   keywords: z.array(z.string()).default([]),
+  chapterIds: z.array(z.string()).default([]),
+  type: z.enum(['learning', 'assessment']).default('learning'),
 });
 
 export async function POST(req: NextRequest) {
@@ -42,24 +45,55 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { courseId, title, sourceType, rawText, summary, learningObjectives, keywords } =
+  const { courseId, title, sourceType, rawText, summary, learningObjectives, keywords, chapterIds, type } =
     parsed.data;
 
-  // Clean up any existing records for this course to prevent duplication
-  await db.delete(chapters).where(eq(chapters.courseId, courseId));
-  await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.courseId, courseId));
-  await db.delete(aiMaterialInstances).where(eq(aiMaterialInstances.courseId, courseId));
-
-  try {
-    const { getNs } = await import('@/lib/pinecone');
-    await getNs(courseId).deleteAll();
-  } catch (err) {
-    console.error('Failed to deleteAll vectors from Pinecone namespace:', err);
+  // Run Pre-Ingestion Canonical Validation
+  const validation = validateCanonicalMarkdown(rawText);
+  if (!validation.success) {
+    return NextResponse.json({
+      error: "Canonical Validation Failed",
+      details: validation.errors
+    }, { status: 400 });
   }
 
-  const instanceId = randomUUID();
   const mtdId = randomUUID();
-  const chapterId = randomUUID(); // One single chapter ID for the entire uploaded document
+
+  if (type === 'assessment') {
+    // Save domain: Master Teaching Document (Assessment)
+    await db.insert(masterTeachingDocuments).values({
+      id: mtdId,
+      courseId,
+      title,
+      markdownContent: rawText,
+      version: 1,
+      status: 'active',
+      type: 'assessment',
+      createdById: session.user.id,
+    });
+
+    // Send ingestion event to Inngest
+    const { inngest } = await import('@/lib/inngest');
+    await inngest.send({
+      name: "assessment.ingest",
+      data: { courseId, mtdId },
+    });
+
+    return NextResponse.json(
+      {
+        mtdId,
+        type: 'assessment',
+        message: "Dokumen Assessment Canonical berhasil diunggah. Klasifikasi Objek Assessment berjalan di latar belakang."
+      },
+      { status: 201 }
+    );
+  }
+
+  // We do NOT delete chapters, master teaching documents, or material instances for the course.
+  // This supports multiple chapters and multiple materials per course.
+
+  const instanceId = randomUUID();
+  const chapterId = chapterIds[0] || randomUUID();
 
   // Parse text into sections → chunks
   const sections = parseMaterialIntoSections(rawText);
@@ -73,11 +107,12 @@ export async function POST(req: NextRequest) {
     summary,
     learningObjectives: learningObjectives as unknown as Record<string, unknown>,
     keywords: keywords as unknown as Record<string, unknown>,
+    chapterIds,
     pineconeSyncStatus: 'pending',
     lastSyncError: null,
   });
 
-  // Save new domain: Master Teaching Document
+  // Save new domain: Master Teaching Document (Learning)
   await db.insert(masterTeachingDocuments).values({
     id: mtdId,
     courseId,
@@ -85,46 +120,33 @@ export async function POST(req: NextRequest) {
     markdownContent: rawText,
     version: 1,
     status: 'active',
+    type: 'learning',
     createdById: session.user.id,
   });
 
-  // Determine orderIndex for the single chapter based on title, fallback to 1
-  let orderIndex = 1;
-  const matchIndex = title.match(/Bab\s*(\d+)/i);
-  if (matchIndex) {
-    orderIndex = parseInt(matchIndex[1], 10);
+  // Create website materials for each selected chapter
+  for (const cid of chapterIds) {
+    const slug = `${title
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')}-${cid.slice(0, 4)}`;
+
+    await db.insert(websiteMaterials).values({
+      id: randomUUID(),
+      courseId,
+      chapterId: cid,
+      sourceMtdId: mtdId,
+      sourceMtdVersion: 1,
+      isStale: false,
+      generationHash: 'initial-hash',
+      title: title,
+      slug,
+      canonicalMarkdown: rawText,
+      structuredContent: [{ type: 'p', content: rawText }],
+      status: 'draft',
+    });
   }
-
-  // Create exactly ONE Chapter (initial status 'draft') for the entire uploaded document
-  await db.insert(chapters).values({
-    id: chapterId,
-    courseId,
-    title: title,
-    orderIndex: orderIndex,
-    status: 'draft',
-  });
-
-  // Create exactly ONE Website Material (initial status 'draft') for the entire chapter
-  const slug = title
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
-
-  await db.insert(websiteMaterials).values({
-    id: randomUUID(),
-    courseId,
-    chapterId,
-    sourceMtdId: mtdId,
-    sourceMtdVersion: 1,
-    isStale: false,
-    generationHash: 'initial-hash',
-    title: title,
-    slug,
-    canonicalMarkdown: rawText,
-    structuredContent: [{ type: 'p', content: rawText }],
-    status: 'draft',
-  });
 
   const vectorUpserts: Promise<void>[] = [];
   const chapterExtractions: Promise<void>[] = [];
@@ -294,6 +316,24 @@ export async function DELETE(req: NextRequest) {
   const id = searchParams.get('id');
   if (!id) {
     return NextResponse.json({ error: 'Missing ID parameter' }, { status: 400 });
+  }
+
+  // First, check if the ID is an assessment MTD
+  const [assessmentMtd] = await db
+    .select()
+    .from(masterTeachingDocuments)
+    .where(eq(masterTeachingDocuments.id, id));
+
+  if (assessmentMtd && assessmentMtd.type === 'assessment') {
+    const courseId = assessmentMtd.courseId;
+    const { assessmentObjects } = await import('@/db/schema');
+    await db.delete(assessmentObjects).where(eq(assessmentObjects.sourceMtdId, id));
+    await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.id, id));
+    
+    const { updateAssessmentProfile } = await import('@/lib/assessment-extractor');
+    await updateAssessmentProfile(courseId);
+
+    return NextResponse.json({ success: true });
   }
 
   const instance = await db.query.aiMaterialInstances.findFirst({

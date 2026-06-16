@@ -7,7 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.NEXT_PUBLIC_VERCEL_URL
       ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : "https://zyxacademy.com");
+      : "https://www.zyxacademy.com");
 
   // Core static/marketing paths
   const staticPaths = ["", "/about", "/plans", "/testimonial", "/courses"];

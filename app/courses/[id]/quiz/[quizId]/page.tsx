@@ -9,9 +9,9 @@ import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { db } from "@/db";
-import { courses, quizTemplates, studentQuizAttempts } from "@/db/schema";
+import { courses, quizTemplates, studentQuizAttempts, aiQuestionBank } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { and, eq, desc } from "drizzle-orm";
+import { and, or, eq, desc, sql } from "drizzle-orm";
 import { headers } from "next/headers";
 import { Button } from "@/components/ui/button";
 import { QuizStartButton } from "./quiz-start-button";
@@ -71,6 +71,30 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
   const isEnrolled = await checkEnrollment(id);
   const isFree = template.visibility === "free";
   const isAccessible = isEnrolled || isFree;
+
+  // Check if questions are available for this template
+  const rules = template.selectionRules as {
+    tags?: string[];
+    count?: number;
+    difficulty_proportions?: Record<string, number>;
+  };
+  const tags = (rules.tags as string[] | undefined) || [];
+  const tagConditions = tags.map(
+    (tag) => sql`exists (select 1 from json_each(${aiQuestionBank.tags}) where json_each.value = ${tag})`
+  );
+  const tagCondition = tags.length > 0 ? or(...tagConditions) : undefined;
+
+  const [questionsCountRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(aiQuestionBank)
+    .where(
+      and(
+        eq(aiQuestionBank.courseId, template.courseId),
+        eq(aiQuestionBank.reviewStatus, 'published'),
+        tagCondition
+      )
+    );
+  const questionsCount = questionsCountRow?.count ?? 0;
 
   if (!isAccessible) {
     return (
@@ -338,7 +362,12 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
           timeLimitMinutes: template.timeLimitSeconds ? Math.round(template.timeLimitSeconds / 60) : 15,
           maxAttempts: template.maxAttempts ?? undefined,
         },
-        questions: (attempt.questionsSnapshot as any[]).map((q, idx) => ({
+        questions: (attempt.questionsSnapshot as unknown as Array<{
+          id: string;
+          prompt: string;
+          options: string[];
+          correct_indices: number[];
+        }>).map((q, idx) => ({
           id: q.id,
           order: idx + 1,
           type: "multiple_choice" as const,
@@ -395,7 +424,7 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                 <div>
                   <span className="block text-body-xs font-semibold text-muted-foreground uppercase tracking-wide">Jumlah Soal</span>
                   <span className="font-heading text-h6 font-bold text-foreground">
-                    {((template.selectionRules as Record<string, any>)?.count ?? 10)} Soal
+                    {((template.selectionRules as { count?: number })?.count ?? 10)} Soal
                   </span>
                 </div>
                 
@@ -436,6 +465,11 @@ export default async function CourseQuizTakePage({ params, searchParams }: Props
                   <div className="flex items-center gap-2 text-status-error font-semibold text-body-sm bg-status-error/10 p-3 rounded-lg border border-status-error/20 w-full justify-center">
                     <AlertTriangle className="size-4" />
                     Batas percobaan maksimal telah tercapai. Anda tidak dapat memulai kuis ini lagi.
+                  </div>
+                ) : questionsCount === 0 ? (
+                  <div className="flex items-center gap-2 text-status-error font-semibold text-body-sm bg-status-error/10 p-3 rounded-lg border border-status-error/20 w-full justify-center">
+                    <AlertTriangle className="size-4" />
+                    Soal kuis belum tersedia untuk kelas ini. Hubungi pengajar Anda untuk mempublikasikan soal kuis.
                   </div>
                 ) : (
                   <QuizStartButton courseId={id} templateId={template.id} />

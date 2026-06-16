@@ -127,12 +127,12 @@ export function ReviewClient({ listItem, review }: ReviewClientProps) {
                 )}
               </div>
 
-              {/* AI-Generated Discussion and Explanation Section */}
+              {/* Zyra-Generated Discussion and Explanation Section */}
               {hasExplanation && (
                 <div className="mt-6 border-t border-border/80 pt-6 space-y-4">
                   <div className="flex items-center gap-2 text-brand-primary">
                     <Sparkles className="size-4 animate-pulse" />
-                    <h4 className="font-heading text-body-xs font-bold uppercase tracking-wider">Pembahasan Soal (AI Trainer)</h4>
+                    <h4 className="font-heading text-body-xs font-bold uppercase tracking-wider">Pembahasan Soal oleh Zyra</h4>
                   </div>
 
                   {/* Text-based explanation */}

@@ -834,7 +834,7 @@ function QuestionRow({
           {/* AI Provenance details box */}
           <div className="rounded-xl bg-muted/40 p-4 border border-border/50 space-y-2 text-xs text-muted-foreground">
             <span className="font-bold text-foreground flex items-center gap-1.5 border-b border-border pb-1.5 mb-2">
-              <Cpu className="size-3.5 text-primary" /> Detail Provenansi Generasi AI (RAG)
+              <Cpu className="size-3.5 text-primary" /> Detail Provenansi Generasi (RAG)
             </span>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 font-mono">
               <div>

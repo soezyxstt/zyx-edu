@@ -7,7 +7,7 @@ import { QuizDemo, type QuizDemoOption } from "@/components/landing/demo/quiz-de
 
 const checklist = [
  <>
- Dibuat AI <strong className="font-semibold text-foreground">dari materi kuliahmu</strong>, bukan
+ Disusun dari <strong className="font-semibold text-foreground">materi kuliahmu</strong>, bukan
  bank soal generik
  </>,
  <>
@@ -72,7 +72,7 @@ export function LandingDemoQuiz() {
  <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
  <div className="max-w-xl">
  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--zx-accent)]">
- Kuis AI
+ Kuis Latihan
  </p>
  <SectionHeading as="h2" id="landing-quiz-heading" className="mt-3 text-foreground">
  Salah itu bagian dari rencana.

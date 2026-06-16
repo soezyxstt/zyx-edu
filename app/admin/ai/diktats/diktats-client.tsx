@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,6 +91,31 @@ export function DiktatCompilerClient({
   const courseChapters = useMemo(() => {
     return chapters.filter(c => c.courseId === selectedCourseId);
   }, [chapters, selectedCourseId]);
+
+  // Auto-generate title based on selected course and chapters
+  useEffect(() => {
+    if (selectedChapters.size === 0) {
+      setCustomTitle("");
+      return;
+    }
+
+    const course = courses.find((c) => c.id === selectedCourseId);
+    if (!course) return;
+
+    const selectedChapsList = courseChapters
+      .filter((c) => selectedChapters.has(c.id))
+      .sort((a, b) => a.orderIndex - b.orderIndex);
+
+    if (selectedChapsList.length === 1) {
+      const chap = selectedChapsList[0];
+      setCustomTitle(`Diktat ${course.title} Bab ${chap.orderIndex} ${chap.title}`);
+    } else if (selectedChapsList.length > 1) {
+      const indices = selectedChapsList.map((c) => c.orderIndex).join(", ");
+      setCustomTitle(`Diktat ${course.title} Bab ${indices}`);
+    } else {
+      setCustomTitle("");
+    }
+  }, [selectedChapters, selectedCourseId, courseChapters, courses]);
 
   // Handle chapter checkbox toggling
   const handleToggleChapter = (chapterId: string) => {

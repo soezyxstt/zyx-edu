@@ -6,25 +6,24 @@ This document is the single, authoritative, compact source of truth for the proj
 
 ## 1. Current State
 
-Last Updated: 2026-06-12
+Last Updated: 2026-06-16
 
 ### Completed
 - **SQLite migration completed**: Turso production configured, Local SQLite dev mode configured, DB queries routed successfully.
 - **R2 migration completed**: UploadThing provider mode switched to R2 by default, assets uploaded and validated.
 - **AI Gateway routing completed**: Gemini client configured to route all traffic through Cloudflare AI Gateway.
 - **Storage abstraction completed**: Reusable storage client (`lib/storage/index.ts`) abstracting R2 and UploadThing providers.
+- **vNext Content Architecture migration completed**: Canonical Markdown-First Knowledge System implemented, schemas updated, local SQLite and production Turso databases fully migrated, MTD backfill completed, validation, extraction, assessment indexing, and policy layers fully operational.
 
 ### Verified
 - SQLite/Turso schema setup and connection verified.
 - R2 uploads and public CDN serving verified.
 - AI Gateway metrics proxying verified.
+- vNext architecture pipeline and verification tests (16/16 tests passing).
+- Production database schemas and MTD backfill verified successfully.
 
 ### Current Focus
-P0 Infrastructure Activation (Phase 0)
-Remaining:
-- KV namespace (configure `zyx-ai-cache` on Cloudflare and record ID)
-- `docs/baselines.md` (baseline metrics table)
-- `scripts/r2-smoke.ts` (health check verification script)
+Deploying and monitoring the Canonical Markdown-First Knowledge System in production environment, ensuring robust integration of assessments and learning components.
 
 ### Blockers
 None

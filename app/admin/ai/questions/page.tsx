@@ -8,7 +8,7 @@ import { assertTutorOrAdmin } from "@/lib/uploadthing-admin";
 import { QuestionBankClient } from "./questions-client";
 
 export const metadata: Metadata = {
-  title: pageTitle("Bank Soal AI"),
+  title: pageTitle("Bank Soal"),
 };
 
 export default async function AIQuestionsPage() {
@@ -28,9 +28,9 @@ export default async function AIQuestionsPage() {
   return (
     <Reveal className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <div className="mb-8">
-        <h1 className="font-heading text-h4 font-semibold text-foreground">Bank Soal AI</h1>
+        <h1 className="font-heading text-h4 font-semibold text-foreground">Bank Soal</h1>
         <p className="mt-2 text-body-sm text-muted-foreground">
-          Tinjau, edit, dan publikasikan soal yang dihasilkan AI. Soal harus berstatus{" "}
+          Tinjau, edit, dan publikasikan soal yang dihasilkan sistem. Soal harus berstatus{" "}
           <strong>published</strong> sebelum dapat digunakan dalam kuis.
         </p>
       </div>

@@ -40,7 +40,7 @@ app.post('/render', auth, async (req, res) => {
       margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
     });
     res.set({ 'Content-Type': 'application/pdf', 'Content-Length': pdf.length });
-    res.send(pdf);
+    res.send(Buffer.from(pdf));
   } catch (err) {
     console.error('[diktat-renderer] PDF generation failed:', err);
     res.status(500).json({ error: err.message });

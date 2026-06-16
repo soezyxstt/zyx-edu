@@ -14,9 +14,16 @@ import {
 import { cn } from "@/lib/utils";
 import type { CourseMaterial, DocCategory } from "@/lib/student-course-fixtures";
 
+type Chapter = {
+  id: string;
+  title: string;
+  orderIndex: number;
+};
+
 type DocumentListClientProps = {
   courseId: string;
   materials: CourseMaterial[];
+  chapters: Chapter[];
 };
 
 const categoryLabel: Record<string, string> = {
@@ -28,13 +35,30 @@ const categoryLabel: Record<string, string> = {
 
 const categories = ["all", "materi", "soal", "solusi", "diktat"] as const;
 
-export function DocumentListClient({ courseId, materials }: DocumentListClientProps) {
+export function DocumentListClient({ courseId, materials, chapters }: DocumentListClientProps) {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [activeTab, setActiveTab] = useState<string>("all");
+  const [activeChapterId, setActiveChapterId] = useState<string>("all");
 
   const filteredMaterials = materials.filter((material) => {
+    // 1. Filter by category
     if (activeTab !== "all" && material.docCategory !== activeTab) {
       return false;
+    }
+
+    // 2. Filter by chapter
+    if (activeChapterId !== "all") {
+      const materialChapterIds: string[] = Array.isArray(material.chapterIds)
+        ? material.chapterIds
+        : typeof material.chapterIds === "string"
+        ? JSON.parse(material.chapterIds)
+        : material.chapterId
+        ? [material.chapterId]
+        : [];
+      
+      if (!materialChapterIds.includes(activeChapterId)) {
+        return false;
+      }
     }
 
     return true;
@@ -121,6 +145,38 @@ export function DocumentListClient({ courseId, materials }: DocumentListClientPr
           </button>
         </div>
       </div>
+
+      {chapters.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-card/45 border border-border/60 p-2.5 rounded-lg scrollbar-thin">
+          <button
+            type="button"
+            onClick={() => setActiveChapterId("all")}
+            className={cn(
+              "inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+              activeChapterId === "all"
+                ? "bg-brand-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-border hover:text-foreground"
+            )}
+          >
+            Semua Bab
+          </button>
+          {chapters.map((chapter) => (
+            <button
+              key={chapter.id}
+              type="button"
+              onClick={() => setActiveChapterId(chapter.id)}
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors cursor-pointer",
+                activeChapterId === chapter.id
+                  ? "bg-brand-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-border hover:text-foreground"
+              )}
+            >
+              Bab {chapter.orderIndex}: {chapter.title}
+            </button>
+          ))}
+        </div>
+      )}
 
       {viewMode === "grid" ? (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

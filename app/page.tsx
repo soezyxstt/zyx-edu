@@ -22,6 +22,18 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <div className="flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": "Zyx Academy",
+            "alternateName": ["Zyx", "ZYX Academy"],
+            "url": "https://www.zyxacademy.com",
+          }),
+        }}
+      />
       <LandingHero />
       <LandingLearningLoop />
       <LandingDemoQuiz />

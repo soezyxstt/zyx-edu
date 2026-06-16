@@ -63,56 +63,60 @@ export async function processBatch(step: any, courseId?: string) {
   // Step 3: Group by course namespace (to optimize embedding & Pinecone requests)
   const courseGroups: Record<string, VectorSyncRow[]> = {};
   for (const row of batch) {
-    if (!courseGroups[row.courseId]) {
-      courseGroups[row.courseId] = [];
+    const key = `${row.courseId}:${row.namespace}`;
+    if (!courseGroups[key]) {
+      courseGroups[key] = [];
     }
-    courseGroups[row.courseId].push(row);
+    courseGroups[key].push(row);
   }
 
   let successCount = 0;
   let failCount = 0;
 
-  for (const [cId, rows] of Object.entries(courseGroups)) {
+  for (const [key, rows] of Object.entries(courseGroups)) {
+    const [cId, namespace] = key.split(":");
+    const safeNamespace = namespace || "learning";
+    const sanitizeKey = `${cId}-${safeNamespace}`;
     try {
       // Step 4: Batch embed text-embedding-004
       const texts = rows.map((r: VectorSyncRow) => (r.payload as any).text);
-      const embeddings = await step.run(`embed-texts-${cId}`, async () => {
+      const embeddings = await step.run(`embed-texts-${sanitizeKey}`, async () => {
         return await embedTexts(texts);
       });
 
       // Step 5: Upsert to Pinecone course namespace
-      const koRecords = await step.run(`upsert-pinecone-${cId}`, async () => {
+      const koRecords = await step.run(`upsert-pinecone-${sanitizeKey}`, async () => {
         const records = rows.map((row: VectorSyncRow, idx: number) => {
           const payload = row.payload as any;
           return {
-            id: row.koId || "",
+            id: row.koId || payload.id || row.id,
             values: embeddings[idx],
             metadata: {
               courseId: row.courseId,
-              chapterId: payload.metadata.chapterId,
+              chapterId: payload.metadata.chapterId || "",
               conceptId: payload.metadata.conceptId || "",
-              type: payload.metadata.type,
-              bloomLevel: payload.metadata.bloomLevel,
-              difficulty: payload.metadata.difficulty,
+              type: payload.metadata.type || "unknown",
+              bloomLevel: payload.metadata.bloomLevel || "apply",
+              difficulty: payload.metadata.difficulty || "medium",
               importance: payload.metadata.importance || "medium",
               tags: payload.metadata.tags || [],
             }
           };
         });
 
-        const ns = getNs(cId);
+        const ns = getNs(`${cId}_${safeNamespace}`);
         await ns.upsert({ records });
         return records;
       });
 
       // Step 5b: Mirror to Vectorize when VECTOR_STORE=dual|vectorize
       if (shouldMirrorToVectorize()) {
-        await step.run(`upsert-vectorize-${cId}`, async () => {
+        await step.run(`upsert-vectorize-${sanitizeKey}`, async () => {
           await vectorizeUpsert(
             koRecords.map((r: { id: string; values: number[]; metadata: Record<string, unknown> }) => ({
               id: r.id,
               values: r.values,
-              namespace: `course_${cId}`,
+              namespace: `course_${cId}_${safeNamespace}`,
               metadata: serializeVzMetadata(r.metadata),
             })),
           );
@@ -120,7 +124,7 @@ export async function processBatch(step: any, courseId?: string) {
       }
 
       // Step 6: Mark rows completed in database & update pineconeVectorId on KOs
-      await step.run(`finalize-success-${cId}`, async () => {
+      await step.run(`finalize-success-${sanitizeKey}`, async () => {
         const rowIds = rows.map((r: VectorSyncRow) => r.id);
 
         await db.transaction(async (tx) => {
@@ -130,9 +134,9 @@ export async function processBatch(step: any, courseId?: string) {
             .set({ status: "completed", updatedAt: new Date() })
             .where(inArray(vectorSyncQueue.id, rowIds));
 
-          // Set KO pineconeVectorId to the KO ID (synced successfully)
+          // Set KO pineconeVectorId to the KO ID (synced successfully) for learning namespace
           for (const row of rows) {
-            if (row.koId) {
+            if (row.koId && row.namespace === "learning") {
               await tx
                 .update(knowledgeObjects)
                 .set({ pineconeVectorId: row.koId, updatedAt: new Date() })
@@ -144,8 +148,8 @@ export async function processBatch(step: any, courseId?: string) {
 
       successCount += rows.length;
     } catch (err: any) {
-      // Step 7: Handle failures for this specific course group
-      await step.run(`handle-failure-${cId}`, async () => {
+      // Step 7: Handle failures for this specific group
+      await step.run(`handle-failure-${sanitizeKey}`, async () => {
         const errorMessage = err?.message || String(err);
         
         for (const row of rows) {
@@ -576,5 +580,34 @@ export const masterySnapshotCron = inngest.createFunction(
     };
   }
 );
+
+export const assessmentIngestWorker = inngest.createFunction(
+  {
+    id: "assessment-ingest-worker",
+    name: "Assessment Ingest Worker",
+    triggers: [{ event: "assessment.ingest" }]
+  },
+  async ({ event, step }) => {
+    const { courseId, mtdId } = event.data as { courseId: string; mtdId: string };
+
+    await step.run("extract-assessment-objects", async () => {
+      const { extractAssessmentObjectsForMtd } = await import("@/lib/assessment-extractor");
+      
+      const [mtd] = await db
+        .select()
+        .from(masterTeachingDocuments)
+        .where(eq(masterTeachingDocuments.id, mtdId));
+
+      if (!mtd) {
+        throw new Error(`MTD ${mtdId} not found`);
+      }
+
+      await extractAssessmentObjectsForMtd(courseId, mtdId, mtd.markdownContent);
+    });
+
+    return { courseId, mtdId };
+  }
+);
+
 
 

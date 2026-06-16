@@ -407,7 +407,7 @@ export function AdminSidebar() {
           <NavItem
             href="/admin/ai/materials"
             icon={BookText}
-            label="Materi AI"
+            label="Materi"
             active={isLinkActive("/admin/ai/materials")}
           />
 
@@ -449,7 +449,7 @@ export function AdminSidebar() {
   <NavItem
     href="/admin/ai/keys"
     icon={KeyRound}
-    label="AI Keys"
+    label="API Keys"
     active={isLinkActive("/admin/ai/keys")}
   />
 

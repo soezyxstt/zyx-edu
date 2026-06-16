@@ -83,7 +83,8 @@ async function main() {
     }
 
     const cleanKey = extractFileKeyFromUrl(key) || key;
-    const publicUrl = storage.getUrl(cleanKey);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_APP_URL || "http://localhost:3000";
+    const publicUrl = `${baseUrl}/api/storage/file/${cleanKey}`;
 
     let exists = false;
     let size = 0;
@@ -128,7 +129,8 @@ async function main() {
     if (!key) continue;
 
     const cleanKey = extractFileKeyFromUrl(key) || key;
-    const publicUrl = storage.getUrl(cleanKey);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_APP_URL || "http://localhost:3000";
+    const publicUrl = `${baseUrl}/api/storage/file/${cleanKey}`;
 
     let exists = false;
     let size = 0;

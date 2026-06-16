@@ -5,7 +5,7 @@ import { assertTutorOrAdmin } from "@/lib/uploadthing-admin";
 import { AiAnalyticsClient } from "./analytics-client";
 
 export const metadata: Metadata = {
-  title: pageTitle("AI Analytics"),
+  title: pageTitle("Analytics"),
 };
 
 export default async function AiAnalyticsPage() {
@@ -15,7 +15,7 @@ export default async function AiAnalyticsPage() {
     <Reveal className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <div className="mb-8">
         <h1 className="font-heading text-h4 font-semibold text-foreground">
-          AI Analytics
+          Analytics
         </h1>
         <p className="mt-2 text-body-sm text-muted-foreground">
           Monitor Gemini API usage, Cloudflare AI Gateway routing, latency,

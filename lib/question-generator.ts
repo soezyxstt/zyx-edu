@@ -5,6 +5,8 @@ import {
   knowledgeObjects,
   masterTeachingDocuments,
   aiQuestionBank,
+  coursePolicies,
+  vectorSyncQueue,
 } from "@/db/schema";
 import { generateContentWithFallback } from "@/lib/gemini";
 import { USE_CASES } from "@/lib/ai-router";
@@ -13,6 +15,7 @@ import { validateQuestion } from "@/lib/question-validator";
 import { buildDistractorMap, type MisconceptionKO } from "@/lib/distractor-mapper";
 import { eq, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { validateQuestionAgainstPolicy, type CoursePolicyRow } from "@/lib/pedagogical-validator";
 
 // Zod validation helper for Gemini response parsing
 import { z } from "zod";
@@ -23,6 +26,9 @@ const GeminiQuestionResponseSchema = z.object({
   options: z.array(z.string()),
   correctIndices: z.array(z.number()),
   explanation: z.string(),
+  bloomLevel: z.enum(["remember", "understand", "apply", "analyze", "evaluate", "create"]).optional(),
+  pattern: z.string().optional(),
+  estimatedSteps: z.number().int().optional(),
 });
 
 /**
@@ -81,7 +87,9 @@ Format and structural constraints:
 export function buildQuestionPromptBatch(
   courseTitle: string,
   chapterTitle: string,
-  items: { ko: any; blueprint: any }[]
+  items: { ko: any; blueprint: any }[],
+  policy?: CoursePolicyRow | null,
+  historicalQuestions?: string[]
 ): string {
   const koBlocks = items.map((item, idx) => {
     return `---
@@ -101,10 +109,25 @@ Math/LaTeX Constraints: ${item.blueprint.mathConstraints}
 Tags: ${item.blueprint.tags.join(", ")}`;
   }).join("\n\n");
 
+  const policyBlock = policy
+    ? `\nPEDAGOGICAL POLICY CONSTRAINTS (Strictly adhere to these):
+- Maximum Bloom Level allowed: ${policy.maxApplicationLevel}
+- Maximum Estimated Calculation Steps allowed: ${policy.maxEstimatedSteps}
+- Banned/Forbidden keywords or context (DO NOT use or mention these words): [${policy.forbiddenContexts?.join(", ") || ""}]
+- Approved question patterns: [${policy.allowedPatterns?.join(", ") || ""}]`
+    : "";
+
+  const historicalBlock = historicalQuestions && historicalQuestions.length > 0
+    ? `\nHISTORICAL QUESTIONS (Do NOT duplicate the phrasing or style of these questions):
+${historicalQuestions.map((q, i) => `Question ${i + 1}: "${q}"`).join("\n")}`
+    : "";
+
   return `You are an expert curriculum editor in physics and engineering. Generate highly accurate multiple-choice assessment questions for the following list of Knowledge Objects (KOs) matching the Course, Chapter, and Question Blueprint details:
 
 COURSE: ${courseTitle}
 CHAPTER: ${chapterTitle}
+${policyBlock}
+${historicalBlock}
 
 INPUT KNOWLEDGE OBJECTS AND BLUEPRINTS:
 ${koBlocks}
@@ -122,7 +145,10 @@ Your output must be a single JSON object matching this schema:
         "[Option D string containing choice value or formula]"
       ],
       "correctIndices": [0],
-      "explanation": "[Detailed pedagogical explanation showing why the correct option is true and how the distractors are derived or why they are incorrect. Keep explanation comprehensive.]"
+      "explanation": "[Detailed pedagogical explanation showing why the correct option is true and how the distractors are derived or why they are incorrect. Keep explanation comprehensive.]",
+      "bloomLevel": "remember | understand | apply | analyze | evaluate | create",
+      "pattern": "direct_computation | graph_interpretation | proof | parameter_analysis | modeling",
+      "estimatedSteps": [Integer, e.g. 1, 2, 3, 4]
     }
   ]
 }
@@ -185,7 +211,10 @@ Your output must be a single JSON object matching this schema:
         "[Corrected Option D]"
       ],
       "correctIndices": [0],
-      "explanation": "[Corrected detailed pedagogical explanation showing why the correct option is true and how distractors are derived.]"
+      "explanation": "[Corrected detailed pedagogical explanation showing why the correct option is true and how distractors are derived.]",
+      "bloomLevel": "remember | understand | apply | analyze | evaluate | create",
+      "pattern": "direct_computation | graph_interpretation | proof | parameter_analysis | modeling",
+      "estimatedSteps": [Integer]
     }
   ]
 }
@@ -233,7 +262,7 @@ export async function generateQuestionsForKOBatch(
     return { success: false, results: Array.from(resultsMap.values()) };
   }
 
-  // 2. Fetch parent courses, chapters, and mtds in batch
+  // 2. Fetch parent courses, chapters, mtds, policies, and historical questions in batch
   const courseIds = Array.from(new Set(kos.map(k => k.courseId)));
   const chapterIds = Array.from(new Set(kos.map(k => k.chapterId)));
   const mtdIds = Array.from(new Set(kos.map(k => k.mtdId)));
@@ -241,10 +270,25 @@ export async function generateQuestionsForKOBatch(
   const coursesList = courseIds.length > 0 ? await db.select().from(courses).where(inArray(courses.id, courseIds)) : [];
   const chaptersList = chapterIds.length > 0 ? await db.select().from(chapters).where(inArray(chapters.id, chapterIds)) : [];
   const mtdList = mtdIds.length > 0 ? await db.select().from(masterTeachingDocuments).where(inArray(masterTeachingDocuments.id, mtdIds)) : [];
+  const policiesList = courseIds.length > 0 ? await db.select().from(coursePolicies).where(inArray(coursePolicies.courseId, courseIds)) : [];
+  const allHistoricalList = courseIds.length > 0
+    ? await db
+        .select({ courseId: aiQuestionBank.courseId, prompt: aiQuestionBank.prompt })
+        .from(aiQuestionBank)
+        .where(and(inArray(aiQuestionBank.courseId, courseIds), eq(aiQuestionBank.status, "active")))
+        .limit(30)
+    : [];
 
   const coursesMap = new Map(coursesList.map(c => [c.id, c]));
   const chaptersMap = new Map(chaptersList.map(c => [c.id, c]));
   const mtdMap = new Map(mtdList.map(m => [m.id, m]));
+  const policiesMap = new Map(policiesList.map(p => [p.courseId, p]));
+  const historicalMap = new Map<string, string[]>();
+  for (const hQ of allHistoricalList) {
+    const list = historicalMap.get(hQ.courseId) || [];
+    list.push(hQ.prompt);
+    historicalMap.set(hQ.courseId, list);
+  }
 
   // E1: misconception KOs per concept, for deterministic distractor tagging.
   const misconceptionKOsList = courseIds.length > 0
@@ -421,7 +465,9 @@ export async function generateQuestionsForKOBatch(
       candidateBatch = { questions: mockQuestions };
     } else {
       // Call Live Gemini API
-      const userPrompt = buildQuestionPromptBatch(course.title, chapter.title, items);
+      const policy = policiesMap.get(courseId);
+      const historicalQs = historicalMap.get(courseId) || [];
+      const userPrompt = buildQuestionPromptBatch(course.title, chapter.title, items, policy, historicalQs);
       
       try {
         const { response, modelUsed } = await generateContentWithFallback({
@@ -475,6 +521,8 @@ export async function generateQuestionsForKOBatch(
         continue;
       }
 
+      const blueprint = blueprintsMap.get(ko.id)!;
+
       const validationInput = {
         knowledgeObjectId: ko.id,
         prompt: candidate.prompt,
@@ -483,8 +531,35 @@ export async function generateQuestionsForKOBatch(
         explanation: candidate.explanation,
       };
 
+      const policy = policiesMap.get(ko.courseId);
       const qcResult = await validateQuestion(validationInput);
-      if (qcResult.success) {
+      
+      const defaultPolicy = {
+        id: "default",
+        courseId: ko.courseId,
+        maxApplicationLevel: 2,
+        maxEstimatedSteps: 4,
+        maxReadingComplexity: 2,
+        allowEngineeringTerms: true,
+        forbiddenContexts: [],
+        allowedPatterns: ["direct_computation", "graph_interpretation", "parameter_analysis"],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+      
+      const policyResult = validateQuestionAgainstPolicy({
+        prompt: candidate.prompt,
+        options: candidate.options,
+        explanation: candidate.explanation,
+        bloomLevel: candidate.bloomLevel || ko.bloomLevel || "apply",
+        pattern: candidate.pattern || blueprint.blueprintType,
+        estimatedSteps: candidate.estimatedSteps || 2,
+      }, policy || defaultPolicy);
+
+      const combinedSuccess = qcResult.success && policyResult.success;
+      const combinedErrors = [...qcResult.errors, ...policyResult.errors];
+
+      if (combinedSuccess) {
         validQuestions.set(ko.id, candidate);
       } else {
         if (!isMock) {
@@ -496,7 +571,7 @@ export async function generateQuestionsForKOBatch(
             koConceptName: ko.conceptName,
             koType: ko.type,
             candidate,
-            errors: qcResult.errors,
+            errors: combinedErrors,
           });
         } else {
           // In mock mode, don't run repair, fail immediately
@@ -504,7 +579,7 @@ export async function generateQuestionsForKOBatch(
             koId: ko.id,
             success: false,
             insertedCount: 0,
-            errors: qcResult.errors,
+            errors: combinedErrors,
           });
         }
       }
@@ -529,6 +604,8 @@ export async function generateQuestionsForKOBatch(
         const repairedQuestions = repairedBatch?.questions || [];
 
         for (const reqInfo of failedQuestionsForRepair) {
+          const ko = groupKOs.find(k => k.id === reqInfo.koId)!;
+          const blueprint = blueprintsMap.get(reqInfo.koId)!;
           const repairedCandidate = repairedQuestions.find((r: any) => r && r.koId === reqInfo.koId);
           if (!repairedCandidate) {
             resultsMap.set(reqInfo.koId, {
@@ -548,15 +625,42 @@ export async function generateQuestionsForKOBatch(
             explanation: repairedCandidate.explanation,
           };
 
+          const policy = policiesMap.get(ko.courseId);
           const qcResult = await validateQuestion(validationInput);
-          if (qcResult.success) {
+          
+          const defaultPolicy = {
+            id: "default",
+            courseId: ko.courseId,
+            maxApplicationLevel: 2,
+            maxEstimatedSteps: 4,
+            maxReadingComplexity: 2,
+            allowEngineeringTerms: true,
+            forbiddenContexts: [],
+            allowedPatterns: ["direct_computation", "graph_interpretation", "parameter_analysis"],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+
+          const policyResult = validateQuestionAgainstPolicy({
+            prompt: repairedCandidate.prompt,
+            options: repairedCandidate.options,
+            explanation: repairedCandidate.explanation,
+            bloomLevel: repairedCandidate.bloomLevel || ko.bloomLevel || "apply",
+            pattern: repairedCandidate.pattern || blueprint.blueprintType,
+            estimatedSteps: repairedCandidate.estimatedSteps || 2,
+          }, policy || defaultPolicy);
+
+          const combinedSuccess = qcResult.success && policyResult.success;
+          const combinedErrors = [...qcResult.errors, ...policyResult.errors];
+
+          if (combinedSuccess) {
             validQuestions.set(reqInfo.koId, repairedCandidate);
           } else {
             resultsMap.set(reqInfo.koId, {
               koId: reqInfo.koId,
               success: false,
               insertedCount: 0,
-              errors: [`QC Gate blocked insertion after repair: ${qcResult.errors.join("; ")}`, ...reqInfo.errors],
+              errors: [`QC/Policy Gate blocked insertion after repair: ${combinedErrors.join("; ")}`, ...reqInfo.errors],
             });
           }
         }
@@ -637,6 +741,29 @@ PROVENANCE:
               reviewStatus: "generated",
               qualityScore: 1.0,
             });
+            
+            const embeddingText = `Question: ${candidate.prompt}\nExplanation: ${candidate.explanation}`;
+            await tx.insert(vectorSyncQueue).values({
+              id: `sync-${randomUUID()}`,
+              courseId: ko.courseId,
+              koId: null,
+              action: "upsert",
+              namespace: "assessment",
+              payload: {
+                id: newQuestionId,
+                text: embeddingText,
+                metadata: {
+                  chapterId: ko.chapterId,
+                  type: "question",
+                  bloomLevel: candidate.bloomLevel || ko.bloomLevel || "apply",
+                  difficulty: blueprint.targetDifficulty,
+                  tags: blueprint.tags,
+                }
+              },
+              status: "pending",
+              attempts: 0,
+            });
+            
             count = 1;
           } else {
             // Clear existing generated candidates first
@@ -663,6 +790,29 @@ PROVENANCE:
               reviewStatus: "generated",
               qualityScore: 1.0,
             });
+            
+            const embeddingText = `Question: ${candidate.prompt}\nExplanation: ${candidate.explanation}`;
+            await tx.insert(vectorSyncQueue).values({
+              id: `sync-${randomUUID()}`,
+              courseId: ko.courseId,
+              koId: null,
+              action: "upsert",
+              namespace: "assessment",
+              payload: {
+                id: newQuestionId,
+                text: embeddingText,
+                metadata: {
+                  chapterId: ko.chapterId,
+                  type: "question",
+                  bloomLevel: candidate.bloomLevel || ko.bloomLevel || "apply",
+                  difficulty: blueprint.targetDifficulty,
+                  tags: blueprint.tags,
+                }
+              },
+              status: "pending",
+              attempts: 0,
+            });
+            
             count = 1;
           }
           return count;

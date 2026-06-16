@@ -4,7 +4,7 @@ import { KeysClient } from "./keys-client";
 
 export const metadata: Metadata = {
   title: pageTitle("Key Diagnostics"),
-  description: "Status dan kuota harian tiap API key AI.",
+  description: "Status dan kuota harian tiap API key.",
 };
 
 export default function KeysPage() {

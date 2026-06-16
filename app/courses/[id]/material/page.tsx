@@ -8,7 +8,7 @@ import { getCourse } from "@/lib/course-utils";
 import { DocumentListClient } from "./document-list-client";
 import { Reveal } from "@/components/ui/reveal";
 import { db } from "@/db";
-import { aiMaterialInstances, diktats } from "@/db/schema";
+import { aiMaterialInstances, diktats, courseMaterials, chapters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { storage } from "@/lib/storage";
@@ -30,11 +30,23 @@ export default async function CourseMaterialListPage({ params }: Props) {
   const course = await getCourse(id);
   if (!course) return null;
 
+  // Fetch chapters
+  const courseChapters = await db
+    .select({
+      id: chapters.id,
+      title: chapters.title,
+      orderIndex: chapters.orderIndex,
+    })
+    .from(chapters)
+    .where(eq(chapters.courseId, id))
+    .orderBy(chapters.orderIndex);
+
   // Fetch db-backed materials
   const dbMaterials = await db
     .select({
       id: aiMaterialInstances.id,
       title: aiMaterialInstances.title,
+      chapterIds: aiMaterialInstances.chapterIds,
     })
     .from(aiMaterialInstances)
     .where(eq(aiMaterialInstances.courseId, id));
@@ -46,9 +58,23 @@ export default async function CourseMaterialListPage({ params }: Props) {
       title: diktats.title,
       fileUrl: diktats.fileUrl,
       updatedAt: diktats.updatedAt,
+      chapterIds: diktats.chapterIds,
     })
     .from(diktats)
     .where(and(eq(diktats.courseId, id), eq(diktats.status, "ready")));
+
+  // Fetch manual PDF materials
+  const manualMaterials = await db
+    .select({
+      id: courseMaterials.id,
+      title: courseMaterials.title,
+      type: courseMaterials.type,
+      fileUrl: courseMaterials.fileUrl,
+      chapterIds: courseMaterials.chapterIds,
+      updatedAt: courseMaterials.updatedAt,
+    })
+    .from(courseMaterials)
+    .where(eq(courseMaterials.courseId, id));
 
   const mappedDiktats = courseDiktats.map((d) => ({
     id: d.id,
@@ -61,6 +87,7 @@ export default async function CourseMaterialListPage({ params }: Props) {
     isPastYear: false,
     isPreview: true,
     url: d.fileUrl ? storage.getUrl(d.fileUrl) : undefined,
+    chapterIds: d.chapterIds as string[],
   }));
 
   const mappedDb = dbMaterials.map((m) => ({
@@ -69,13 +96,28 @@ export default async function CourseMaterialListPage({ params }: Props) {
     title: m.title.replace(/^\[DRAF\]\s*/, ""),
     kind: "article" as const,
     docCategory: "materi" as const,
-    fileSize: "AI Generated",
+    fileSize: "Materi ZYX",
     completed: false,
     isPastYear: false,
-    isPreview: true, // Allow review without enrolling for simplicity
+    isPreview: true,
+    chapterIds: m.chapterIds as string[],
   }));
 
-  const allMaterials = [...getMaterialsForCourse(id), ...mappedDiktats, ...mappedDb];
+  const mappedManual = manualMaterials.map((m) => ({
+    id: m.id,
+    courseId: id,
+    title: m.title,
+    kind: "pdf" as const,
+    docCategory: m.type === "contoh_soal" ? ("soal" as const) : ("materi" as const),
+    fileSize: m.type === "contoh_soal" ? "Contoh Soal" : "Materi Kelas",
+    completed: false,
+    isPastYear: false,
+    isPreview: true,
+    url: storage.getUrl(m.fileUrl),
+    chapterIds: m.chapterIds as string[],
+  }));
+
+  const allMaterials = [...getMaterialsForCourse(id), ...mappedDiktats, ...mappedDb, ...mappedManual];
 
 
   return (
@@ -115,7 +157,7 @@ export default async function CourseMaterialListPage({ params }: Props) {
             </div>
           </div>
         )}
-        <DocumentListClient courseId={id} materials={allMaterials} />
+        <DocumentListClient courseId={id} materials={allMaterials} chapters={courseChapters} />
       </Reveal>
     </CoursePageShell>
   );

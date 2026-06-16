@@ -16,8 +16,16 @@ import { QueryProvider } from "@/components/providers/query-provider";
 import Script from "next/script";
 
 export const metadata: Metadata = {
- title: pageTitle(),
- description: siteDescription,
+  title: pageTitle(),
+  description: siteDescription,
+  openGraph: {
+    title: pageTitle(),
+    description: siteDescription,
+    url: "https://www.zyxacademy.com",
+    siteName: "Zyx Academy",
+    locale: "id_ID",
+    type: "website",
+  },
 };
 
 const inter = Inter({

@@ -12,8 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveCourse, deleteCourse } from "@/app/admin/courses/actions";
-import { Edit, Trash2, Check, X } from "lucide-react";
+import { saveCourse, deleteCourse, getCourseChapters, saveChapter, deleteChapter } from "@/app/admin/courses/actions";
+import { Edit, Trash2, Check, X, Layers, Plus, Loader2, ListOrdered } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -101,6 +101,87 @@ export function CoursesDashboard({ initialCourses }: Props) {
   const [editVals, setEditVals] = useState<Partial<Course>>({});
   const [loading, setLoading] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+  // Chapters Management States
+  const [chaptersModalOpen, setChaptersModalOpen] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [chaptersList, setChaptersList] = useState<any[]>([]);
+  const [chaptersLoading, setChaptersLoading] = useState(false);
+  const [chapterActionLoading, setChapterActionLoading] = useState(false);
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
+  const [chapterForm, setChapterForm] = useState({ title: "", orderIndex: 1, description: "" });
+  const [newChapterForm, setNewChapterForm] = useState({ title: "", description: "" });
+
+  const loadChapters = async (courseId: string) => {
+    setChaptersLoading(true);
+    try {
+      const data = await getCourseChapters(courseId);
+      setChaptersList(data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Gagal memuat daftar bab");
+    } finally {
+      setChaptersLoading(false);
+    }
+  };
+
+  const openChaptersModal = (course: Course) => {
+    setSelectedCourse(course);
+    setEditingChapterId(null);
+    setNewChapterForm({ title: "", description: "" });
+    setChaptersModalOpen(true);
+    loadChapters(course.id);
+  };
+
+  const handleSaveChapter = async (chapterId: string | null) => {
+    if (!selectedCourse) return;
+    setChapterActionLoading(true);
+
+    const isEdit = !!chapterId;
+    const title = isEdit ? chapterForm.title : newChapterForm.title;
+    const desc = isEdit ? chapterForm.description : newChapterForm.description;
+    const orderIndex = isEdit ? chapterForm.orderIndex : chaptersList.length + 1;
+
+    const res = await saveChapter(chapterId, selectedCourse.id, title, orderIndex, desc);
+    setChapterActionLoading(false);
+
+    if (res.success) {
+      toast.success(isEdit ? "Bab diperbarui" : "Bab ditambahkan");
+      if (isEdit) {
+        setEditingChapterId(null);
+      } else {
+        setNewChapterForm({ title: "", description: "" });
+      }
+      loadChapters(selectedCourse.id);
+    } else {
+      toast.error(res.error || "Gagal menyimpan bab");
+    }
+  };
+
+  const handleDeleteChapter = async (chapterId: string) => {
+    if (!selectedCourse) return;
+    if (!confirm("Apakah Anda yakin ingin menghapus bab ini?")) return;
+    
+    setChapterActionLoading(true);
+    const res = await deleteChapter(chapterId);
+    setChapterActionLoading(false);
+
+    if (res.success) {
+      toast.success("Bab dihapus");
+      loadChapters(selectedCourse.id);
+    } else {
+      toast.error(res.error || "Gagal menghapus bab");
+    }
+  };
+
+  const startEditChapter = (chapter: any) => {
+    setEditingChapterId(chapter.id);
+    setChapterForm({
+      title: chapter.title,
+      orderIndex: chapter.orderIndex,
+      description: chapter.description || "",
+    });
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -294,6 +375,9 @@ export function CoursesDashboard({ initialCourses }: Props) {
                       <Button size="sm" variant="ghost" onClick={() => setPendingDeleteId(c.id)} disabled={loading}>
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
+                      <Button size="sm" variant="ghost" onClick={() => openChaptersModal(c)} disabled={loading} title="Kelola Bab">
+                        <Layers className="size-4 text-brand-primary" />
+                      </Button>
                     </div>
                   )}
                 </td>
@@ -321,6 +405,148 @@ export function CoursesDashboard({ initialCourses }: Props) {
             <Button variant="destructive" onClick={handleDeleteConfirm} disabled={loading}>
               {loading ? "Menghapus..." : "Hapus"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Chapters Management Dialog */}
+      <Dialog open={chaptersModalOpen} onOpenChange={setChaptersModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="size-5 text-brand-primary" />
+              Kelola Bab: {selectedCourse?.title}
+            </DialogTitle>
+            <DialogDescription>
+              Tambahkan bab baru, ubah urutan, atau edit judul bab untuk menyusun struktur pembelajaran.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 my-4">
+            {/* Chapters List */}
+            <div className="space-y-2">
+              <h3 className="font-heading text-body-sm font-bold text-foreground">Daftar Bab Aktif</h3>
+              
+              {chaptersLoading ? (
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
+                  <Loader2 className="size-5 animate-spin mr-2" />
+                  Memuat bab...
+                </div>
+              ) : chaptersList.length === 0 ? (
+                <div className="text-center py-6 text-body-sm text-muted-foreground border border-dashed border-border rounded-lg">
+                  Belum ada bab yang ditambahkan.
+                </div>
+              ) : (
+                <div className="border border-border rounded-lg divide-y divide-border/60">
+                  {chaptersList.map((chapter) => (
+                    <div key={chapter.id} className="p-3 flex items-start justify-between gap-4 bg-muted/10 hover:bg-muted/20">
+                      {editingChapterId === chapter.id ? (
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-[60px_1fr_2fr] gap-2 items-center">
+                          <Input
+                            type="number"
+                            value={chapterForm.orderIndex}
+                            onChange={(e) => setChapterForm(p => ({ ...p, orderIndex: parseInt(e.target.value) || 1 }))}
+                            disabled={chapterActionLoading}
+                            placeholder="No"
+                            title="Urutan"
+                          />
+                          <Input
+                            value={chapterForm.title}
+                            onChange={(e) => setChapterForm(p => ({ ...p, title: e.target.value }))}
+                            disabled={chapterActionLoading}
+                            placeholder="Judul Bab"
+                          />
+                          <Input
+                            value={chapterForm.description}
+                            onChange={(e) => setChapterForm(p => ({ ...p, description: e.target.value }))}
+                            disabled={chapterActionLoading}
+                            placeholder="Deskripsi (opsional)"
+                          />
+                        </div>
+                      ) : (
+                        <div className="min-w-0 flex-1">
+                          <p className="text-body-sm font-semibold text-foreground flex items-center gap-2">
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-bold">
+                              {chapter.orderIndex}
+                            </span>
+                            {chapter.title}
+                          </p>
+                          {chapter.description && (
+                            <p className="text-body-xs text-muted-foreground mt-0.5 ml-7">{chapter.description}</p>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {editingChapterId === chapter.id ? (
+                          <>
+                            <Button size="xs" variant="ghost" onClick={() => handleSaveChapter(chapter.id)} disabled={chapterActionLoading} title="Simpan">
+                              <Check className="size-4 text-status-success" />
+                            </Button>
+                            <Button size="xs" variant="ghost" onClick={() => setEditingChapterId(null)} disabled={chapterActionLoading} title="Batal">
+                              <X className="size-4 text-muted-foreground" />
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button size="xs" variant="ghost" onClick={() => startEditChapter(chapter)} disabled={chapterActionLoading} title="Edit">
+                              <Edit className="size-4" />
+                            </Button>
+                            <Button size="xs" variant="ghost" onClick={() => handleDeleteChapter(chapter.id)} disabled={chapterActionLoading} title="Hapus">
+                              <Trash2 className="size-4 text-destructive" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Add New Chapter Form */}
+            <div className="border border-border/80 rounded-xl p-4 bg-muted/5">
+              <h3 className="font-heading text-body-sm font-bold text-foreground mb-3 flex items-center gap-1.5">
+                <Plus className="size-4 text-brand-secondary" />
+                Tambah Bab Baru
+              </h3>
+              <div className="grid gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-muted-foreground">JUDUL BAB</label>
+                    <Input
+                      placeholder="Contoh: Limit dan Kekontinuan"
+                      value={newChapterForm.title}
+                      onChange={(e) => setNewChapterForm(p => ({ ...p, title: e.target.value }))}
+                      disabled={chapterActionLoading}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-muted-foreground">DESKRIPSI (OPSIONAL)</label>
+                    <Input
+                      placeholder="Contoh: Konsep dasar limit fungsi satu variabel"
+                      value={newChapterForm.description}
+                      onChange={(e) => setNewChapterForm(p => ({ ...p, description: e.target.value }))}
+                      disabled={chapterActionLoading}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  size="sm"
+                  className="w-fit self-end mt-2 rounded-lg font-semibold bg-gradient-to-r from-brand-secondary to-brand-secondary/90 text-white" 
+                  onClick={() => handleSaveChapter(null)}
+                  disabled={chapterActionLoading || !newChapterForm.title.trim()}
+                >
+                  {chapterActionLoading ? "Menambahkan..." : "Tambah Bab"}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Tutup</Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

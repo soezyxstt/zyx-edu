@@ -928,7 +928,7 @@ export function MaterialDetailClient({
             className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="size-3.5" />
-            Kembali ke Materi AI
+            Kembali ke Materi
           </Link>
           <h1 className="font-heading text-h4 font-bold text-foreground">
             {activeChapterId 
@@ -967,7 +967,7 @@ export function MaterialDetailClient({
                   <span className="font-semibold text-foreground mt-0.5 block">{course.title}</span>
                 </div>
                 <div>
-                  <span className="text-muted-foreground block text-xs uppercase tracking-wider">Sinkronisasi Pinecone</span>
+                  <span className="text-muted-foreground block text-xs uppercase tracking-wider">Sinkronisasi Vektor</span>
                   <span className={`inline-block rounded-sm px-2 py-0.5 text-xs font-semibold mt-1 border uppercase ${
                     instance.pineconeSyncStatus === "synced" 
                       ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
@@ -1039,7 +1039,7 @@ export function MaterialDetailClient({
                   </ul>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Menyetujui penyelarasan ini akan memperbarui hash keandalan pembelajaran, membersihkan tanda <strong>stale</strong>, dan memastikan AI Tutor merujuk pada versi KO ini untuk mendampingi siswa.
+                  Menyetujui penyelarasan ini akan memperbarui hash keandalan pembelajaran, membersihkan tanda <strong>stale</strong>, dan memastikan Zyra merujuk pada versi KO ini untuk mendampingi siswa.
                 </p>
               </div>
 

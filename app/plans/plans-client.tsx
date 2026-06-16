@@ -89,7 +89,7 @@ export default function PlansClient() {
       <Reveal>
         <MarketingPageHero
           sectionId="plans"
-          eyebrow="Zyx Edu"
+          eyebrow="Zyx Academy"
           title="Paket & layanan"
           description="Pilih kombinasi course dan intensitas pendampingan. Pembayaran dilakukan di luar website; admin akan mengaktifkan akses sesuai paket."
         />

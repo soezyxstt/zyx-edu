@@ -7,6 +7,8 @@ import {
   chapters,
   flashcardSets,
   aiQuestionBank,
+  masterTeachingDocuments,
+  vectorSyncQueue,
 } from "@/db/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { generateFlashcardsForChapter } from "@/lib/flashcard-generator";
@@ -77,37 +79,119 @@ export async function updateKOAction(
   }
 ) {
   try {
-    // 1. Update the KO itself
-    await db
-      .update(knowledgeObjects)
-      .set({
-        conceptName: updates.conceptName,
-        title: updates.title,
-        content: updates.content,
-        difficulty: updates.difficulty,
-        type: updates.type,
-        bloomLevel: updates.bloomLevel,
-        importance: updates.importance,
-        updatedAt: new Date(),
-      })
-      .where(eq(knowledgeObjects.id, koId));
+    const { createHash } = await import("crypto");
+    const { diktats } = await import("@/db/schema");
 
-    // 2. Find the chapterId of this KO
-    const [koRecord] = await db
-      .select({ chapterId: knowledgeObjects.chapterId })
-      .from(knowledgeObjects)
-      .where(eq(knowledgeObjects.id, koId));
-
-    if (koRecord?.chapterId) {
-      // 3. Mark the websiteMaterial for this chapter as stale
-      await db
-        .update(websiteMaterials)
+    await db.transaction(async (tx) => {
+      // 1. Update the KO itself
+      await tx
+        .update(knowledgeObjects)
         .set({
-          isStale: true,
+          conceptName: updates.conceptName,
+          title: updates.title,
+          content: updates.content,
+          difficulty: updates.difficulty,
+          type: updates.type,
+          bloomLevel: updates.bloomLevel,
+          importance: updates.importance,
           updatedAt: new Date(),
         })
-        .where(eq(websiteMaterials.chapterId, koRecord.chapterId));
-    }
+        .where(eq(knowledgeObjects.id, koId));
+
+      // 2. Fetch the updated KO to get details
+      const [koRecord] = await tx
+        .select()
+        .from(knowledgeObjects)
+        .where(eq(knowledgeObjects.id, koId));
+
+      if (koRecord) {
+        // 3. Fetch all active KOs for this chapter
+        const allKOs = await tx
+          .select()
+          .from(knowledgeObjects)
+          .where(
+            and(
+              eq(knowledgeObjects.chapterId, koRecord.chapterId),
+              eq(knowledgeObjects.status, "active")
+            )
+          );
+
+        // Calculate new derived hash from KOs' key attributes
+        const derivedHashInput = [...allKOs]
+          .sort((a, b) => a.title.localeCompare(b.title))
+          .map(ko => `${ko.title}:${ko.content}:${ko.difficulty}:${ko.bloomLevel}`)
+          .join("|");
+        const newDerivedHash = createHash("sha256").update(derivedHashInput).digest("hex");
+
+        // Fetch current MTD
+        const [mtdRecord] = await tx
+          .select()
+          .from(masterTeachingDocuments)
+          .where(eq(masterTeachingDocuments.id, koRecord.mtdId));
+
+        const derivedHashChanged = !mtdRecord || mtdRecord.derivedHash !== newDerivedHash;
+        const nextVersion = mtdRecord ? (derivedHashChanged ? mtdRecord.version + 1 : mtdRecord.version) : 1;
+
+        // Update MTD record with new derived hash and version
+        if (mtdRecord) {
+          await tx
+            .update(masterTeachingDocuments)
+            .set({
+              derivedHash: newDerivedHash,
+              version: nextVersion,
+              updatedAt: new Date(),
+            })
+            .where(eq(masterTeachingDocuments.id, koRecord.mtdId));
+        }
+
+        // 4. Cascade staleness only if the derived hash has changed
+        if (derivedHashChanged && mtdRecord) {
+          console.log(`[Staleness Cascade] Derived hash changed via admin edit. Marking downstream assets stale for MTD ${koRecord.mtdId}`);
+          await tx
+            .update(websiteMaterials)
+            .set({ isStale: true, sourceMtdVersion: nextVersion, updatedAt: new Date() })
+            .where(eq(websiteMaterials.sourceMtdId, koRecord.mtdId));
+
+          await tx
+            .update(flashcardSets)
+            .set({ isStale: true, sourceMtdVersion: nextVersion, updatedAt: new Date() })
+            .where(eq(flashcardSets.sourceMtdId, koRecord.mtdId));
+
+          await tx
+            .update(diktats)
+            .set({ isStale: true, sourceMtdVersion: nextVersion, updatedAt: new Date() })
+            .where(eq(diktats.sourceMtdId, koRecord.mtdId));
+
+          await tx
+            .update(aiQuestionBank)
+            .set({ isStale: true, sourceMtdVersion: nextVersion })
+            .where(eq(aiQuestionBank.sourceMtdId, koRecord.mtdId));
+        }
+
+        // 5. Queue vector sync outbox payload for the updated KO (routed to 'learning' namespace)
+        const crypto = await import("crypto");
+        const embeddingText = `Title: ${koRecord.title}\nConcept: ${koRecord.conceptName}\nContent: ${koRecord.content}`;
+        await tx.insert(vectorSyncQueue).values({
+          id: `sync-${crypto.randomUUID()}`,
+          courseId: koRecord.courseId,
+          koId: koRecord.id,
+          action: "upsert",
+          namespace: "learning",
+          payload: {
+            text: embeddingText,
+            metadata: {
+              chapterId: koRecord.chapterId,
+              type: koRecord.type,
+              bloomLevel: koRecord.bloomLevel,
+              difficulty: koRecord.difficulty,
+              tags: koRecord.tags,
+            }
+          },
+          status: "pending",
+          attempts: 0,
+        });
+      }
+    });
 
     return { success: true };
   } catch (error: any) {

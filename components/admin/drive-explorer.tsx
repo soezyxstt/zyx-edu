@@ -1231,7 +1231,7 @@ export function DriveExplorer({
  <p className="text-muted-foreground text-body-sm leading-relaxed">
  {deleteRow?.kind === "folder"
  ? "Everything inside will be permanently removed from storage."
- : "This file will be removed from UploadThing permanently."}{" "}
+ : "This file will be removed from storage permanently."}{" "}
  <strong className="text-foreground">{deleteRow?.name}</strong>
  </p>
  <DialogFooter>

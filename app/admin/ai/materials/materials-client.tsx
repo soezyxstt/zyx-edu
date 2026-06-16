@@ -450,7 +450,7 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
  Material Ingestion Workspace
  </h2>
  <p className="text-body-sm text-muted-foreground mt-0.5">
- Proses berkas kurikulum menjadi materi terstruktur dan objek pengetahuan AI.
+ Proses berkas kurikulum menjadi materi terstruktur dan objek pengetahuan.
  </p>
  </div>
  <span className="rounded-md bg-muted px-2.5 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
@@ -972,7 +972,7 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
  {/* Database Material Listing (Active dashboard grid) */}
  {instances.length === 0 ? (
  <div className="py-16 text-center text-muted-foreground text-body-sm bg-card rounded-xl border border-border">
- Belum ada materi AI. Klik &quot;Tambah Materi&quot; untuk mulai.
+ Belum ada materi. Klik &quot;Tambah Materi&quot; untuk mulai.
  </div>
  ) : (
  <div className="divide-y divide-border border border-border rounded-xl bg-card px-6 shadow-xs">
@@ -1021,7 +1021,7 @@ export function MaterialInstancesClient({ instances, courses, courseMap }: Props
  <div className="p-8 text-center text-muted-foreground space-y-2">
  <p className="font-semibold text-body-sm">Tidak ada kontainer KO kustom terdeteksi.</p>
  <p className="text-xs max-w-md mx-auto leading-relaxed">
- Sistem akan menggunakan AI untuk mengekstrak objek secara otomatis saat materi diterbitkan. 
+ Sistem akan mengekstrak objek secara otomatis saat materi diterbitkan. 
  Anda juga dapat menambahkannya secara manual di dalam dokumen menggunakan kontainer seperti:
  </p>
  <pre className="text-left bg-muted/50 p-3 rounded-md text-[10px] font-mono max-w-sm mx-auto overflow-x-auto border border-border/60">
@@ -1040,7 +1040,7 @@ Limit fungsi f(x)...
  
  <div className="p-3 bg-muted/20 border border-border rounded-lg text-xs leading-relaxed text-muted-foreground flex gap-2">
  <Info className="size-4 shrink-0 mt-0.5 text-primary" />
- <span>Sistem RAG memetakan objek di atas untuk merakit konten penjelasan kuis, kartu pengulangan jeda (flashcard), dan basis pengetahuan untuk AI Tutor. Kurasi di atas bersifat internal untuk menjaga keandalan pengajaran.</span>
+ <span>Sistem RAG memetakan objek di atas untuk merakit konten penjelasan kuis, kartu pengulangan jeda (flashcard), dan basis pengetahuan untuk Zyra. Kurasi di atas bersifat internal untuk menjaga keandalan pengajaran.</span>
  </div>
  </div>
 
@@ -1239,7 +1239,7 @@ function InstanceRow({
  <DialogHeader>
  <DialogTitle>Hapus Materi Pelajaran?</DialogTitle>
  <DialogDescription>
- Apakah Anda yakin ingin menghapus materi &quot;{cleanTitle}&quot;? Tindakan ini akan menghapus materi secara permanen dari basis data utama dan membersihkan seluruh representasi memori AI terkait.
+ Apakah Anda yakin ingin menghapus materi &quot;{cleanTitle}&quot;? Tindakan ini akan menghapus materi secara permanen dari basis data utama dan membersihkan seluruh representasi vektor terkait.
  </DialogDescription>
  </DialogHeader>
  <DialogFooter className="gap-2 sm:gap-0">

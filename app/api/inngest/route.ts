@@ -8,7 +8,8 @@ import {
   feedbackWorker,
   courseAnalyticsSnapshotCron,
   weeklyReflectionCron,
-  masterySnapshotCron
+  masterySnapshotCron,
+  assessmentIngestWorker
 } from "@/lib/inngest-functions";
 
 /**
@@ -25,7 +26,8 @@ export const { GET, POST, PUT } = serve({
     feedbackWorker,
     courseAnalyticsSnapshotCron,
     weeklyReflectionCron,
-    masterySnapshotCron
+    masterySnapshotCron,
+    assessmentIngestWorker
   ],
 });
 

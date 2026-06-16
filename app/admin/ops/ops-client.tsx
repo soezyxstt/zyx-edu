@@ -126,7 +126,7 @@ export function OpsClient() {
         <div>
           <h1 className="font-heading text-h4 font-semibold text-foreground">Ops</h1>
           <p className="mt-1 text-body-sm text-muted-foreground">
-            AI usage, cache, and infrastructure health. Auto-refresh every 60 s.
+            Model usage, cache, and infrastructure health. Auto-refresh every 60 s.
           </p>
         </div>
         <button
@@ -144,7 +144,7 @@ export function OpsClient() {
           <SectionHead title="Gemini Usage" status={geminiStatus} checkedAt={data.checkedAt} />
           <div className="flex flex-wrap gap-8">
             <Stat
-              label="AI requests today"
+              label="Model requests today"
               value={data.gemini.reqToday}
               unit="/ 250 free"
             />
@@ -179,7 +179,7 @@ export function OpsClient() {
         <div className="py-8 space-y-4">
           <SectionHead title="Usage by Feature" status="healthy" checkedAt={data.checkedAt} />
           {data.usageByFeature.length === 0 ? (
-            <p className="text-body-sm text-muted-foreground">No AI requests logged today.</p>
+            <p className="text-body-sm text-muted-foreground">No model requests logged today.</p>
           ) : (
             <div className="divide-y divide-border">
               {data.usageByFeature.map((row) => (

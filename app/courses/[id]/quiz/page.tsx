@@ -62,7 +62,7 @@ export default async function CourseQuizListPage({ params }: Props) {
   return (
     <CoursePageShell
       title={`Kuis Latihan: ${course.title}`}
-      description="Uji pemahaman materi Anda dengan kuis AI interaktif."
+      description="Uji pemahaman materi Anda dengan kuis interaktif."
       icon={ClipboardList}
     >
       <Reveal>

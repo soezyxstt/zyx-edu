@@ -484,6 +484,7 @@ export const aiMaterialInstances = sqliteTable(
  summary: text("summary").notNull(),
  learningObjectives: text("learning_objectives", { mode: "json" }).$defaultFn(() => []).notNull(),
  keywords: text("keywords", { mode: "json" }).$defaultFn(() => []).notNull(),
+ chapterIds: text("chapter_ids", { mode: "json" }).$type<string[]>().$defaultFn(() => []),
  pineconeSyncStatus: text("pinecone_sync_status").default("pending").notNull(),
  lastSyncError: text("last_sync_error"),
  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
@@ -580,6 +581,7 @@ export const aiQuestionBank = sqliteTable(
  sourceMtdVersion: integer("source_mtd_version"),
  generationHash: text("generation_hash"),
  status: text("status").default("active").notNull(),
+ isStale: integer("is_stale", { mode: "boolean" }).default(false).notNull(),
  
  difficulty: text("difficulty").$type<"easy" | "medium" | "hard">().default("medium").notNull(),
  questionType: text("question_type").$type<"multiple_choice" | "multiple_choices">().default("multiple_choice").notNull(),
@@ -760,6 +762,9 @@ export const masterTeachingDocuments = sqliteTable(
  markdownContent: text("markdown_content").notNull(),
  version: integer("version").default(1).notNull(),
  status: text("status").default("draft").notNull(), // 'draft', 'active', 'archived'
+ type: text("type").$type<"learning" | "assessment">().default("learning").notNull(),
+ sourceHash: text("source_hash"),
+ derivedHash: text("derived_hash"),
  createdById: text("created_by_id")
  .notNull()
  .references(() => user.id),
@@ -924,6 +929,7 @@ export const vectorSyncQueue = sqliteTable(
  koId: text("ko_id")
  .references(() => knowledgeObjects.id, { onDelete: "set null" }),
  action: text("action").$type<"upsert" | "delete">().notNull(),
+ namespace: text("namespace").default("learning").notNull(),
  payload: text("payload", { mode: "json" }).notNull(),
  status: text("status").$type<"pending" | "processing" | "completed" | "failed">().default("pending").notNull(),
  attempts: integer("attempts").default(0).notNull(),
@@ -1057,7 +1063,149 @@ export const knowledgeRelationships = sqliteTable(
  ]
 );
 
+// 11.5. assessment_objects
+export const assessmentObjects = sqliteTable(
+  "assessment_objects",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    sourceMtdId: text("source_mtd_id")
+      .notNull()
+      .references(() => masterTeachingDocuments.id, { onDelete: "cascade" }),
+    questionType: text("question_type").notNull(),
+    difficulty: integer("difficulty").notNull(),
+    applicationLevel: integer("application_level").notNull(),
+    concepts: text("concepts", { mode: "json" }).$type<string[]>().notNull(),
+    pattern: text("pattern").notNull(),
+    reasoningType: text("reasoning_type").notNull(),
+    estimatedSteps: integer("estimated_steps").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }
+);
+
+// 11.6. assessment_profiles
+export const assessmentProfiles = sqliteTable(
+  "assessment_profiles",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .unique()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    applicationLevel: integer("application_level").notNull(),
+    difficultyDistribution: text("difficulty_distribution", { mode: "json" })
+      .$type<{ easy: number; medium: number; hard: number }>()
+      .notNull(),
+    commonPatterns: text("common_patterns", { mode: "json" }).$type<string[]>().notNull(),
+    topContexts: text("top_contexts", { mode: "json" })
+      .$type<{ conceptName: string; percentage: number }[]>()
+      .notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }
+);
+
+// 11.7. course_policies
+export const coursePolicies = sqliteTable(
+  "course_policies",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .unique()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    maxApplicationLevel: integer("max_application_level").default(2).notNull(),
+    maxEstimatedSteps: integer("max_estimated_steps").default(4).notNull(),
+    maxReadingComplexity: integer("max_reading_complexity").default(2).notNull(),
+    allowEngineeringTerms: integer("allow_engineering_terms", { mode: "boolean" }).default(true).notNull(),
+    forbiddenContexts: text("forbidden_contexts", { mode: "json" }).$type<string[]>().notNull(),
+    allowedPatterns: text("allowed_patterns", { mode: "json" }).$type<string[]>().notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  }
+);
+
+// 12. course_materials (Uploaded PDF files: Materi Kelas & Contoh Soal)
+export const courseMaterials = sqliteTable(
+	"course_materials",
+	{
+		id: text("id").primaryKey(),
+		courseId: text("course_id")
+			.notNull()
+			.references(() => courses.id, { onDelete: "cascade" }),
+		title: text("title").notNull(),
+		type: text("type").$type<"materi_kelas" | "contoh_soal">().notNull(),
+		fileUrl: text("file_url").notNull(),
+		chapterIds: text("chapter_ids", { mode: "json" }).$type<string[]>().notNull(),
+		createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+	},
+	(table) => [
+		index("idx_course_materials_course").on(table.courseId),
+	]
+);
+
 // ─── Relations ────────────────────────────────────────────────────────────────
+
+export const coursesRelations = relations(courses, ({ one, many }) => ({
+	courseMaterials: many(courseMaterials),
+	assessmentObjects: many(assessmentObjects),
+	assessmentProfile: one(assessmentProfiles, {
+		fields: [courses.id],
+		references: [assessmentProfiles.courseId],
+	}),
+	coursePolicy: one(coursePolicies, {
+		fields: [courses.id],
+		references: [coursePolicies.courseId],
+	}),
+}));
+
+export const assessmentObjectsRelations = relations(assessmentObjects, ({ one }) => ({
+	course: one(courses, {
+		fields: [assessmentObjects.courseId],
+		references: [courses.id],
+	}),
+	sourceMtd: one(masterTeachingDocuments, {
+		fields: [assessmentObjects.sourceMtdId],
+		references: [masterTeachingDocuments.id],
+	}),
+}));
+
+export const assessmentProfilesRelations = relations(assessmentProfiles, ({ one }) => ({
+	course: one(courses, {
+		fields: [assessmentProfiles.courseId],
+		references: [courses.id],
+	}),
+}));
+
+export const coursePoliciesRelations = relations(coursePolicies, ({ one }) => ({
+	course: one(courses, {
+		fields: [coursePolicies.courseId],
+		references: [courses.id],
+	}),
+}));
+
+export const courseMaterialsRelations = relations(courseMaterials, ({ one }) => ({
+	course: one(courses, {
+		fields: [courseMaterials.courseId],
+		references: [courses.id],
+	}),
+}));
 
 export const aiMaterialInstancesRelations = relations(aiMaterialInstances, ({ one, many }) => ({
  course: one(courses, {

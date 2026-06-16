@@ -1031,43 +1031,104 @@ export async function extractKnowledgeObjectsForChapter(
  return koRow;
  });
 
- if (koValues.length > 0) {
- await db.transaction(async (tx) => {
- // Insert new registry concepts if any
- if (newConceptsToRegister.length > 0) {
- await tx.insert(concepts).values(newConceptsToRegister);
- await tx.insert(conceptLocalizations).values(newLocalizationsToRegister);
- }
+   if (koValues.length > 0) {
+    const { createHash } = await import("crypto");
+    const { websiteMaterials, flashcardSets, diktats, aiQuestionBank } = await import("@/db/schema");
 
- // Insert KOs
- await tx.insert(knowledgeObjects).values(koValues);
+    // 1. Compute Source Hash from the input markdown
+    const sourceHash = createHash("sha256").update(chapterMarkdown).digest("hex");
 
- // Insert vector sync outbox payloads
- const outboxPayloads = koValues.map((ko) => {
- const embeddingText = `Title: ${ko.title}\nConcept: ${ko.conceptName}\nContent: ${ko.content}`;
- return {
- id: randomUUID(),
- courseId,
- koId: ko.id,
- action: "upsert" as const,
- payload: {
- text: embeddingText,
- metadata: {
- chapterId: ko.chapterId,
- type: ko.type,
- bloomLevel: ko.bloomLevel,
- difficulty: ko.difficulty,
- tags: ko.tags,
- },
- },
- status: "pending" as const,
- attempts: 0,
- };
- });
+    // 2. Compute Derived Hash from extracted KO content
+    const derivedHashInput = [...koValues]
+      .sort((a, b) => a.title.localeCompare(b.title))
+      .map(ko => `${ko.title}:${ko.content}:${ko.difficulty}:${ko.bloomLevel}`)
+      .join("|");
+    const derivedHash = createHash("sha256").update(derivedHashInput).digest("hex");
 
- await tx.insert(vectorSyncQueue).values(outboxPayloads);
- });
- }
+    // 3. Fetch existing MTD to check if derived hash changed
+    const [existingMtd] = await db
+      .select()
+      .from(masterTeachingDocuments)
+      .where(eq(masterTeachingDocuments.id, mtdId));
+
+    const derivedHashChanged = !existingMtd || existingMtd.derivedHash !== derivedHash;
+    const nextVersion = existingMtd ? (derivedHashChanged ? existingMtd.version + 1 : existingMtd.version) : 1;
+
+    await db.transaction(async (tx) => {
+      // Delete previous KOs for this chapter to prevent duplicates
+      await tx.delete(knowledgeObjects).where(eq(knowledgeObjects.chapterId, chapterId));
+
+      // Insert new registry concepts if any
+      if (newConceptsToRegister.length > 0) {
+        await tx.insert(concepts).values(newConceptsToRegister);
+        await tx.insert(conceptLocalizations).values(newLocalizationsToRegister);
+      }
+
+      // Insert new KOs
+      await tx.insert(knowledgeObjects).values(koValues);
+
+      // Update MTD record with new version and hashes
+      await tx
+        .update(masterTeachingDocuments)
+        .set({
+          sourceHash,
+          derivedHash,
+          version: nextVersion,
+          updatedAt: new Date(),
+        })
+        .where(eq(masterTeachingDocuments.id, mtdId));
+
+      // 4. Cascade staleness only if the derived hash (semantic meaning) has changed
+      if (derivedHashChanged && existingMtd) {
+        console.log(`[Staleness Cascade] Derived hash changed. Marking downstream assets stale for MTD ${mtdId}`);
+        await tx
+          .update(websiteMaterials)
+          .set({ isStale: true, sourceMtdVersion: nextVersion, updatedAt: new Date() })
+          .where(eq(websiteMaterials.sourceMtdId, mtdId));
+
+        await tx
+          .update(flashcardSets)
+          .set({ isStale: true, sourceMtdVersion: nextVersion, updatedAt: new Date() })
+          .where(eq(flashcardSets.sourceMtdId, mtdId));
+
+        await tx
+          .update(diktats)
+          .set({ isStale: true, sourceMtdVersion: nextVersion, updatedAt: new Date() })
+          .where(eq(diktats.sourceMtdId, mtdId));
+
+        await tx
+          .update(aiQuestionBank)
+          .set({ isStale: true, sourceMtdVersion: nextVersion })
+          .where(eq(aiQuestionBank.sourceMtdId, mtdId));
+      }
+
+      // Insert vector sync outbox payloads (routed to 'learning' namespace)
+      const outboxPayloads = koValues.map((ko) => {
+        const embeddingText = `Title: ${ko.title}\nConcept: ${ko.conceptName}\nContent: ${ko.content}`;
+        return {
+          id: randomUUID(),
+          courseId,
+          koId: ko.id,
+          action: "upsert" as const,
+          namespace: "learning" as const,
+          payload: {
+            text: embeddingText,
+            metadata: {
+              chapterId: ko.chapterId,
+              type: ko.type,
+              bloomLevel: ko.bloomLevel,
+              difficulty: ko.difficulty,
+              tags: ko.tags,
+            },
+          },
+          status: "pending" as const,
+          attempts: 0,
+        };
+      });
+
+      await tx.insert(vectorSyncQueue).values(outboxPayloads);
+    });
+  }
 
  // Return formatted array matching the Zod KnowledgeObjectSchema structure expected by callers
  return koValues.map(ko => ({

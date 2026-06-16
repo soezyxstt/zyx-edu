@@ -246,7 +246,7 @@ async function retrieve(
  chapterId: string | null,
  question: string
 ): Promise<RetrievedSource[]> {
- const matches = await vectorStore.query(courseId, question, {
+ const matches = await vectorStore.query(`${courseId}_learning`, question, {
  topK: TOP_K,
  ...(chapterId ? { filter: { chapterId } } : {}),
  });

@@ -117,22 +117,28 @@ Anything else (parallax, count-up, confetti, springs) is forbidden unless a phas
 
 | Concern | Service | Free limit that shapes design |
 |---|---|---|
-| LLM | Gemini 2.5 Flash (existing key) | about 250 req/day, 10 RPM |
+| LLM | Gemini 2.5 Flash (existing key, 4-key rotation) | about 250 req/day per key, routed via AI Gateway |
 | Embeddings | Gemini text-embedding-004 | about 1,500 req/day |
-| AI proxy, logs, cache | Cloudflare AI Gateway | unlimited proxy, 100k logged req/mo |
+| AI proxy, logs, cache | Cloudflare AI Gateway | unlimited proxy, 100k logged req/mo, rate limiting |
 | Edge cache | Cloudflare Workers KV | 100k reads/day, ONLY 1k writes/day, 1 GB |
-| Object storage | Cloudflare R2 | 10 GB, zero egress |
-| Vectors (default, indefinitely) | Pinecone Serverless Starter | 2 GB |
-| Vectors (conditional only) | Cloudflare Vectorize | about 6,500 stored vectors at 768 dims |
-| Realtime (gated) | Durable Objects, SQLite-backed, Workers Free | 100k req/day |
-| DB | Turso (already wired in `lib/db/index.ts`) | 5 GB, 500M row reads/mo |
-| Jobs | Inngest (existing) | 50k steps/mo |
-| Storage for uploads | R2 via `lib/storage/index.ts` (migration done 2026-06-10; UploadThing teardown pending, see P7) | 10 GB |
+| Object storage | Cloudflare R2 | 10 GB, zero egress, serves file URLs via `/api/storage/file/{key}` |
+| Vectors (default) | Pinecone Serverless Starter | 2 GB, namespace per course (`course_{courseId}`) |
+| Vectors (prod migration) | Cloudflare Vectorize via `zyx-vector-api` Worker | ~6,500 vectors at 768 dims, controlled by `VECTOR_STORE` env |
+| Realtime (live quiz) | Cloudflare Durable Objects + `zyxrealtime` Worker | 100k req/day, WebSocket/SSE |
+| Diktat PDF renderer | Railway Puppeteer service (`zyxacademydiktat`) | Separate deployment, called via `DIKTAT_RENDERER_URL` |
+| DB | Turso (libsql, wired in `lib/db/index.ts`) | 5 GB, 500M row reads/mo |
+| Jobs | Inngest Cloud | 50k steps/mo |
+| File upload (browser) | UploadThing (dev fallback); production prefers direct R2 | UploadThing: 2 GB; R2: 10 GB |
+| Push notifications | Firebase Cloud Messaging (FCM) via Firebase Admin SDK | Free tier, device tokens in `user_push_tokens` table |
 | Email | Resend | 100 emails/day |
+| Auth | Better-Auth (credentials + Google OAuth) | Free |
+| Analytics / monitoring | Vercel Analytics + Speed Insights + Sentry | Sentry: 5k events/mo free |
 
 Standing decisions (never re-litigate):
 1. Turso/SQLite stays. No Postgres return.
-2. Pinecone is the default vector store forever, behind the adapter built in P3. Vectorize (P8) runs only if a trigger fires. Goal is reliable retrieval, not Cloudflare purity.
-3. Storage already runs on R2 through `lib/storage/index.ts` (`STORAGE_PROVIDER_MODE`). Keep the UploadThing provider wired until P7 teardown completes.
-4. All Gemini traffic goes through AI Gateway from P0 (routing already coded in `lib/gemini.ts`).
-5. Engagement features (streak, reflection, live quiz) are deterministic, never AI-generated.
+2. Pinecone is the dev default; `VECTOR_STORE` env switches modes: `pinecone` (dev), `dual` (write both, read Pinecone), `vectorize` (read from Vectorize). Production targets `dual` → `vectorize` migration.
+3. Storage runs on R2 through `lib/storage/index.ts` (`STORAGE_PROVIDER_MODE`). Keep the UploadThing provider wired for development convenience.
+4. All Gemini traffic goes through Cloudflare AI Gateway (caching, rate limiting, observability).
+5. Engagement features (streak, reflection, live quiz) are deterministic SQL, never AI-generated.
+6. Three Cloudflare Workers support the app: `zyx-vector-api` (Vectorize proxy), `zyxrealtime` (live quiz WebSocket), `zyxacademydiktat` (Puppeteer PDF on Railway).
+7. Feature flags (`FEATURE_*` in env) gate every non-trivial feature. Flag absent or `"0"` = invisible.

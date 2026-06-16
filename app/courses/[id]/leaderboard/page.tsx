@@ -130,7 +130,7 @@ export default async function CourseLeaderboardPage({ params }: Props) {
  </div>
  {rankedRows.length === 0 ? (
  <p className="mt-6 text-body-md text-muted-foreground">
- Belum ada skor kuis AI untuk course ini. Selesaikan kuis untuk muncul di papan peringkat.
+  Belum ada skor kuis untuk course ini. Selesaikan kuis untuk muncul di papan peringkat.
  </p>
  ) : null}
  </Reveal>

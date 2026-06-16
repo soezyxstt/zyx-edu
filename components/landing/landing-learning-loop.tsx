@@ -150,7 +150,7 @@ function PracticePane() {
  return (
  <DemoFrame
  title="Kuis Mingguan #4"
- meta={<span>dibuat AI dari materimu</span>}
+ meta={<span>dari materi kuliahmu</span>}
  className="h-full"
  bodyClassName="flex h-[calc(100%-2.25rem)] flex-col justify-center"
  >
@@ -279,7 +279,7 @@ const loopSteps: ScrollStep[] = [
  <StepCopy
  index={3}
  title="Latihan terarah"
- body="Kuis disusun AI dari materi kuliahmu sendiri ; menyesuaikan konsep yang paling lemah, lengkap dengan pembahasan."
+ body="Kuis disusun dari materi kuliahmu sendiri ; menyesuaikan konsep yang paling lemah, lengkap dengan pembahasan."
  />
  ),
  pane: (

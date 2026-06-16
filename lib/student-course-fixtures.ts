@@ -23,6 +23,7 @@ export type CourseMaterial = {
  isPreview?: boolean;
  /** Chapter this material belongs to, when known (enables P3 chapter summary). */
  chapterId?: string;
+ chapterIds?: string[] | null;
 };
 
 export type ExamType = "quiz" | "tryout";

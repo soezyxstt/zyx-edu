@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { courses } from "@/db/schema";
+import { courses, chapters, courseMaterials } from "@/db/schema";
 import { assertAdmin } from "@/lib/uploadthing-admin";
-import { eq } from "drizzle-orm";
+import { eq, asc, desc, and } from "drizzle-orm";
+import { randomUUID } from "crypto";
+import { storage } from "@/lib/storage";
 
 export async function getCourses() {
   await assertAdmin();
@@ -148,5 +150,179 @@ export async function deleteCourse(id: string) {
   } catch (err: any) {
     console.error("Failed to delete course:", err);
     return { success: false, error: "Gagal menghapus mata kuliah. Pastikan tidak ada data terkait." };
+  }
+}
+
+// Chapter Management Server Actions
+export async function getCourseChapters(courseId: string) {
+  await assertAdmin();
+  return db
+    .select()
+    .from(chapters)
+    .where(eq(chapters.courseId, courseId))
+    .orderBy(asc(chapters.orderIndex));
+}
+
+export async function getAllChapters() {
+  await assertAdmin();
+  return db
+    .select()
+    .from(chapters)
+    .orderBy(asc(chapters.orderIndex));
+}
+
+export async function saveChapter(
+  id: string | null,
+  courseId: string,
+  title: string,
+  orderIndex: number,
+  description?: string | null
+) {
+  await assertAdmin();
+
+  const cleanTitle = title.trim();
+  const cleanDesc = description?.trim() || null;
+
+  if (!cleanTitle) {
+    return { success: false, error: "Judul bab tidak boleh kosong" };
+  }
+
+  try {
+    if (!id) {
+      const newId = randomUUID();
+      await db.insert(chapters).values({
+        id: newId,
+        courseId,
+        title: cleanTitle,
+        orderIndex,
+        description: cleanDesc,
+        status: "published",
+      });
+    } else {
+      await db
+        .update(chapters)
+        .set({
+          title: cleanTitle,
+          orderIndex,
+          description: cleanDesc,
+        })
+        .where(eq(chapters.id, id));
+    }
+
+    revalidatePath("/admin/courses");
+    revalidatePath(`/courses/${courseId}/material`);
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to save chapter:", err);
+    return { success: false, error: err.message || "Gagal menyimpan bab" };
+  }
+}
+
+export async function deleteChapter(id: string) {
+  await assertAdmin();
+
+  try {
+    const [existing] = await db.select().from(chapters).where(eq(chapters.id, id)).limit(1);
+    if (!existing) {
+      return { success: false, error: "Bab tidak ditemukan" };
+    }
+
+    await db.delete(chapters).where(eq(chapters.id, id));
+
+    revalidatePath("/admin/courses");
+    revalidatePath(`/courses/${existing.courseId}/material`);
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to delete chapter:", err);
+    return { success: false, error: "Gagal menghapus bab. Pastikan tidak ada data terkait." };
+  }
+}
+
+// PDF Course Materials Server Actions
+export async function getUploadedMaterials(courseId?: string) {
+  await assertAdmin();
+  
+  if (courseId) {
+    return db
+      .select()
+      .from(courseMaterials)
+      .where(eq(courseMaterials.courseId, courseId))
+      .orderBy(desc(courseMaterials.createdAt));
+  } else {
+    return db
+      .select()
+      .from(courseMaterials)
+      .orderBy(desc(courseMaterials.createdAt));
+  }
+}
+
+export async function uploadCourseMaterial(
+  courseId: string,
+  title: string,
+  type: "materi_kelas" | "contoh_soal",
+  chapterIds: string[],
+  fileData: { bufferBase64: string; name: string; type: string }
+) {
+  await assertAdmin();
+
+  if (!courseId || !title || !type || !chapterIds || chapterIds.length === 0 || !fileData) {
+    return { success: false, error: "Semua field wajib diisi" };
+  }
+
+  try {
+    const fileBuffer = Buffer.from(fileData.bufferBase64, "base64");
+    const fileExtension = fileData.name.split(".").pop() || "pdf";
+    const r2Key = `pdf-materials/${courseId}/${randomUUID()}.${fileExtension}`;
+    
+    const uploadRes = await storage.upload(fileBuffer, r2Key, fileData.type);
+    
+    const materialId = randomUUID();
+    
+    await db.insert(courseMaterials).values({
+      id: materialId,
+      courseId,
+      title: title.trim(),
+      type,
+      fileUrl: uploadRes.key,
+      chapterIds,
+    });
+
+    revalidatePath("/admin/courses");
+    revalidatePath(`/courses/${courseId}/material`);
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to upload course material:", err);
+    return { success: false, error: err.message || "Gagal mengunggah materi" };
+  }
+}
+
+export async function deleteCourseMaterial(id: string) {
+  await assertAdmin();
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(courseMaterials)
+      .where(eq(courseMaterials.id, id))
+      .limit(1);
+
+    if (!existing) {
+      return { success: false, error: "Materi tidak ditemukan" };
+    }
+
+    if (existing.fileUrl) {
+      await storage.delete(existing.fileUrl).catch((e) => {
+        console.error("Failed to delete from R2:", e);
+      });
+    }
+
+    await db.delete(courseMaterials).where(eq(courseMaterials.id, id));
+
+    revalidatePath("/admin/courses");
+    revalidatePath(`/courses/${existing.courseId}/material`);
+    return { success: true };
+  } catch (err: any) {
+    console.error("Failed to delete course material:", err);
+    return { success: false, error: err.message || "Gagal menghapus materi" };
   }
 }

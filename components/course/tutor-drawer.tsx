@@ -414,7 +414,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
 
  let aiContent: string;
  if (res.budgetExhausted) {
- aiContent = "Kuota AI harian telah habis (maks. 30 permintaan). Silakan coba lagi besok, atau gunakan menu buku teks dan kartu hafalan untuk belajar mandiri.";
+ aiContent = "Zyra tidak dapat menjawab pertanyaan baru hari ini (batas harian tercapai). Silakan coba lagi besok, atau gunakan menu buku teks dan kartu hafalan untuk belajar mandiri.";
  } else if (!res.answer) {
  aiContent = "Maaf, terjadi gangguan saat memproses jawaban. Silakan coba lagi dalam beberapa saat.";
  } else {
@@ -453,7 +453,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  <TutorContext.Provider value={{ openExplain, openMistake, openStudyPlan, openChat, close, isOpen, activeMode }}>
  {children}
 
- {/* Global floating AI Tutor trigger ; available on every course surface
+ {/* Global floating Zyra trigger ; available on every course surface
  (overview, quiz, material viewer) regardless of sidebar state. */}
  {pathname?.startsWith("/courses/") &&
  !pathname.includes("/live/host") &&
@@ -540,11 +540,11 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  <div className="rounded-2xl border border-status-error/30 bg-status-error/5 p-4 space-y-3 text-left">
  <div className="flex items-center gap-2 text-status-error font-semibold text-body-sm">
  <AlertTriangle className="size-4 shrink-0" />
- Batas Penggunaan AI Terlampaui
+ Batas Penggunaan Zyra Tercapai
  </div>
  <p className="text-body-xs text-foreground/90 leading-relaxed">
  {errors[0].includes("DAILY_QUOTA_EXCEEDED") 
- ? "Kuota harian gratis untuk asisten AI Anda telah habis hari ini (Maksimal 30 permintaan harian)."
+ ? "Anda telah mencapai batas interaksi harian dengan Zyra. Zyra tersedia kembali besok."
  : errors[0]}
  </p>
  <div className="border-t border-status-error/20 pt-3 text-[11px] text-status-error font-mono">

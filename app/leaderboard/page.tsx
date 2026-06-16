@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: pageTitle("Papan Peringkat"),
-  description: "Peringkat kuis AI per kursus.",
+  description: "Peringkat kuis per kursus.",
 };
 
 function rankClass(rank: number) {
@@ -98,7 +98,7 @@ export default async function LeaderboardPage() {
     <Reveal className="marketing-container mx-auto w-full px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Papan Peringkat"
-        description="Peringkat kuis AI berdasarkan rata-rata skor tiap kelas bimbingan."
+        description="Peringkat kuis berdasarkan rata-rata skor tiap kelas bimbingan."
         icon={Trophy}
       />
 

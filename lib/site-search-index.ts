@@ -149,12 +149,12 @@ const STATIC_PAGES: Omit<SiteSearchDocument, "id">[] = [
  content: "Pembuatan dan manajemen token pendaftaran dan aktivasi kelas",
  },
  {
- title: "Materi AI",
+ title: "Materi",
  subtitle: "Admin",
  href: "/admin/ai/materials",
  group: "Halaman",
  keywords: "materi bahan ajar ai ingestion knowledge base",
- content: "Segmentasi dan pengunggahan materi kurikulum ke basis pengetahuan AI",
+ content: "Segmentasi dan pengunggahan materi kurikulum ke basis pengetahuan untuk generasi soal",
  },
  {
  title: "Kompilasi Diktat",

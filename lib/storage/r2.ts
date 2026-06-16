@@ -84,11 +84,7 @@ export class R2Provider implements StorageProvider {
     if (key.startsWith("http://") || key.startsWith("https://")) {
       return key;
     }
-    // Use local proxy API route instead of direct public R2 URL to bypass SSL/cert warnings
-    if (typeof window === "undefined") {
-      const baseUrl = process.env.NEXT_APP_URL || "";
-      return `${baseUrl}/api/storage/file/${key}`;
-    }
+    // Use relative path for Next.js to dynamically resolve to the active origin
     return `/api/storage/file/${key}`;
   }
 

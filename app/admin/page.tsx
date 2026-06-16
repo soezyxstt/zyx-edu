@@ -155,7 +155,7 @@ export default async function AdminHomePage() {
 
   const syncQueueDepth = opsStatsRes[0][0]?.count ?? 0;
   const aiRequestsToday = opsStatsRes[1][0]?.count ?? 0;
-  const opsStat = `${syncQueueDepth} sync job, ${aiRequestsToday} req AI`;
+  const opsStat = `${syncQueueDepth} sync job, ${aiRequestsToday} req`;
 
   const categories = [
     {
@@ -182,13 +182,13 @@ export default async function AdminHomePage() {
           stat: fileStat,
         },
         {
-          title: "Materi AI",
+          title: "Materi",
           description:
-            "Proses dan segmentasikan dokumen materi kuliah ke dalam basis pengetahuan AI.",
+            "Proses dan segmentasikan dokumen materi kuliah ke dalam basis pengetahuan untuk generasi soal.",
           icon: BookText,
           iconColor: "text-tertiary-1",
           href: "/admin/ai/materials",
-          label: "Kelola materi AI",
+          label: "Kelola materi",
           stat: materialStat,
         },
         {
@@ -219,7 +219,7 @@ export default async function AdminHomePage() {
         {
           title: "Bank Soal",
           description:
-            "Tinjau, edit, setujui, dan publikasikan soal latihan hasil generasi AI.",
+            "Tinjau, edit, setujui, dan publikasikan soal latihan hasil generasi sistem.",
           icon: ListChecks,
           iconColor: "text-status-success",
           href: "/admin/ai/questions",
@@ -269,7 +269,7 @@ export default async function AdminHomePage() {
         {
           title: "Key Diagnostics",
           description:
-            "Lihat status, kuota RPD, dan kesehatan tiap API key AI secara real-time.",
+            "Lihat status, kuota RPD, dan kesehatan tiap API key secara real-time.",
           icon: KeyRound,
           iconColor: "text-tertiary-1",
           href: "/admin/ai/keys",
@@ -279,7 +279,7 @@ export default async function AdminHomePage() {
         {
           title: "Ops",
           description:
-            "Pantau penggunaan API harian, kuota KV write, serta performa sistem AI.",
+            "Pantau penggunaan API harian, kuota KV write, serta performa sistem.",
           icon: Activity,
           iconColor: "text-status-success",
           href: "/admin/ops",

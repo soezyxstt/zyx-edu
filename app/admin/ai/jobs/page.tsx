@@ -50,7 +50,7 @@ export default async function GenerationJobsPage() {
       <div className="mb-8">
         <h1 className="font-heading text-h4 font-semibold text-foreground">Generation Jobs</h1>
         <p className="mt-2 text-body-sm text-muted-foreground">
-          Pantau status pengerjaan generasi kuis/soal AI secara massal berdasarkan Objek Pengetahuan dan Bab.
+          Pantau status pengerjaan generasi kuis/soal secara massal berdasarkan Objek Pengetahuan dan Bab.
         </p>
       </div>
       <GenerationJobsClient

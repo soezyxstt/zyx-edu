@@ -34,8 +34,13 @@ export async function GET(
       return new Response("File not found", { status: 404 });
     }
 
-    // Convert S3 body stream to Response
+    // Convert S3 body stream to Response (with Edge/Serverless compatibility conversion)
     const stream = s3Res.Body as any;
+    let webStream = stream;
+    if (stream && typeof stream.on === "function" && typeof stream.read === "function") {
+      const { Readable } = require("stream");
+      webStream = Readable.toWeb(stream);
+    }
     
     const headers = new Headers();
     if (s3Res.ContentType) {
@@ -66,7 +71,7 @@ export async function GET(
       `${isDownload ? "attachment" : "inline"}; filename="${filename.replace(/"/g, '\\"')}"; filename*=UTF-8''${encodeURIComponent(filename)}`
     );
 
-    return new Response(stream, {
+    return new Response(webStream, {
       headers,
     });
   } catch (err: any) {

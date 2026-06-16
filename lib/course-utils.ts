@@ -89,7 +89,7 @@ export async function getCourseMaterials(courseId: string, studentId?: string) {
     title: m.title.replace(/^\[DRAF\]\s*/, ""),
     kind: "article" as const,
     docCategory: "materi" as const,
-    fileSize: "AI Generated",
+    fileSize: "Disusun otomatis",
     completed: completedSet.has(m.id),
     isPastYear: false,
     isPreview: true,
