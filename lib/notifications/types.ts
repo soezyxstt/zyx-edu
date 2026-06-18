@@ -1,7 +1,7 @@
 /**
  * lib/notifications/types.ts
  *
- * Shared TypeScript types for the ZYX Academy push notification system.
+ * Shared TypeScript types for the Zyx Academy push notification system.
  */
 
 // ─── Notification categories ──────────────────────────────────────────────────

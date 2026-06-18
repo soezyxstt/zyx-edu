@@ -59,7 +59,9 @@ export default async function AIMaterialsPage() {
       </div>
       <MaterialInstancesClient
         instances={instances}
+        assessments={assessments}
         courses={allCourses}
+        chapters={allChapters}
         courseMap={courseMap}
       />
     </Reveal>

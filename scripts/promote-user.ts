@@ -1,5 +1,6 @@
-import { db } from "@/lib/db"; // adjust the import path if needed
-import { user } from "@/db/schema";
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { eq } from "drizzle-orm";
 
 const email = process.argv[2]; // pass the email on the CLI
@@ -15,6 +16,9 @@ if (process.argv[3]) {
 }
 
 (async () => {
+  const { db } = await import("@/lib/db");
+  const { user } = await import("@/db/schema");
+
   await db
     .update(user)
     .set({ role: role })

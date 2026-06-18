@@ -352,12 +352,9 @@ export async function computeStudyPath(
     let readingTime = 0;
     if (material?.structuredContent) {
       try {
-        const parsed = material.structuredContent as {
-          documentMetadata?: {
-            estimatedReadingTimeMin?: number;
-          };
-        } | null;
-        readingTime = parsed?.documentMetadata?.estimatedReadingTimeMin || 0;
+        const parsed = material.structuredContent as any;
+        const ast = parsed?.compilerResult?.ast || parsed;
+        readingTime = ast?.documentMetadata?.estimatedReadingTimeMin || 0;
       } catch {
         readingTime = 0;
       }

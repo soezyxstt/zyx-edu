@@ -7,7 +7,7 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 async function runTests() {
-  console.log("=== STARTING ZYX CONTENT ARCHITECTURE VNEXT TESTS ===\n");
+  console.log("=== STARTING Zyx CONTENT ARCHITECTURE VNEXT TESTS ===\n");
 
   let passed = 0;
   let failed = 0;

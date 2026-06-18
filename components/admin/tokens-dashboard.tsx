@@ -199,7 +199,7 @@ export function TokensDashboard({ initialTokens, coursesList }: Props) {
                   Pratinjau Format Token:
                 </span>
                 <div className="font-mono text-body-sm font-bold text-foreground bg-card px-3 py-2 rounded-lg border border-border select-none">
-                  ZYX-XXXXXXXX-{capacity}-{selectedCourseIds.length}
+                  Zyx-XXXXXXXX-{capacity}-{selectedCourseIds.length}
                 </div>
                 <p className="text-body-xs text-muted-foreground mt-2">
                   Token ini dapat digunakan hingga <strong className="text-foreground">{capacity} orang</strong> berbeda, dan mengaktifkan <strong className="text-foreground">{selectedCourseIds.length} kelas</strong> sekaligus.

@@ -6,10 +6,10 @@ import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { studentInteractiveCardClass } from "@/components/course/course-surfaces";
 import {
-  listCourses,
-  getMaterialsForCourse,
-  getExamsForCourse,
-} from "@/lib/student-course-fixtures";
+  getCourseMaterials,
+  getCourseQuizzes,
+  getCourseTryouts,
+} from "@/lib/course-utils";
 import { db } from "@/db";
 import { courses as coursesTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -20,7 +20,6 @@ export const metadata: Metadata = {
 };
 
 export default async function CoursesPage() {
-  // Fetch courses from DB (authoritative) and fall back to fixtures for missing entries
   const dbCourses = await db.select().from(coursesTable);
   const TEST_COURSE_IDS = new Set([
     "embed-test-course",
@@ -29,18 +28,23 @@ export default async function CoursesPage() {
     "term-test-course",
     "graph-test-course",
   ]);
-  const fixtureCourses = listCourses().filter((c) => !TEST_COURSE_IDS.has(c.id));
-  const courseMap = new Map(dbCourses.map((c) => [c.id, c] as [string, any]));
-  const merged: typeof dbCourses = [];
-  // Add DB courses first
-  for (const c of dbCourses) {
-    if (!TEST_COURSE_IDS.has(c.id)) merged.push(c);
-  }
-  // Add any fixture courses not present in DB
-  for (const fc of fixtureCourses) {
-    if (!courseMap.has(fc.id)) merged.push(fc as any);
-  }
-  const courses = merged;
+  const courses = dbCourses.filter((c) => !TEST_COURSE_IDS.has(c.id));
+
+  const coursesWithStats = await Promise.all(
+    courses.map(async (c) => {
+      const [materials, quizzes, tryouts] = await Promise.all([
+        getCourseMaterials(c.id),
+        getCourseQuizzes(c.id),
+        getCourseTryouts(c.id),
+      ]);
+      return {
+        ...c,
+        materialsCount: materials.length,
+        quizzesCount: quizzes.length,
+        tryoutsCount: tryouts.length,
+      };
+    })
+  );
 
   return (
     <CoursePageShell
@@ -55,11 +59,7 @@ export default async function CoursesPage() {
     >
       <Reveal>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {courses.map((c) => {
-            const materials = getMaterialsForCourse(c.id);
-            const quizzes = getExamsForCourse(c.id, "quiz");
-            const tryouts = getExamsForCourse(c.id, "tryout");
-
+          {coursesWithStats.map((c) => {
             return (
               <div
                 key={c.id}
@@ -86,11 +86,11 @@ export default async function CoursesPage() {
                   <div className="mt-5 space-y-2 border-t border-border/50 pt-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <BookOpen className="size-3.5 text-brand-primary" />
-                      <span>{materials.length} Bahan belajar</span>
+                      <span>{c.materialsCount} Bahan belajar</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <ClipboardList className="size-3.5 text-tertiary-1" />
-                      <span>{quizzes.length} Kuis &middot; {tryouts.length} Tryout</span>
+                      <span>{c.quizzesCount} Kuis &middot; {c.tryoutsCount} Tryout</span>
                     </div>
                   </div>
                 </div>

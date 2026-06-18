@@ -7,6 +7,8 @@ import {
   aiQuestionBank,
   coursePolicies,
   vectorSyncQueue,
+  assessmentObjects,
+  assessmentObjectConcepts,
 } from "@/db/schema";
 import { generateContentWithFallback } from "@/lib/gemini";
 import { USE_CASES } from "@/lib/ai-router";
@@ -16,6 +18,7 @@ import { buildDistractorMap, type MisconceptionKO } from "@/lib/distractor-mappe
 import { eq, and, inArray } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { validateQuestionAgainstPolicy, type CoursePolicyRow } from "@/lib/pedagogical-validator";
+import { getPatternProfile } from "./assessment-pattern-engine";
 
 // Zod validation helper for Gemini response parsing
 import { z } from "zod";
@@ -28,6 +31,7 @@ const GeminiQuestionResponseSchema = z.object({
   explanation: z.string(),
   bloomLevel: z.enum(["remember", "understand", "apply", "analyze", "evaluate", "create"]).optional(),
   pattern: z.string().optional(),
+  reasoningType: z.string().optional(),
   estimatedSteps: z.number().int().optional(),
 });
 
@@ -87,11 +91,25 @@ Format and structural constraints:
 export function buildQuestionPromptBatch(
   courseTitle: string,
   chapterTitle: string,
-  items: { ko: any; blueprint: any }[],
+  items: { ko: any; blueprint: any; patternProfile?: any; examQuestions?: any[] }[],
   policy?: CoursePolicyRow | null,
   historicalQuestions?: string[]
 ): string {
   const koBlocks = items.map((item, idx) => {
+    const patternProfileBlock = item.patternProfile && item.patternProfile.totalQuestionsCount > 0
+      ? `\nHISTORICAL EXAM SEBARAN DISTRIBUSI (Align with these style balances if possible):
+- Target Pattern Mix: ${JSON.stringify(item.patternProfile.patternDistribution)}
+- Target Reasoning Mix: ${JSON.stringify(item.patternProfile.reasoningDistribution)}
+- Target Difficulty Mix: ${JSON.stringify(item.patternProfile.difficultyDistribution)}
+- Target Avg Steps: ${item.patternProfile.averageEstimatedSteps} langkah
+- Target Bloom Level: Level ${item.patternProfile.averageApplicationLevel}`
+      : "";
+
+    const examQuestionsBlock = item.examQuestions && item.examQuestions.length > 0
+      ? `\nCONTOH SOAL UTS/UAS HISTORIS (Analyze their style/wording, but DO NOT clone or copy their scenarios/values):
+${item.examQuestions.map((eq, i) => `Contoh ${i + 1} (Pattern: ${eq.pattern}): "${eq.questionMarkdown}"`).join("\n")}`
+      : "";
+
     return `---
 ITEM #${idx + 1}
 Knowledge Object ID: ${item.ko.id}
@@ -106,7 +124,7 @@ Bloom Cognitive Level: ${item.blueprint.bloomLevel}
 Target Difficulty: ${item.blueprint.targetDifficulty}
 Distractor Strategy: ${item.blueprint.distractorStrategy}
 Math/LaTeX Constraints: ${item.blueprint.mathConstraints}
-Tags: ${item.blueprint.tags.join(", ")}`;
+Tags: ${item.blueprint.tags.join(", ")}${patternProfileBlock}${examQuestionsBlock}`;
   }).join("\n\n");
 
   const policyBlock = policy
@@ -148,7 +166,8 @@ Your output must be a single JSON object matching this schema:
       "explanation": "[Detailed pedagogical explanation showing why the correct option is true and how the distractors are derived or why they are incorrect. Keep explanation comprehensive.]",
       "bloomLevel": "remember | understand | apply | analyze | evaluate | create",
       "pattern": "direct_computation | graph_interpretation | proof | parameter_analysis | modeling",
-      "estimatedSteps": [Integer, e.g. 1, 2, 3, 4]
+      "reasoningType": "procedural | conceptual | analytical",
+      "estimatedSteps": [Integer]
     }
   ]
 }
@@ -384,6 +403,36 @@ export async function generateQuestionsForKOBatch(
     kosToProcess.push(ko);
   }
 
+  // Fetch Pattern Profiles and Exam Exemplars for all active KOs to avoid N+1 DB calls
+  const patternProfilesMap = new Map<string, any>();
+  const examExemplarsMap = new Map<string, any[]>();
+
+  for (const ko of kos) {
+    try {
+      const profile = await getPatternProfile(ko.conceptId);
+      patternProfilesMap.set(ko.id, profile);
+
+      const examQuestions = await db
+        .select({
+          id: assessmentObjects.id,
+          questionMarkdown: assessmentObjects.questionMarkdown,
+          options: assessmentObjects.options,
+          pattern: assessmentObjects.pattern,
+        })
+        .from(assessmentObjects)
+        .innerJoin(
+          assessmentObjectConcepts,
+          eq(assessmentObjects.id, assessmentObjectConcepts.assessmentObjectId)
+        )
+        .where(eq(assessmentObjectConcepts.conceptId, ko.conceptId))
+        .limit(2);
+
+      examExemplarsMap.set(ko.id, examQuestions);
+    } catch (err) {
+      console.warn(`Failed to fetch pattern profile or exemplars for KO ${ko.id}:`, err);
+    }
+  }
+
   if (kosToProcess.length === 0) {
     return { success: true, results: Array.from(resultsMap.values()) };
   }
@@ -405,6 +454,8 @@ export async function generateQuestionsForKOBatch(
     const items = groupKOs.map(ko => ({
       ko,
       blueprint: blueprintsMap.get(ko.id)!,
+      patternProfile: patternProfilesMap.get(ko.id),
+      examQuestions: examExemplarsMap.get(ko.id) || [],
     }));
 
     let candidateBatch: any = null;
@@ -723,6 +774,9 @@ PROVENANCE:
             }
 
             const newQuestionId = `q-${randomUUID()}`;
+            const examExs = examExemplarsMap.get(koId) || [];
+            const styledAfterId = examExs[0]?.id || null;
+
             await tx.insert(aiQuestionBank).values({
               id: newQuestionId,
               courseId: ko.courseId,
@@ -740,6 +794,13 @@ PROVENANCE:
               explanation: finalExplanation,
               reviewStatus: "generated",
               qualityScore: 1.0,
+              styledAfterAssessmentObjectId: styledAfterId,
+              pattern: candidate.pattern || blueprint.blueprintType,
+              reasoningType: candidate.reasoningType || "conceptual",
+              applicationLevel: candidate.bloomLevel
+                ? (candidate.bloomLevel === "remember" ? 1 : candidate.bloomLevel === "understand" ? 2 : candidate.bloomLevel === "apply" ? 3 : 2)
+                : (ko.bloomLevel === "remember" ? 1 : ko.bloomLevel === "understand" ? 2 : ko.bloomLevel === "apply" ? 3 : 2),
+              estimatedSteps: candidate.estimatedSteps || 2,
             });
             
             const embeddingText = `Question: ${candidate.prompt}\nExplanation: ${candidate.explanation}`;
@@ -772,6 +833,9 @@ PROVENANCE:
             }
 
             const newQuestionId = `q-${randomUUID()}`;
+            const examExs = examExemplarsMap.get(koId) || [];
+            const styledAfterId = examExs[0]?.id || null;
+
             await tx.insert(aiQuestionBank).values({
               id: newQuestionId,
               courseId: ko.courseId,
@@ -789,6 +853,13 @@ PROVENANCE:
               explanation: finalExplanation,
               reviewStatus: "generated",
               qualityScore: 1.0,
+              styledAfterAssessmentObjectId: styledAfterId,
+              pattern: candidate.pattern || blueprint.blueprintType,
+              reasoningType: candidate.reasoningType || "conceptual",
+              applicationLevel: candidate.bloomLevel
+                ? (candidate.bloomLevel === "remember" ? 1 : candidate.bloomLevel === "understand" ? 2 : candidate.bloomLevel === "apply" ? 3 : 2)
+                : (ko.bloomLevel === "remember" ? 1 : ko.bloomLevel === "understand" ? 2 : ko.bloomLevel === "apply" ? 3 : 2),
+              estimatedSteps: candidate.estimatedSteps || 2,
             });
             
             const embeddingText = `Question: ${candidate.prompt}\nExplanation: ${candidate.explanation}`;

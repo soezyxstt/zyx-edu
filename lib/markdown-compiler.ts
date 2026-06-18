@@ -1,4 +1,11 @@
-import { WebsiteMaterialAST, ASTBlock, validateAST } from "./ast-validator";
+import { 
+  WebsiteMaterialAST, 
+  ASTBlock, 
+  validateAST, 
+  CompilerDiagnostic, 
+  CompilerStats, 
+  CompilerResult 
+} from "./ast-validator";
 
 // ==========================================
 // STRING ATTRIBUTE PARSER UTILITY
@@ -17,6 +24,84 @@ function parseAttributes(attrStr: string): Record<string, string> {
     attrs[key] = value;
   }
   return attrs;
+}
+
+function parseYamlLike(lines: string[]): Record<string, any> {
+  const result: Record<string, any> = {};
+  let currentKey: string | null = null;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const indent = line.length - line.trimStart().length;
+
+    if (indent >= 2 && currentKey) {
+      if (trimmed.startsWith("-")) {
+        const val = trimmed.slice(1).trim();
+        let parsedVal: any = val;
+        if (val.startsWith("[") && val.endsWith("]")) {
+          try {
+            parsedVal = JSON.parse(val);
+          } catch {
+            parsedVal = val.slice(1, -1).split(",").map(x => {
+              const num = Number(x.trim());
+              return isNaN(num) ? x.trim() : num;
+            });
+          }
+        } else {
+          const num = Number(val);
+          parsedVal = isNaN(num) ? val : num;
+        }
+
+        if (!result[currentKey] || !Array.isArray(result[currentKey])) {
+          result[currentKey] = [];
+        }
+        result[currentKey].push(parsedVal);
+      } else {
+        const colonIdx = trimmed.indexOf(":");
+        if (colonIdx !== -1) {
+          const key = trimmed.slice(0, colonIdx).trim();
+          const val = trimmed.slice(colonIdx + 1).trim();
+          let parsedVal: any = val;
+          if (val.toLowerCase() === "true") parsedVal = true;
+          else if (val.toLowerCase() === "false") parsedVal = false;
+          else {
+            const num = Number(val);
+            parsedVal = isNaN(num) ? val : num;
+          }
+
+          if (typeof result[currentKey] !== "object" || Array.isArray(result[currentKey])) {
+            result[currentKey] = {};
+          }
+          result[currentKey][key] = parsedVal;
+        }
+      }
+      continue;
+    }
+
+    const colonIdx = trimmed.indexOf(":");
+    if (colonIdx !== -1) {
+      const key = trimmed.slice(0, colonIdx).trim();
+      const val = trimmed.slice(colonIdx + 1).trim();
+      currentKey = key;
+
+      if (val === "") {
+        result[key] = {};
+      } else {
+        let parsedVal: any = val;
+        if (val.toLowerCase() === "true") parsedVal = true;
+        else if (val.toLowerCase() === "false") parsedVal = false;
+        else {
+          const num = Number(val);
+          parsedVal = isNaN(num) ? val : num;
+        }
+        result[key] = parsedVal;
+      }
+    }
+  }
+
+  return result;
 }
 
 // ==========================================
@@ -44,6 +129,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "learning_objective",
+        globalOrderIndex: 0,
         metadata: {
           bloomLevel: (attrs.bloomLevel as any) || "remember",
         },
@@ -55,6 +141,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "concept",
+        globalOrderIndex: 0,
         metadata: {
           koId: attrs.koId || "",
         },
@@ -66,55 +153,102 @@ function parseBlockNode(
     }
 
     case "formula": {
+      const yamlLines: string[] = [];
+      const contentLines: string[] = [];
+      let inYaml = true;
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (inYaml && (trimmed.includes(":") || trimmed.startsWith("-") || !trimmed)) {
+          yamlLines.push(line);
+        } else {
+          inYaml = false;
+          contentLines.push(line);
+        }
+      }
+      
+      const parsedYaml = parseYamlLike(yamlLines);
       const blockText = lines.join("\n");
       const latexMatch = blockText.match(/\$\$\s*([\s\S]*?)\s*\$\$/);
       const latex = latexMatch ? latexMatch[1].trim() : "";
 
-      // Parse parameters table
-      const parameters: any[] = [];
+      const symbols: any[] = [];
+
+      // Helper: wrap a bare LaTeX token in $...$ if it isn't already.
+      // Triggers on: backslash commands (\delta), superscript (^), subscript (_).
+      const wrapLatex = (raw: string): string => {
+        const t = raw.trim();
+        if (!t) return t;
+        // Already $-wrapped → keep as-is
+        if (t.startsWith("$") && t.endsWith("$")) return t;
+        // Needs wrapping if it contains LaTeX-specific characters
+        if (t.includes("\\") || t.includes("^") || t.includes("_")) return `$${t}$`;
+        return t;
+      };
+
       const tableLines = lines.filter(l => l.includes("|"));
       tableLines.forEach(l => {
         const parts = l
           .split("|")
           .map(p => p.trim())
           .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
-        if (parts.length >= 3) {
-          const symbol = parts[0];
-          const unit = parts[1];
-          const name = parts[2];
-          // Skip header and divider lines
+        if (parts.length >= 2) {
+          const symbolRaw = parts[0];
+          const unit = parts.length > 2 ? parts[1] : undefined;
+          const definition = parts.length > 2 ? parts[2] : parts[1];
+
+          // Skip header row (contains "Simbol", "Symbol", "Parameter") or separator row (:--- / ---)
+          const symLower = symbolRaw.toLowerCase();
           if (
-            symbol.toLowerCase().includes("symbol") ||
-            symbol.toLowerCase().includes("parameter") ||
-            symbol.startsWith("---")
+            symLower === "simbol" ||
+            symLower === "symbol" ||
+            symLower === "parameter" ||
+            /^:?-+$/.test(symbolRaw)
           ) {
             return;
           }
-          parameters.push({
-            symbol,
-            unit,
-            name,
-            standardUnitSystem: "SI",
-            description: name,
+          // Skip separator rows in any column (e.g. ":---")
+          if (/^:?-+$/.test(definition || "")) {
+            return;
+          }
+
+          symbols.push({
+            symbol: wrapLatex(symbolRaw),
+            definition: wrapLatex(definition),
+            unit: unit ? wrapLatex(unit) : undefined,
           });
         }
       });
 
-      // Derivation is everything not matching latex block or table lines
-      const derivationLines = lines.filter(l => !l.includes("|") && !l.includes("$$"));
-      const derivationMarkdown = derivationLines.join("\n").trim();
+      // Only extract interpretation when explicitly marked in the source.
+      // The old else-branch fallback incorrectly captured LaTeX formula body lines.
+      let interpretation = "";
+      const interpIdx = blockText.indexOf("Interpretasi:");
+      const explIdx = blockText.indexOf("Explanation:");
+      const startIdx = interpIdx !== -1 ? interpIdx + "Interpretasi:".length : (explIdx !== -1 ? explIdx + "Explanation:".length : -1);
+
+      if (startIdx !== -1) {
+        const remainingText = blockText.slice(startIdx);
+        const interpLines = remainingText.split(/\r?\n/).filter(l => !l.includes("|") && !l.includes("$$"));
+        interpretation = interpLines.join("\n").trim();
+      }
 
       return {
         id: blockId,
         type: "formula",
+        globalOrderIndex: 0,
         metadata: {
-          koId: attrs.koId || "",
+          koId: attrs.koId || undefined,
         },
         content: {
-          title: attrs.title || "Mathematical Formulation",
+          title: attrs.title || parsedYaml.title || undefined,
           latex,
-          derivationMarkdown: derivationMarkdown || undefined,
-          parameters,
+          interpretation: interpretation || undefined,
+          derivationMarkdown: interpretation || undefined,
+          symbols,
+          parameters: symbols,
+          assumptions: parsedYaml.assumptions || [],
+          usage: parsedYaml.usage || [],
         },
       };
     }
@@ -127,6 +261,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "formula_reference",
+        globalOrderIndex: 0,
         metadata: {
           linkedFormulaBlockId: attrs.linkedFormulaBlockId || "",
         },
@@ -141,6 +276,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "engineering_insight",
+        globalOrderIndex: 0,
         metadata: {
           discipline: (attrs.discipline as any) || "general",
         },
@@ -199,6 +335,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "example",
+        globalOrderIndex: 0,
         metadata: {
           difficulty: (attrs.difficulty as any) || "medium",
           koId: attrs.koId,
@@ -238,6 +375,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "misconception",
+        globalOrderIndex: 0,
         metadata: {
           koId: attrs.koId || "",
         },
@@ -254,6 +392,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "exercise",
+        globalOrderIndex: 0,
         metadata: {
           questionId: attrs.questionId || "",
         },
@@ -275,6 +414,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "summary",
+        globalOrderIndex: 0,
         metadata: {},
         content: { bullets },
       };
@@ -285,6 +425,7 @@ function parseBlockNode(
       return {
         id: blockId,
         type: type as "warning" | "note",
+        globalOrderIndex: 0,
         metadata: {
           collapsible: attrs.collapsible === "true",
         },
@@ -299,10 +440,139 @@ function parseBlockNode(
       return {
         id: blockId,
         type: "glossary_term",
+        globalOrderIndex: 0,
         metadata: {},
         content: {
           term: attrs.term || "",
           definition: lines.join("\n").trim(),
+        },
+      };
+    }
+
+    case "chart": {
+      const parsed = parseYamlLike(lines);
+      return {
+        id: blockId,
+        type: "visual",
+        globalOrderIndex: 0,
+        visualType: "chart",
+        version: 1,
+        metadata: {} as Record<string, unknown>,
+        title: attrs.title || parsed.title || undefined,
+        caption: attrs.caption || parsed.caption || undefined,
+        data: {
+          chartType: parsed.chartType || "line",
+          xLabel: parsed.xLabel || undefined,
+          yLabel: parsed.yLabel || undefined,
+          data: parsed.data || [],
+        },
+      };
+    }
+
+    case "graph": {
+      const parsed = parseYamlLike(lines);
+      let domain = { min: -10, max: 10 };
+      if (parsed.domain && typeof parsed.domain === "object") {
+        domain = {
+          min: typeof parsed.domain.min === "number" ? parsed.domain.min : -10,
+          max: typeof parsed.domain.max === "number" ? parsed.domain.max : 10,
+        };
+      } else if (parsed.domain && Array.isArray(parsed.domain)) {
+        domain = {
+          min: typeof parsed.domain[0] === "number" ? parsed.domain[0] : -10,
+          max: typeof parsed.domain[1] === "number" ? parsed.domain[1] : 10,
+        };
+      }
+      return {
+        id: blockId,
+        type: "visual",
+        globalOrderIndex: 0,
+        visualType: "graph",
+        version: 1,
+        metadata: {} as Record<string, unknown>,
+        title: attrs.title || parsed.title || undefined,
+        caption: attrs.caption || parsed.caption || undefined,
+        data: {
+          functions: parsed.functions || (parsed.equation ? [parsed.equation] : []),
+          domain,
+          samples: typeof parsed.samples === "number" ? parsed.samples : 200,
+        },
+      };
+    }
+
+    case "flowchart":
+    case "diagram": {
+      const yamlLines: string[] = [];
+      const edgeLines: string[] = [];
+      lines.forEach(l => {
+        const trimmed = l.trim();
+        if (trimmed.includes("-->")) {
+          edgeLines.push(trimmed);
+        } else if (trimmed) {
+          yamlLines.push(l);
+        }
+      });
+
+      const parsed = parseYamlLike(yamlLines);
+      const edges: any[] = [];
+      const nodeNames = new Set<string>();
+
+      const cleanNodeName = (name: string): { label: string; stepNumber?: number } => {
+        const match = name.match(/^(?:Langkah|Step|Phase|Stage)\s*(\d+)\s*[:.-]\s*(.+)$/i);
+        if (match) {
+          return {
+            label: match[2].trim(),
+            stepNumber: parseInt(match[1], 10),
+          };
+        }
+        return { label: name };
+      };
+
+      const edgeRegex = /^(.+?)\s*(?:-->|--\s*(.*?)\s*-->|-->\s*\|(.*?)\|)\s*(.+)$/;
+      edgeLines.forEach(line => {
+        const match = line.match(edgeRegex);
+        if (match) {
+          const rawSource = match[1].trim();
+          const label = (match[2] || match[3] || "").trim();
+          const rawTarget = match[4].trim();
+
+          const sourceId = rawSource.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+          const targetId = rawTarget.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+
+          nodeNames.add(rawSource);
+          nodeNames.add(rawTarget);
+
+          edges.push({
+            source: sourceId,
+            target: targetId,
+            label: label || undefined,
+          });
+        }
+      });
+
+      const nodes = Array.from(nodeNames).map(rawName => {
+        const id = rawName.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-");
+        const { label, stepNumber } = cleanNodeName(rawName);
+        return {
+          id,
+          label,
+          stepNumber,
+        };
+      });
+
+      return {
+        id: blockId,
+        type: "visual",
+        globalOrderIndex: 0,
+        visualType: type === "flowchart" ? "flowchart" : "diagram",
+        version: 1,
+        metadata: {} as Record<string, unknown>,
+        title: attrs.title || parsed.title || undefined,
+        caption: attrs.caption || parsed.caption || undefined,
+        data: {
+          edges,
+          nodes,
+          diagramType: parsed.type || undefined,
         },
       };
     }
@@ -317,33 +587,122 @@ function parseBlockNode(
 // CORE COMPILER SERVICE
 // ==========================================
 
-export async function compileMarkdownToAST(
-  markdown: string,
-  chapterId: string,
-  courseId: string
-): Promise<WebsiteMaterialAST> {
-  const lines = markdown.split(/\r?\n/);
+export function parseCanonicalMarkdown(markdown: string): ASTBlock[] {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
   const blocks: ASTBlock[] = [];
-  let chapterTitle = "Untitled Chapter";
+  let globalIndex = 0;
 
   let currentBlockType: string | null = null;
   let currentBlockAttrStr = "";
   let currentBlockLines: string[] = [];
   let currentBlockId: string | null = null;
 
+  const flushPresenterBlock = (type: string, contentLines: string[]) => {
+    const contentText = contentLines.join("\n").trim();
+    if (!contentText) return;
+
+    const id = `md-${globalIndex}-${type}`;
+    let block: ASTBlock | null = null;
+
+    if (type === "h") {
+      const match = contentText.match(/^(#{1,6})\s+(.+)$/);
+      if (match) {
+        block = {
+          id,
+          type: "h",
+          globalOrderIndex: globalIndex++,
+          level: match[1].length,
+          content: match[2].trim(),
+        };
+      }
+    } else if (type === "blockquote") {
+      const cleanContent = contentLines.map(l => l.replace(/^>\s?/, "")).join("\n").trim();
+      block = {
+        id,
+        type: "blockquote",
+        globalOrderIndex: globalIndex++,
+        content: cleanContent,
+      };
+    } else if (type === "code") {
+      const langMatch = contentLines[0].match(/^```(\w*)/);
+      const language = langMatch ? langMatch[1] : undefined;
+      const codeLines = contentLines.slice(1, -1);
+      block = {
+        id,
+        type: "code",
+        globalOrderIndex: globalIndex++,
+        content: codeLines.join("\n"),
+        language,
+      };
+    } else if (type === "table") {
+      const headers = contentLines[0]
+        .split("|")
+        .map(h => h.trim())
+        .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+      
+      const rows: string[][] = [];
+      contentLines.slice(2).forEach(rowLine => {
+        const cells = rowLine
+          .split("|")
+          .map(c => c.trim())
+          .filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+        if (cells.length > 0) {
+          rows.push(cells);
+        }
+      });
+
+      block = {
+        id,
+        type: "table",
+        globalOrderIndex: globalIndex++,
+        headers,
+        rows,
+      };
+    } else if (type === "list") {
+      const items = contentLines.map(l => {
+        const orderedMatch = l.trim().match(/^\d+\.\s+(.+)$/);
+        const unorderedMatch = l.trim().match(/^[-*+]\s+(.+)$/);
+        return {
+          text: orderedMatch ? orderedMatch[1].trim() : (unorderedMatch ? unorderedMatch[1].trim() : l.trim()),
+          ordered: !!orderedMatch,
+        };
+      });
+      block = {
+        id,
+        type: "list",
+        globalOrderIndex: globalIndex++,
+        items,
+      };
+    } else if (type === "hr") {
+      block = {
+        id,
+        type: "hr",
+        globalOrderIndex: globalIndex++,
+      };
+    } else if (type === "p") {
+      block = {
+        id,
+        type: "p",
+        globalOrderIndex: globalIndex++,
+        content: contentText,
+      };
+    }
+
+    if (block) {
+      blocks.push(block);
+    }
+  };
+
+  let presenterLines: string[] = [];
+  let presenterType: "p" | "h" | "code" | "list" | "blockquote" | "table" | "hr" | null = null;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Parse Chapter Title (H1 heading outside blocks)
-    if (currentBlockType === null && line.startsWith("# ")) {
-      chapterTitle = line.slice(2).trim();
-      continue;
-    }
-
     if (trimmed.startsWith(":::")) {
       if (currentBlockType !== null) {
-        // Closing current block
+        // Closing a canonical block
         const block = parseBlockNode(
           currentBlockType,
           currentBlockAttrStr,
@@ -351,6 +710,7 @@ export async function compileMarkdownToAST(
           currentBlockId || `block-${i}`
         );
         if (block) {
+          block.globalOrderIndex = globalIndex++;
           blocks.push(block);
         }
         currentBlockType = null;
@@ -358,7 +718,13 @@ export async function compileMarkdownToAST(
         currentBlockLines = [];
         currentBlockId = null;
       } else {
-        // Opening a new block
+        // Open a canonical block; flush any pending presenter lines first
+        if (presenterType && presenterLines.length > 0) {
+          flushPresenterBlock(presenterType, presenterLines);
+          presenterLines = [];
+          presenterType = null;
+        }
+
         const match = trimmed.match(/^:::(\w+)(?:\s+\{(.*?)\})?/);
         if (match) {
           currentBlockType = match[1];
@@ -369,112 +735,204 @@ export async function compileMarkdownToAST(
           currentBlockId = attrs.id || attrs.koId || `block-${i}-${currentBlockType}`;
         }
       }
-    } else {
-      if (currentBlockType !== null) {
-        currentBlockLines.push(line);
+      continue;
+    }
+
+    if (currentBlockType !== null) {
+      currentBlockLines.push(line);
+      continue;
+    }
+
+    // Lists continuation parsing
+    const listPattern = /^(\s*)([-*+]|\d+\.)\s+(.*)$/;
+    if (listPattern.test(line)) {
+      if (presenterType && presenterLines.length > 0) {
+        flushPresenterBlock(presenterType, presenterLines);
+        presenterLines = [];
+        presenterType = null;
       }
+      
+      const items: { text: string; ordered: boolean }[] = [];
+      while (i < lines.length) {
+        const currentLine = lines[i];
+        const currentTrimmed = currentLine.trim();
+
+        // Check if the current line starts a new list item
+        const listMatch = currentLine.match(listPattern);
+        if (listMatch) {
+          const marker = listMatch[2];
+          const isOrdered = /^\d/.test(marker);
+          items.push({
+            text: listMatch[3].trim(),
+            ordered: isOrdered,
+          });
+          i++;
+          continue;
+        }
+
+        // Check for list termination
+        if (
+          currentTrimmed.startsWith("```") ||
+          currentTrimmed.startsWith(":::") ||
+          currentTrimmed === "---" || currentTrimmed === "***" || currentTrimmed === "___" ||
+          /^(#{1,6})\s+/.test(currentLine) ||
+          currentTrimmed.startsWith(">") ||
+          (currentTrimmed.startsWith("|") && currentTrimmed.endsWith("|") && currentTrimmed.length > 2)
+        ) {
+          i--; // back up so the outer loop parses this line
+          break;
+        }
+
+        // Empty line handling
+        if (currentTrimmed === "") {
+          let nextIdx = i + 1;
+          while (nextIdx < lines.length && lines[nextIdx].trim() === "") {
+            nextIdx++;
+          }
+          if (nextIdx >= lines.length) {
+            i = nextIdx; // consume trailing empty lines
+            break;
+          }
+          const nextLine = lines[nextIdx];
+          const nextIsListItem = listPattern.test(nextLine);
+          const nextHasIndent = nextLine.startsWith(" ") || nextLine.startsWith("\t");
+          
+          if (!nextIsListItem && !nextHasIndent) {
+            i--; // back up so outer loop processes empty line/paragraph
+            break;
+          }
+        }
+
+        // Append line to current list item
+        if (items.length > 0) {
+          items[items.length - 1].text += "\n" + currentLine;
+        }
+        i++;
+      }
+
+      blocks.push({
+        id: `md-${globalIndex}-list`,
+        type: "list",
+        globalOrderIndex: globalIndex++,
+        items,
+      });
+      continue;
+    }
+
+    if (trimmed.startsWith("$$")) {
+      // Flush presenter block first
+      if (presenterType && presenterType !== "code") {
+        flushPresenterBlock(presenterType, presenterLines);
+        presenterLines = [];
+        presenterType = null;
+      }
+
+      const mathLines: string[] = [];
+      if (trimmed.endsWith("$$") && trimmed.length > 2) {
+        mathLines.push(trimmed.slice(2, -2).trim());
+        blocks.push({
+          id: `md-${globalIndex}-mathblk`,
+          type: "p",
+          globalOrderIndex: globalIndex++,
+          content: `$$${mathLines[0]}$$`,
+        });
+      } else {
+        i++;
+        while (i < lines.length && !lines[i].trim().startsWith("$$")) {
+          mathLines.push(lines[i]);
+          i++;
+        }
+        blocks.push({
+          id: `md-${globalIndex}-mathblk`,
+          type: "p",
+          globalOrderIndex: globalIndex++,
+          content: `$$\n${mathLines.join("\n")}\n$$`,
+        });
+      }
+      continue;
+    }
+
+    // Normal markdown line parsing
+    if (!trimmed) {
+      if (presenterType && presenterType !== "code") {
+        flushPresenterBlock(presenterType, presenterLines);
+        presenterLines = [];
+        presenterType = null;
+      }
+      continue;
+    }
+
+    // Identify line type
+    let lineType: "p" | "h" | "code" | "list" | "blockquote" | "table" | "hr" | null = "p";
+    if (trimmed.startsWith("```")) {
+      lineType = "code";
+    } else if (trimmed.startsWith("#")) {
+      lineType = "h";
+    } else if (trimmed.startsWith(">")) {
+      lineType = "blockquote";
+    } else if (trimmed.startsWith("|")) {
+      lineType = "table";
+    } else if (trimmed.match(/^[-*+]\s+/) || trimmed.match(/^\d+\.\s+/)) {
+      lineType = "list";
+    } else if (trimmed === "---" || trimmed === "***" || trimmed === "___") {
+      lineType = "hr";
+    }
+
+    if (presenterType === "code") {
+      presenterLines.push(line);
+      if (trimmed.startsWith("```") && presenterLines.length > 1) {
+        flushPresenterBlock("code", presenterLines);
+        presenterLines = [];
+        presenterType = null;
+      }
+      continue;
+    }
+
+    if (presenterType && presenterType !== lineType) {
+      flushPresenterBlock(presenterType, presenterLines);
+      presenterLines = [];
+    }
+
+    presenterType = lineType;
+    presenterLines.push(line);
+
+    if (lineType === "hr" || lineType === "h") {
+      flushPresenterBlock(lineType, presenterLines);
+      presenterLines = [];
+      presenterType = null;
     }
   }
 
-  // Auto-resolve glossary term mappings to prevent false validation failures
-  const glossaryTerms = new Set<string>();
-  blocks.forEach(b => {
-    if (b.type === "glossary_term") {
-      glossaryTerms.add(b.content.term.toLowerCase().trim());
-    }
-  });
+  // Flush any remaining presenter blocks
+  if (presenterType && presenterLines.length > 0) {
+    flushPresenterBlock(presenterType, presenterLines);
+  }
 
-  const mentionedTerms = new Set<string>();
-  blocks.forEach(block => {
-    const texts: string[] = [];
-    if (block.type === "concept") texts.push(block.content.bodyMarkdown);
-    else if (block.type === "formula") {
-      if (block.content.derivationMarkdown) texts.push(block.content.derivationMarkdown);
-    } else if (block.type === "engineering_insight") texts.push(block.content.applicationMarkdown);
-    else if (block.type === "example") {
-      texts.push(block.content.problemStatement);
-      block.content.solutionSteps.forEach(s => texts.push(s.explanationMarkdown));
-    } else if (block.type === "misconception") {
-      texts.push(block.content.myth, block.content.correctionMarkdown, block.content.physicalRationaleMarkdown);
-    } else if (block.type === "exercise") texts.push(block.content.questionMarkdown);
-    else if (block.type === "warning" || block.type === "note") texts.push(block.content.messageMarkdown);
+  return blocks;
+}
 
-    texts.forEach(t => {
-      const matches = t.match(/\[\[(.*?)\]\]/g);
-      if (matches) {
-        matches.forEach(m => {
-          mentionedTerms.add(m.slice(2, -2).trim());
-        });
-      }
-    });
-  });
+// ==========================================
+// COMPILER PHASES HELPERS
+// ==========================================
 
-  // Automatically append stubbed glossary terms for mentioned bracket tags
-  mentionedTerms.forEach(term => {
-    const termLower = term.toLowerCase().trim();
-    if (!glossaryTerms.has(termLower)) {
-      blocks.push({
-        id: `glossary-${termLower.replace(/\s+/g, "-")}`,
-        type: "glossary_term",
-        metadata: {},
-        content: {
-          term: term,
-          definition: `Auto-generated definition of [[${term}]].`,
-        },
-      });
-      glossaryTerms.add(termLower);
-    }
-  });
+// Phase 2: Normalize
+function normalizeBlocks(blocks: ASTBlock[]): ASTBlock[] {
+  // Diagram and flowchart step normalization is already completed during parsing.
+  // Additional block-level normalization can be performed here.
+  return blocks;
+}
 
-  // Calculate estimated reading duration
-  let totalWords = 0;
-  let formulaCount = 0;
-  let exampleStepCount = 0;
-
-  blocks.forEach(block => {
-    const texts: string[] = [];
-    if (block.type === "concept") {
-      texts.push(block.content.title, block.content.bodyMarkdown);
-    } else if (block.type === "formula") {
-      formulaCount++;
-      texts.push(block.content.title);
-      if (block.content.derivationMarkdown) texts.push(block.content.derivationMarkdown);
-    } else if (block.type === "formula_reference") {
-      texts.push(block.content.label);
-    } else if (block.type === "engineering_insight") {
-      texts.push(block.content.title, block.content.applicationMarkdown);
-    } else if (block.type === "example") {
-      texts.push(block.content.problemStatement);
-      exampleStepCount += block.content.solutionSteps.length;
-      block.content.solutionSteps.forEach(s => texts.push(s.label, s.explanationMarkdown));
-    } else if (block.type === "misconception") {
-      texts.push(block.content.myth, block.content.correctionMarkdown, block.content.physicalRationaleMarkdown);
-    } else if (block.type === "exercise") {
-      texts.push(block.content.questionMarkdown);
-    } else if (block.type === "summary") {
-      block.content.bullets.forEach(b => texts.push(b));
-    } else if (block.type === "glossary_term") {
-      texts.push(block.content.term, block.content.definition);
-    } else if (block.type === "warning" || block.type === "note") {
-      if (block.content.title) texts.push(block.content.title);
-      texts.push(block.content.messageMarkdown);
-    }
-
-    texts.forEach(text => {
-      const words = text
-        .trim()
-        .split(/\s+/)
-        .filter(w => w.length > 0).length;
-      totalWords += words;
-    });
-  });
-
-  const estimatedReadingTimeMin = Math.ceil(
-    totalWords / 200 + formulaCount * 2 + exampleStepCount * 5
-  ) || 1;
-
+// Phase 3: Validate
+function validateBlocks(
+  blocks: ASTBlock[],
+  chapterId: string,
+  courseId: string,
+  chapterTitle: string,
+  estimatedReadingTimeMin: number
+): { ast: WebsiteMaterialAST; validationDiagnostics: CompilerDiagnostic[] } {
   const ast: WebsiteMaterialAST = {
     schemaVersion: "1.0.0",
+    compilerVersion: "2.1.0",
     chapterId,
     courseId,
     documentMetadata: {
@@ -485,14 +943,459 @@ export async function compileMarkdownToAST(
     blocks,
   };
 
-  // Run full validation suite
   const validation = validateAST(ast);
+  const validationDiagnostics: CompilerDiagnostic[] = [];
+
   if (!validation.success) {
-    throw new Error(
-      `AST Validation failed on compiled output:\n` +
-        validation.errors.map(e => `  [${e.path}]: ${e.message}`).join("\n")
-    );
+    validation.errors.forEach(err => {
+      validationDiagnostics.push({
+        severity: "error",
+        code: "AST_SCHEMA_VALIDATION_FAILED",
+        message: `Schema violation at path [${err.path}]: ${err.message}`,
+        recommendation: "Review the block structure and confirm all required fields are provided.",
+      });
+    });
   }
 
+  return { ast, validationDiagnostics };
+}
+
+// Phase 4: Diagnostics
+function runDiagnostics(
+  ast: WebsiteMaterialAST,
+  validationDiagnostics: CompilerDiagnostic[]
+): CompilerDiagnostic[] {
+  const diagnostics: CompilerDiagnostic[] = [...validationDiagnostics];
+  const blocks = ast.blocks;
+
+  const glossaryTerms = new Set<string>();
+  const definedVisualIds = new Set<string>();
+  const referencedVisualIds = new Set<string>();
+  const referencedGlossaryTerms = new Set<string>();
+  const glossaryTermsBlocks: any[] = [];
+  const conceptTitles = new Set<string>();
+
+  blocks.forEach(block => {
+    if (block.type === "glossary_term") {
+      glossaryTerms.add(block.content.term.toLowerCase().trim());
+      glossaryTermsBlocks.push(block);
+    }
+    if (block.type === "visual") {
+      definedVisualIds.add(block.id);
+    }
+    if (block.type === "concept") {
+      conceptTitles.add(block.content.title.toLowerCase().trim());
+    }
+  });
+
+  blocks.forEach(block => {
+    // Math Leakage Check in Concept blocks (Point 4 - Heuristic 3-level)
+    if (block.type === "concept") {
+      const body = block.content.bodyMarkdown;
+      
+      // Level 1: Strict latex keywords
+      const hasStrictMath = /\\frac|\\sum|\\int|\\lim|\\sqrt/g.test(body);
+      
+      // Level 2 & 3: Candidates like variables assignment (P(x) = ax^2 + bx + c)
+      const assignmentRegex = /[a-zA-Z]\s*=\s*[^=]/g;
+      let hasMathLeakage = hasStrictMath;
+
+      if (!hasMathLeakage) {
+        let match;
+        while ((match = assignmentRegex.exec(body)) !== null) {
+          // Level 3: Evaluate surrounding context (30 characters before and after)
+          const contextStart = Math.max(0, match.index - 30);
+          const contextEnd = Math.min(body.length, match.index + match[0].length + 30);
+          const surroundingContext = body.slice(contextStart, contextEnd);
+
+          // Heuristic check: see if caret, subscript, plus/minus, sin/cos, etc. are nearby
+          const hasMathContext = /[\^_\+\-\*\/]|\b(?:sin|cos|tan|log|ln|exp|lim|sqrt)\b|\b[a-zA-Z]_\d+|\b[a-zA-Z]\([a-zA-Z0-9]\)/i.test(surroundingContext);
+          
+          if (hasMathContext) {
+            hasMathLeakage = true;
+            break;
+          }
+        }
+      }
+
+      if (hasMathLeakage) {
+        diagnostics.push({
+          severity: "error",
+          code: "FORMULA_IN_CONCEPT",
+          message: `Concept block "${block.content.title}" contains direct math/formula declarations without separate block encapsulation.`,
+          blockId: block.id,
+          recommendation: "Move equation into a dedicated :::formula block.",
+        });
+      }
+    }
+
+    // Extract glossary reference tags [[term]] or visual references [[visual:id]]
+    const textsToSearch: string[] = [];
+    if (block.type === "concept") textsToSearch.push(block.content.bodyMarkdown);
+    else if (block.type === "formula" && block.content.interpretation) textsToSearch.push(block.content.interpretation);
+    else if (block.type === "p") textsToSearch.push(block.content);
+
+    textsToSearch.forEach(text => {
+      const matches = text.match(/\[\[(.*?)\]\]/g);
+      if (matches) {
+        matches.forEach(m => {
+          const content = m.slice(2, -2).trim();
+          if (content.toLowerCase().startsWith("visual:")) {
+            const visualId = content.slice(7).trim();
+            referencedVisualIds.add(visualId);
+            if (!definedVisualIds.has(visualId)) {
+              diagnostics.push({
+                severity: "error",
+                code: "VISUAL_REFERENCE_INVALID",
+                message: `Block references visual ID "${visualId}" which does not exist in the document.`,
+                blockId: block.id,
+                recommendation: `Ensure a visual block with id="${visualId}" is declared.`,
+              });
+            }
+          } else {
+            referencedGlossaryTerms.add(content.toLowerCase().trim());
+            if (!glossaryTerms.has(content.toLowerCase().trim())) {
+              diagnostics.push({
+                severity: "error",
+                code: "MISSING_GLOSSARY_TERM",
+                message: `Term "[[${content}]]" is referenced but has no corresponding glossary term definition.`,
+                blockId: block.id,
+                recommendation: `Create a glossary term for "${content}".`,
+              });
+            }
+          }
+        });
+      }
+    });
+
+    // Check visual block parsing fallback
+    if (block.type === "visual") {
+      if (block.visualType === "graph" && (!block.data.functions || block.data.functions.length === 0)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "VISUAL_BLOCK_PARSE_FALLBACK",
+          message: `Graph visual "${block.title || block.id}" contains no plottable mathematical functions.`,
+          blockId: block.id,
+          recommendation: "Graph block parsed as descriptive content. No structured function extracted.",
+        });
+      }
+      if ((block.visualType === "diagram" || block.visualType === "flowchart") && (!block.data.nodes || block.data.nodes.length === 0)) {
+        diagnostics.push({
+          severity: "warning",
+          code: "VISUAL_BLOCK_PARSE_FALLBACK",
+          message: `Visual node mapping failed for "${block.title || block.id}": 0 nodes or edges were successfully generated.`,
+          blockId: block.id,
+          recommendation: "Confirm diagram edges use valid 'A --> B' syntax to allow automatic node extraction.",
+        });
+      }
+    }
+  });
+
+  // CONCEPT_WITHOUT_GLOSSARY warning
+  conceptTitles.forEach(title => {
+    if (!glossaryTerms.has(title)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "CONCEPT_WITHOUT_GLOSSARY",
+        message: `Concept title "${title}" has no corresponding glossary term definition.`,
+        recommendation: `Create a glossary term for "${title}".`,
+      });
+    }
+  });
+
+  // GLOSSARY_NEVER_REFERENCED warning
+  glossaryTermsBlocks.forEach(block => {
+    const term = block.content.term.toLowerCase().trim();
+    if (!referencedGlossaryTerms.has(term)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "GLOSSARY_NEVER_REFERENCED",
+        message: `Glossary term "${block.content.term}" is defined but never referenced anywhere in the text.`,
+        blockId: block.id,
+        recommendation: `Use [[${block.content.term}]] inside concepts or paragraphs to link to this glossary term.`,
+      });
+    }
+  });
+
+  // UNUSED_VISUAL_BLOCK warning
+  definedVisualIds.forEach(vid => {
+    if (!referencedVisualIds.has(vid)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "UNUSED_VISUAL_BLOCK",
+        message: `Visual block "${vid}" is parsed but never referenced via [[visual:${vid}]].`,
+        recommendation: `Insert [[visual:${vid}]] in relevant paragraphs or concept blocks to reference this diagram.`,
+      });
+    }
+  });
+
+  // VISUAL_TOO_FAR warning
+  blocks.forEach(block => {
+    let text = "";
+    if (block.type === "concept") text = block.content.bodyMarkdown;
+    else if (block.type === "p") text = block.content;
+
+    const matches = text.match(/\[\[visual:(.*?)\]\]/);
+    if (matches) {
+      const visualId = matches[1].trim();
+      const visualBlockIdx = blocks.findIndex(b => b.id === visualId);
+      if (visualBlockIdx !== -1) {
+        const currentIdx = blocks.findIndex(b => b.id === block.id);
+        const distance = Math.abs(currentIdx - visualBlockIdx);
+        if (distance > 5) {
+          diagnostics.push({
+            severity: "warning",
+            code: "VISUAL_TOO_FAR",
+            message: `Visual reference "[[visual:${visualId}]]" is located ${distance} blocks away from the actual visual block.`,
+            blockId: block.id,
+            recommendation: "Move the visual block closer to the text or concept describing it.",
+          });
+        }
+      }
+    }
+  });
+
+  return diagnostics;
+}
+
+// Phase 5: Stats
+function computeStats(
+  ast: WebsiteMaterialAST,
+  diagnostics: CompilerDiagnostic[],
+  counts: {
+    conceptCount: number;
+    formulaCount: number;
+    glossaryCount: number;
+    visualCount: number;
+    graphCount: number;
+    diagramCount: number;
+    flowchartCount: number;
+    estimatedReadingTimeMin: number;
+  }
+): CompilerStats {
+  const blocks = ast.blocks;
+
+  const glossaryTerms = new Set<string>();
+  const definedVisualIds = new Set<string>();
+  const referencedVisualIds = new Set<string>();
+  const referencedGlossaryTerms = new Set<string>();
+
+  blocks.forEach(block => {
+    if (block.type === "glossary_term") {
+      glossaryTerms.add(block.content.term.toLowerCase().trim());
+    }
+    if (block.type === "visual") {
+      definedVisualIds.add(block.id);
+    }
+  });
+
+  blocks.forEach(block => {
+    const textsToSearch: string[] = [];
+    if (block.type === "concept") textsToSearch.push(block.content.bodyMarkdown);
+    else if (block.type === "formula" && block.content.interpretation) textsToSearch.push(block.content.interpretation);
+    else if (block.type === "p") textsToSearch.push(block.content);
+
+    textsToSearch.forEach(text => {
+      const matches = text.match(/\[\[(.*?)\]\]/g);
+      if (matches) {
+        matches.forEach(m => {
+          const content = m.slice(2, -2).trim();
+          if (content.toLowerCase().startsWith("visual:")) {
+            const visualId = content.slice(7).trim();
+            if (definedVisualIds.has(visualId)) {
+              referencedVisualIds.add(visualId);
+            }
+          } else {
+            const term = content.toLowerCase().trim();
+            if (glossaryTerms.has(term)) {
+              referencedGlossaryTerms.add(term);
+            }
+          }
+        });
+      }
+    });
+  });
+
+  let conceptLengthSum = 0;
+  let formulaLengthSum = 0;
+  blocks.forEach(block => {
+    if (block.type === "concept") conceptLengthSum += block.content.bodyMarkdown.length;
+    else if (block.type === "formula") formulaLengthSum += (block.content.interpretation || "").length;
+  });
+
+  const averageConceptLength = counts.conceptCount > 0 ? Math.round(conceptLengthSum / counts.conceptCount) : 0;
+  const averageFormulaLength = counts.formulaCount > 0 ? Math.round(formulaLengthSum / counts.formulaCount) : 0;
+  
+  // Calculate average glossary references per concept/paragraph
+  const textBlocksCount = blocks.filter(b => b.type === "concept" || b.type === "p").length;
+  const averageGlossaryReferenceCount = textBlocksCount > 0 ? Math.round((referencedGlossaryTerms.size / textBlocksCount) * 100) / 100 : 0;
+
+  // Calculate average visual distance
+  let totalDistance = 0;
+  let referenceCount = 0;
+  blocks.forEach((block, idx) => {
+    let text = "";
+    if (block.type === "concept") text = block.content.bodyMarkdown;
+    else if (block.type === "p") text = block.content;
+
+    const matches = text.match(/\[\[visual:(.*?)\]\]/g);
+    if (matches) {
+      matches.forEach(m => {
+        const visualId = m.slice(9, -2).trim();
+        const visualBlockIdx = blocks.findIndex(b => b.id === visualId);
+        if (visualBlockIdx !== -1) {
+          totalDistance += Math.abs(idx - visualBlockIdx);
+          referenceCount++;
+        }
+      });
+    }
+  });
+  const averageVisualDistance = referenceCount > 0 ? Math.round((totalDistance / referenceCount) * 10) / 10 : 0;
+
+  // Glossary coverage calculation
+  const glossaryCoverage = referencedGlossaryTerms.size > 0 ? Math.round((Array.from(referencedGlossaryTerms).filter(t => glossaryTerms.has(t)).length / referencedGlossaryTerms.size) * 100) : 100;
+  // Visual reference coverage calculation
+  const visualReferenceCoverage = definedVisualIds.size > 0 ? Math.round((Array.from(definedVisualIds).filter(id => referencedVisualIds.has(id)).length / definedVisualIds.size) * 100) : 100;
+  // Formula atomization check
+  const mathErrorCount = diagnostics.filter(d => d.code === "FORMULA_IN_CONCEPT").length;
+  const formulaAtomization = Math.max(100 - mathErrorCount * 15, 0);
+  // Visual coverage
+  const visualCoverage = definedVisualIds.size > 0 ? 100 : 80;
+
+  // Quality score formula
+  const score = Math.round(glossaryCoverage * 0.3 + visualReferenceCoverage * 0.3 + formulaAtomization * 0.2 + visualCoverage * 0.2);
+
+  return {
+    conceptCount: counts.conceptCount,
+    formulaCount: counts.formulaCount,
+    glossaryCount: counts.glossaryCount,
+    visualCount: counts.visualCount,
+    graphCount: counts.graphCount,
+    diagramCount: counts.diagramCount,
+    flowchartCount: counts.flowchartCount,
+    readingTime: counts.estimatedReadingTimeMin,
+    averageConceptLength,
+    averageFormulaLength,
+    averageVisualDistance,
+    averageGlossaryReferenceCount,
+    quality: {
+      score,
+      breakdown: {
+        glossaryCoverage,
+        visualCoverage,
+        formulaAtomization,
+        visualReferenceCoverage,
+      }
+    }
+  };
+}
+
+// ==========================================
+// CORE COMPILER SERVICE
+// ==========================================
+
+export function compileMarkdown(
+  markdown: string,
+  chapterId: string = "chapter-id",
+  courseId: string = "course-id"
+): CompilerResult {
+  // Phase 1: Parse
+  const rawBlocks = parseCanonicalMarkdown(markdown);
+
+  // Phase 2: Normalize
+  const normalizedBlocks = normalizeBlocks(rawBlocks);
+
+  let chapterTitle = "Untitled Chapter";
+  const lines = markdown.split(/\r?\n/);
+  for (const line of lines) {
+    if (line.trim().startsWith("# ")) {
+      chapterTitle = line.trim().slice(2).trim();
+      break;
+    }
+  }
+
+  // Calculate counts for stats and reading time estimation
+  let totalWords = 0;
+  let formulaCount = 0;
+  let visualCount = 0;
+  let graphCount = 0;
+  let diagramCount = 0;
+  let flowchartCount = 0;
+  let conceptCount = 0;
+  let glossaryCount = 0;
+
+  normalizedBlocks.forEach(block => {
+    const texts: string[] = [];
+    if (block.type === "p" || block.type === "h" || block.type === "blockquote") {
+      texts.push(block.content);
+    } else if (block.type === "concept") {
+      conceptCount++;
+      texts.push(block.content.title, block.content.bodyMarkdown);
+    } else if (block.type === "formula") {
+      formulaCount++;
+      texts.push(block.content.title || "", block.content.latex, block.content.interpretation || "");
+    } else if (block.type === "glossary_term") {
+      glossaryCount++;
+      texts.push(block.content.term, block.content.definition);
+    } else if (block.type === "visual") {
+      visualCount++;
+      if (block.visualType === "graph") graphCount++;
+      else if (block.visualType === "diagram") diagramCount++;
+      else if (block.visualType === "flowchart") flowchartCount++;
+      
+      if (block.title) texts.push(block.title);
+      if (block.caption) texts.push(block.caption);
+    }
+    
+    texts.forEach(text => {
+      totalWords += text.split(/\s+/).filter(Boolean).length;
+    });
+  });
+
+  const estimatedReadingTimeMin = Math.ceil(totalWords / 200 + formulaCount * 2 + visualCount * 1.5) || 1;
+
+  // Phase 3: Validate
+  const { ast, validationDiagnostics } = validateBlocks(
+    normalizedBlocks,
+    chapterId,
+    courseId,
+    chapterTitle,
+    estimatedReadingTimeMin
+  );
+
+  // Phase 4: Diagnostics
+  const diagnostics = runDiagnostics(ast, validationDiagnostics);
+
+  // Phase 5: Stats
+  const stats = computeStats(ast, diagnostics, {
+    conceptCount,
+    formulaCount,
+    glossaryCount,
+    visualCount,
+    graphCount,
+    diagramCount,
+    flowchartCount,
+    estimatedReadingTimeMin,
+  });
+
+  return {
+    ast,
+    diagnostics,
+    stats,
+  };
+}
+
+export function migrateAst(ast: WebsiteMaterialAST, fromVersion: string, toVersion: string): WebsiteMaterialAST {
+  // Version migration stub
   return ast;
 }
+
+export async function compileMarkdownToAST(
+  markdown: string,
+  chapterId: string,
+  courseId: string
+): Promise<WebsiteMaterialAST> {
+  const result = compileMarkdown(markdown, chapterId, courseId);
+  return result.ast;
+}
+

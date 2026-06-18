@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, User, LayoutDashboard, GraduationCap } from "lucide-react";
+import { LogOut, User, LayoutDashboard, GraduationCap, ShieldCheck } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
@@ -173,6 +173,17 @@ export function NavProfileOrSignIn({
  <Link href="/tutor" onClick={onNavigate}>
  <GraduationCap className="size-4 shrink-0 text-muted-foreground" aria-hidden />
  <span>Teaching</span>
+ </Link>
+ </DropdownMenu.Item>
+ )}
+ {userRole === "admin" && (
+ <DropdownMenu.Item
+ asChild
+ className="hover:bg-accent hover:text-accent-foreground flex cursor-pointer items-center gap-2 rounded-lg px-2.5 py-2 text-body-sm outline-none"
+ >
+ <Link href="/admin" onClick={onNavigate}>
+ <ShieldCheck className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+ <span>Admin</span>
  </Link>
  </DropdownMenu.Item>
  )}

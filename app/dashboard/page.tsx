@@ -22,7 +22,7 @@ import {
   getMaterialsProgress,
   getStudentSubmissions,
 } from "@/app/dashboard/actions";
-import { getMaterialsForCourse, getExamsForCourse } from "@/lib/student-course-fixtures";
+import { getCourseMaterials, getCourseQuizzes, getCourseTryouts } from "@/lib/course-utils";
 import { DashboardWeakConcepts } from "@/components/course/dashboard-weak-concepts";
 import { TodayPlan } from "@/components/dashboard/today-plan";
 import { env } from "@/lib/env";
@@ -128,19 +128,36 @@ export default async function DashboardPage() {
   const isEnrolledInAny = enrollments.length > 0;
   const enrolledCourseIds = enrollments.map((e) => e.id);
 
+  // Resolve all materials, quizzes, and tryouts for enrolled courses
+  const courseDataList = await Promise.all(
+    enrolledCourseIds.map(async (courseId) => {
+      const [materials, quizzes, tryouts] = await Promise.all([
+        getCourseMaterials(courseId),
+        getCourseQuizzes(courseId),
+        getCourseTryouts(courseId),
+      ]);
+      return {
+        courseId,
+        materials,
+        exams: [...quizzes, ...tryouts],
+      };
+    })
+  );
+
+  const courseDataMap = new Map(courseDataList.map((d) => [d.courseId, d]));
+
   // 1. In-progress documents (materials)
   const inProgressRecords = progressList.filter((p) => p.status === "in_progress");
   const inProgressDocuments = inProgressRecords
     .map((record) => {
-      for (const courseId of enrolledCourseIds) {
-        const materials = getMaterialsForCourse(courseId);
-        const mat = materials.find((m) => m.id === record.materialId);
+      for (const courseData of courseDataList) {
+        const mat = courseData.materials.find((m) => m.id === record.materialId);
         if (mat) {
-          const course = enrollments.find((e) => e.id === courseId);
+          const course = enrollments.find((e) => e.id === courseData.courseId);
           return {
             ...mat,
             courseTitle: course?.title || "Course",
-            courseId,
+            courseId: courseData.courseId,
           };
         }
       }
@@ -149,13 +166,9 @@ export default async function DashboardPage() {
     .filter((document) => document !== null);
 
   // 2. Available exams
-  const availableExams = enrolledCourseIds.flatMap((courseId) => {
-    const course = enrollments.find((e) => e.id === courseId);
-    const quizzes = getExamsForCourse(courseId, "quiz");
-    const tryouts = getExamsForCourse(courseId, "tryout");
-    const allCourseExams = [...quizzes, ...tryouts];
-
-    return allCourseExams
+  const availableExams = courseDataList.flatMap((courseData) => {
+    const course = enrollments.find((e) => e.id === courseData.courseId);
+    return courseData.exams
       .filter((exam) => {
         const alreadySubmitted = submissionsList.some(
           (sub) => sub.examId === exam.id && sub.status !== "pending_review"
@@ -165,7 +178,7 @@ export default async function DashboardPage() {
       .map((exam) => ({
         ...exam,
         courseTitle: course?.title || "Course",
-        courseId,
+        courseId: courseData.courseId,
       }));
   });
 
@@ -289,7 +302,7 @@ export default async function DashboardPage() {
 
                 <div className="divide-y divide-border/50">
                   {enrollments.map((course) => {
-                    const materials = getMaterialsForCourse(course.id);
+                    const materials = courseDataMap.get(course.id)?.materials || [];
                     const courseCompletedIds = progressList
                       .filter((p) => p.status === "completed")
                       .map((p) => p.materialId);

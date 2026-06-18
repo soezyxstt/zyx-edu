@@ -12,10 +12,7 @@ import { headers } from "next/headers";
 import { and, eq } from "drizzle-orm";
 import { AttemptReview } from "@/components/course/attempt-review";
 import { ReviewClient } from "./review-client";
-import {
-  getSubmissionListItem,
-  getSubmissionReview,
-} from "@/lib/student-course-fixtures";
+// Fixture imports removed
 
 type Props = { params: Promise<{ id: string; submissionId: string }> };
 
@@ -80,8 +77,8 @@ export default async function SubmissionReviewPage({ params }: Props) {
   }
 
   // 2. Otherwise try loading from database
-  let listItem = getSubmissionListItem(id, submissionId);
-  let review = getSubmissionReview(id, submissionId);
+  let listItem: any = null;
+  let review: any = null;
 
   if (!listItem || !review) {
     const [dbSub] = await db

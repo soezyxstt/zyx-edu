@@ -21,3 +21,35 @@ export function getSemesterEndDate(now = new Date()): Date {
     }
   }
 }
+
+export function cleanSummary(text: string | null | undefined): string {
+  if (!text) return "";
+  
+  // 1. Split into lines and filter out any container block tags (lines starting with ':::')
+  let cleaned = text
+    .split("\n")
+    .filter((line) => !line.trim().startsWith(":::"))
+    .join("\n");
+
+  // 2. Remove standard markdown headings (#s)
+  cleaned = cleaned.replace(/^#+\s+/gm, "");
+
+  // 3. Remove inline KaTeX equations (both $...$ and $$...$$ or \[...\] / \(...\))
+  cleaned = cleaned.replace(/\$\$[\s\S]*?\$\$/g, "");
+  cleaned = cleaned.replace(/\$[^\$\n]+?\$/g, "");
+  cleaned = cleaned.replace(/\\\[[\s\S]*?\\\]/g, "");
+  cleaned = cleaned.replace(/\\\(.*?\\\)/g, "");
+
+  // 4. Remove glossary/visual double-brackets like [[visual:xxx]] or [[term]]
+  cleaned = cleaned.replace(/\[\[visual:[^\]]+\]\]/g, "");
+  cleaned = cleaned.replace(/\[\[([^\]]+)\]\]/g, "$1");
+
+  // 5. Clean up other inline markdown styling characters
+  cleaned = cleaned.replace(/[#*`_~]/g, "");
+
+  // 6. Normalize whitespace
+  cleaned = cleaned.replace(/\s+/g, " ").trim();
+
+  return cleaned;
+}
+

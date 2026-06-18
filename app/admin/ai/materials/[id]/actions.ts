@@ -270,6 +270,34 @@ export async function regenerateWebsiteMaterialAction(chapterId: string) {
   }
 }
 
+export async function saveWebsiteMaterialAction(chapterId: string, markdown: string) {
+  try {
+    const { auth } = await import("@/lib/auth");
+    const { headers } = await import("next/headers");
+    const session = await auth.api.getSession({ headers: await headers() });
+    const authorId = session?.user?.id || "admin";
+
+    const { saveWebsiteMaterial } = await import("@/lib/material-storage");
+    const result = await saveWebsiteMaterial(
+      chapterId,
+      markdown,
+      authorId,
+      "Penyuntingan visual oleh admin",
+      false, // isAiGenerated = false
+      false  // forcePublish = false
+    );
+
+    return {
+      success: result.compiledStatus === "success",
+      error: result.compileError,
+      materialId: result.materialId,
+    };
+  } catch (error: any) {
+    console.error("Error saving website material action:", error);
+    return { success: false, error: error.message || "Gagal menyimpan materi website." };
+  }
+}
+
 export async function triggerBulkChapterGenerationAction(chapterId: string) {
   try {
     await inngest.send({

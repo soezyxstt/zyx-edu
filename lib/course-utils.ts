@@ -11,13 +11,7 @@ import {
   user
 } from "@/db/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
-import {
-  getCourseById as getFixtureCourseById,
-  getMaterialsForCourse as getFixtureMaterialsForCourse,
-  getExamsForCourse as getFixtureExamsForCourse,
-  getSubmissionsForCourse as getFixtureSubmissionsForCourse,
-  getLeaderboard as getFixtureLeaderboard
-} from "@/lib/student-course-fixtures";
+// Fixture imports removed
 import { storage } from "@/lib/storage";
 
 export async function getCourse(id: string) {
@@ -32,7 +26,7 @@ export async function getCourse(id: string) {
       description: dbCourse.description || "",
     };
   }
-  return getFixtureCourseById(id);
+  return undefined;
 }
 
 export async function getCourseMaterials(courseId: string, studentId?: string) {
@@ -95,12 +89,7 @@ export async function getCourseMaterials(courseId: string, studentId?: string) {
     isPreview: true,
   }));
 
-  const fixtureMaterials = getFixtureMaterialsForCourse(courseId).map((m) => ({
-    ...m,
-    completed: completedSet.has(m.id) || m.completed,
-  }));
-
-  return [...fixtureMaterials, ...mappedDiktats, ...mappedDb];
+  return [...mappedDiktats, ...mappedDb];
 }
 
 export async function getCourseQuizzes(courseId: string) {
@@ -123,7 +112,7 @@ export async function getCourseQuizzes(courseId: string) {
     questions: [],
   }));
 
-  return [...getFixtureExamsForCourse(courseId, "quiz"), ...mappedQuizzes];
+  return mappedQuizzes;
 }
 
 export async function getCourseTryouts(courseId: string) {
@@ -145,13 +134,12 @@ export async function getCourseTryouts(courseId: string) {
     };
   });
 
-  return [...getFixtureExamsForCourse(courseId, "tryout"), ...mappedTryouts];
+  return mappedTryouts;
 }
 
 export async function getCourseSubmissions(courseId: string, studentId?: string) {
-  const fixtureSubmissions = getFixtureSubmissionsForCourse(courseId);
   if (!studentId) {
-    return fixtureSubmissions;
+    return [];
   }
 
   const dbAttempts = await db
@@ -212,7 +200,7 @@ export async function getCourseSubmissions(courseId: string, studentId?: string)
     }))
   ];
 
-  return [...fixtureSubmissions, ...mappedSubmissions];
+  return mappedSubmissions;
 }
 
 export async function getCourseLeaderboard(courseId: string) {
@@ -245,6 +233,5 @@ export async function getCourseLeaderboard(courseId: string) {
     tryoutAvgPercent: 0,
   }));
 
-  const fixtures = getFixtureLeaderboard(courseId);
-  return mappedLeaderboard.length > 0 ? mappedLeaderboard : fixtures;
+  return mappedLeaderboard;
 }

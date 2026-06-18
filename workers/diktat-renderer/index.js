@@ -39,8 +39,9 @@ app.post('/render', auth, async (req, res) => {
       scale: 1.0,
       margin: { top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' },
     });
-    res.set({ 'Content-Type': 'application/pdf', 'Content-Length': pdf.length });
-    res.send(Buffer.from(pdf));
+    const pdfBuffer = Buffer.isBuffer(pdf) ? pdf : Buffer.from(pdf);
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Length': pdfBuffer.length });
+    res.end(pdfBuffer, 'binary');
   } catch (err) {
     console.error('[diktat-renderer] PDF generation failed:', err);
     res.status(500).json({ error: err.message });

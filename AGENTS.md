@@ -9,7 +9,12 @@ This version has breaking changes ; APIs, conventions, and file structure may al
 > [!IMPORTANT]
 > **READ BEFORE WRITING CODE**: Before working on any task or editing code, you must read the [AGENT_CONTEXT.md](file:///d:/ZYX/web/zyx-edu/AGENT_CONTEXT.md) file in the root directory. It contains the authoritative current state map, database details, technical architecture decisions, and styling system rules.
 
-# ZYX design system (agents)
+# Brand naming
+
+- The brand name is always written as **Zyx** (capitalized first letter, lowercase `yx`). Never `ZYX` (all-caps) except in literal filesystem paths.
+- Token prefixes use the same casing: `Zyx-XXXXXXXX-{capacity}-{courseIds.length}`.
+
+# Zyx design system (agents)
 
 Authoritative tokens live in `app/globals.css` (`@theme inline`, `:root`, `.dark`, `@layer base`, `@layer components`). Prefer **semantic Tailwind utilities** that map to those tokens over hard-coded hex or ad hoc font stacks.
 

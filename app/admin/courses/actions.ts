@@ -198,6 +198,9 @@ export async function saveChapter(
         description: cleanDesc,
         status: "published",
       });
+      revalidatePath("/admin/courses");
+      revalidatePath(`/courses/${courseId}/material`);
+      return { success: true, chapter: { id: newId, courseId, title: cleanTitle, orderIndex, description: cleanDesc } };
     } else {
       await db
         .update(chapters)

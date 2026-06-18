@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -177,6 +178,16 @@ export function PDFMaterialsTab({ courses, chapters, initialMaterials }: Props) 
           <FileText className="size-5 text-brand-secondary" />
           Unggah Dokumen PDF Baru
         </h2>
+        <div className="mb-5 p-4 rounded-xl border border-status-warning/20 bg-status-warning/10 text-status-warning text-left flex items-start gap-2.5">
+          <span className="text-lg shrink-0 mt-0.5">⚠️</span>
+          <div className="space-y-1">
+            <p className="font-bold text-body-sm text-foreground">Catatan Penting Ingestion</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              Unggah PDF di tab ini hanya ditujukan untuk bahan bacaan langsung atau unduhan manual mahasiswa (Layer 1).
+              Untuk memproses materi pelajaran menjadi basis pengetahuan AI (RAG, Ringkasan, Flashcard, &amp; Bank Soal), silakan unggah berkas Markdown di menu <Link href="/admin/ai/materials" className="text-primary font-semibold hover:underline">Materi AI</Link>.
+            </p>
+          </div>
+        </div>
         <form onSubmit={handleUpload} className="space-y-5">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Course Selector */}

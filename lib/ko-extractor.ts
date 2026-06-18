@@ -76,6 +76,7 @@ export type ValidatedKO = z.infer<typeof KnowledgeObjectSchema>;
 // Candidate schema for extraction (separates concept name from context fields)
 export const CandidateKnowledgeObjectSchema = z.object({
  conceptName: z.string().min(2),
+ parentConceptName: z.string().nullable().optional(),
  title: z.string().min(2),
  content: z.string().min(10),
  type: z.enum([
@@ -162,6 +163,7 @@ const candidateKoSchema = {
  type: "OBJECT",
  properties: {
  conceptName: { type: "STRING" },
+ parentConceptName: { type: "STRING" },
  title: { type: "STRING" },
  content: { type: "STRING" },
  type: {
@@ -212,6 +214,7 @@ const candidateKoSchema = {
  },
  required: [
  "conceptName",
+ "parentConceptName",
  "title",
  "content",
  "type",
@@ -297,7 +300,14 @@ CRITICAL RULES FOR CONCEPTS & CONTEXT:
  - If a concept is illustrated in an example or scenario (e.g., calculating Euclidean distance for robotics), set "conceptName" to "Jarak Euclidean" and set "exampleContext" to "Robotika".
  - Under no circumstances should the conceptName contain suffixes like "pada Termodinamika", "dalam Kendali Dinamis", or "untuk Robotika".
 3. DEFAULT BIAS: REUSE EXISTING CONCEPTS. Aggressively avoid creating new concepts. Look at the EXISTING CONCEPTS list above. If a concept matches or is an alias/variant of an existing concept, reuse the exact conceptName. Only create a new concept when absolutely necessary.
-4. LANGUAGE POLICY: All content (conceptName, title, content, tags, misconceptions, summaries) MUST be generated in Bahasa Indonesia. Use standard Indonesian academic terminology (e.g. "Sistem Koordinat Kartesius" instead of "Cartesian Coordinate System"). Exceptions are only allowed for English terms that are the accepted university standard in Indonesia (e.g., "RAG", "Machine Learning").
+4. CONCEPT TO KO HIERARCHY / NO MICRO-CONCEPTS:
+ - A conceptName represents a high-level Mastery Unit (e.g., 'Limit Fungsi').
+ - Every KO of type 'formula', 'example', 'misconception', 'exercise', 'summary', or 'objective' is a Supporting Asset and MUST map to a parent core conceptName (e.g., 'Limit Fungsi').
+ - For each candidate KO, you must specify 'parentConceptName'.
+ - For core concept KOs (type 'definition' or 'concept_overview'), set 'parentConceptName' to null.
+ - For supporting assets (formulas, examples, misconceptions, exercises, summaries, objectives), identify which of the core concepts in this chapter they support, and set 'parentConceptName' to the exact name of that core concept.
+ - Under no circumstances should a formula, example, or misconception have a unique micro-concept name (e.g. do not set parentConceptName to 'Sifat Limit Fungsi: Konstanta' or similar. Use the parent core concept name 'Limit Fungsi' instead).
+5. LANGUAGE POLICY: All content (conceptName, title, content, tags, misconceptions, summaries) MUST be generated in Bahasa Indonesia. Use standard Indonesian academic terminology (e.g. "Sistem Koordinat Kartesius" instead of "Cartesian Coordinate System"). Exceptions are only allowed for English terms that are the accepted university standard in Indonesia (e.g., "RAG", "Machine Learning").
 
 MANDATORY CONCEPT TESTS:
 Before assigning a conceptName, you must internally evaluate the topic against these 4 tests:
@@ -332,6 +342,7 @@ Respond ONLY with valid JSON matching this schema:
  "candidate_knowledge_objects": [
  {
  "conceptName": "string (canonical academic topic name in Bahasa Indonesia, e.g. 'Komposisi Fungsi')",
+ "parentConceptName": "string or null (the name of the parent core concept, or null if this is itself a core concept definition or overview)",
  "title": "string (clear human-readable title in Bahasa Indonesia)",
  "content": "string (Markdown + LaTeX in Bahasa Indonesia)",
  "type": "definition" | "formula" | "example" | "misconception" | "exercise" | "summary" | "objective" | "concept_overview",
@@ -822,28 +833,74 @@ export async function extractKnowledgeObjectsForChapter(
  },
  ];
  }
- }
+ }  // Parse and sanitize candidates via Zod (safe loop for final assembly)
+  const coreConceptsInBatch = new Set<string>();
+  const normalizedCoreConceptsInBatch = new Set<string>();
+  for (const rawItem of candidateBatch) {
+    if (rawItem && (rawItem.type === "definition" || rawItem.type === "concept_overview")) {
+      if (rawItem.conceptName) {
+        const trimmed = rawItem.conceptName.trim();
+        coreConceptsInBatch.add(trimmed);
+        normalizedCoreConceptsInBatch.add(normalizeConceptName(trimmed));
+      }
+    }
+  }
 
- // Parse and sanitize candidates via Zod (safe loop for final assembly)
- const validatedCandidates: z.infer<typeof CandidateKnowledgeObjectSchema>[] = [];
- for (const rawItem of candidateBatch) {
- try {
- const prepared = {
- ...rawItem,
- applicationContext: rawItem.applicationContext || null,
- exampleContext: rawItem.exampleContext || null,
- conceptTests: rawItem.conceptTests || {
- taughtIndependently: true,
- chapterHeading: true,
- existsWithoutExamples: true,
- isUsageScenario: false,
- },
- };
- validatedCandidates.push(CandidateKnowledgeObjectSchema.parse(prepared));
- } catch (zodErr) {
- console.warn("Skipping candidate item due to Zod validation failure:", zodErr, rawItem);
- }
- }
+  const normalizedExistingConcepts = new Set(existingConcepts.map(c => normalizeConceptName(c)));
+
+  let lastConceptName = chapterTitle;
+  const validatedCandidates: z.infer<typeof CandidateKnowledgeObjectSchema>[] = [];
+  for (const rawItem of candidateBatch) {
+    try {
+      // If this is a core concept, update our tracker
+      if (rawItem.type === "definition" || rawItem.type === "concept_overview") {
+        if (rawItem.conceptName) {
+          lastConceptName = rawItem.conceptName.trim();
+        }
+      } else {
+        // This is a supporting asset
+        const parent = rawItem.parentConceptName ? rawItem.parentConceptName.trim() : null;
+        if (parent) {
+          const normParent = normalizeConceptName(parent);
+          if (normalizedCoreConceptsInBatch.has(normParent)) {
+            // Find the exact name from batch to preserve casing/canonical form
+            const exactName = Array.from(coreConceptsInBatch).find(c => normalizeConceptName(c) === normParent) || parent;
+            rawItem.conceptName = exactName;
+            rawItem.parentConceptName = exactName;
+          } else if (normalizedExistingConcepts.has(normParent)) {
+            const exactName = existingConcepts.find(c => normalizeConceptName(c) === normParent) || parent;
+            rawItem.conceptName = exactName;
+            rawItem.parentConceptName = exactName;
+          } else {
+            console.warn(`[Normalization Guard] parentConceptName "${parent}" is not a known concept. Falling back to "${lastConceptName}".`);
+            if (!rawItem.metadata) rawItem.metadata = {};
+            if (!rawItem.metadata.normalizationWarnings) rawItem.metadata.normalizationWarnings = [];
+            rawItem.metadata.normalizationWarnings.push(`Invalid parent concept "${parent}", fell back to "${lastConceptName}"`);
+            rawItem.conceptName = lastConceptName;
+            rawItem.parentConceptName = lastConceptName;
+          }
+        } else {
+          rawItem.conceptName = lastConceptName;
+          rawItem.parentConceptName = lastConceptName;
+        }
+      }
+
+      const prepared = {
+        ...rawItem,
+        applicationContext: rawItem.applicationContext || null,
+        exampleContext: rawItem.exampleContext || null,
+        conceptTests: rawItem.conceptTests || {
+          taughtIndependently: true,
+          chapterHeading: true,
+          existsWithoutExamples: true,
+          isUsageScenario: false,
+        },
+      };
+      validatedCandidates.push(CandidateKnowledgeObjectSchema.parse(prepared));
+    } catch (zodErr) {
+      console.warn("Skipping candidate item due to Zod validation failure:", zodErr, rawItem);
+    }
+  }
 
  if (validatedCandidates.length === 0) {
  return [];

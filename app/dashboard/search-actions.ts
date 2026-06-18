@@ -2,65 +2,154 @@
 
 import { headers } from "next/headers";
 import { db } from "@/db";
-import { enrollments } from "@/db/schema";
+import {
+  courses as coursesTable,
+  aiMaterialInstances,
+  diktats,
+  courseMaterials,
+  exams,
+  quizTemplates,
+  enrollments,
+} from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { eq, and, gt } from "drizzle-orm";
 import { getSiteSearchDocuments } from "@/lib/site-search-index";
 import type { SiteSearchDocument } from "@/lib/site-search-index";
 
 export async function getStudentSearchDocuments(): Promise<SiteSearchDocument[]> {
-  // Get all documents
-  const allDocs = getSiteSearchDocuments();
+  const staticDocs = getSiteSearchDocuments();
+  const docs: SiteSearchDocument[] = [...staticDocs];
   
   try {
     const h = await headers();
     const session = await auth.api.getSession({ headers: h });
     const user = session?.user;
 
+    let dbCourses: any[] = [];
     if (!user?.id || user.role === "admin") {
-      // If not logged in or admin, return all documents (fallback/unrestricted)
-      return allDocs;
+      dbCourses = await db.select().from(coursesTable);
+    } else {
+      const now = new Date();
+      dbCourses = await db
+        .select({
+          id: coursesTable.id,
+          title: coursesTable.title,
+          category: coursesTable.category,
+          description: coursesTable.description,
+        })
+        .from(enrollments)
+        .innerJoin(coursesTable, eq(enrollments.courseId, coursesTable.id))
+        .where(
+          and(
+            eq(enrollments.userId, user.id),
+            gt(enrollments.expiresAt, now)
+          )
+        );
     }
 
-    // Get user's active enrollments from database
-    const now = new Date();
-    const activeEnrollments = await db
-      .select({
-        courseId: enrollments.courseId,
-      })
-      .from(enrollments)
-      .where(
-        and(
-          eq(enrollments.userId, user.id),
-          gt(enrollments.expiresAt, now)
-        )
-      );
+    for (const course of dbCourses) {
+      docs.push({
+        id: `course:${course.id}`,
+        title: course.title,
+        subtitle: `${course.category} · Course`,
+        href: `/courses/${course.id}`,
+        group: "Course",
+        keywords: `${course.id} ${course.category} course`,
+        content: `${course.title}. ${course.description || ""}`,
+      });
 
-    const enrolledCourseIds = new Set(activeEnrollments.map((ae) => ae.courseId));
+      // Fetch materials
+      const dbMats = await db
+        .select({ id: aiMaterialInstances.id, title: aiMaterialInstances.title })
+        .from(aiMaterialInstances)
+        .where(eq(aiMaterialInstances.courseId, course.id));
 
-    // Filter documents:
-    // - Group "Halaman" is always included.
-    // - Group "Topik & landing" is always included.
-    // - Group "Course", "Materi", "Evaluasi" are only included if their courseId is in enrolledCourseIds!
-    const filteredDocs = allDocs.filter((doc) => {
-      if (doc.group === "Halaman" || doc.group === "Topik & landing") {
-        return true;
-      }
+      const dbDiktats = await db
+        .select({ id: diktats.id, title: diktats.title })
+        .from(diktats)
+        .where(and(eq(diktats.courseId, course.id), eq(diktats.status, "ready")));
 
-      // Extract courseId from doc.id (format: "course:courseId", "material:courseId:materialId", "exam:courseId:examId")
-      const parts = doc.id.split(":");
-      const docCourseId = parts[1];
-      
-      if (docCourseId) {
-        return enrolledCourseIds.has(docCourseId);
-      }
+      const dbManuals = await db
+        .select({ id: courseMaterials.id, title: courseMaterials.title, type: courseMaterials.type })
+        .from(courseMaterials)
+        .where(eq(courseMaterials.courseId, course.id));
 
-      return false;
-    });
+      dbMats.forEach((m) => {
+        docs.push({
+          id: `material:${course.id}:${m.id}`,
+          title: m.title.replace(/^\[DRAF\]\s*/, ""),
+          subtitle: `${course.title} · artikel`,
+          href: `/courses/${course.id}/material/${m.id}`,
+          group: "Materi",
+          keywords: `article ${course.title} artikel`,
+          content: m.title,
+        });
+      });
 
-    return filteredDocs;
+      dbDiktats.forEach((d) => {
+        docs.push({
+          id: `material:${course.id}:${d.id}`,
+          title: d.title,
+          subtitle: `${course.title} · PDF`,
+          href: `/courses/${course.id}/material/${d.id}`,
+          group: "Materi",
+          keywords: `pdf ${course.title} PDF`,
+          content: d.title,
+        });
+      });
+
+      dbManuals.forEach((m) => {
+        const kindLabel = m.type === "contoh_soal" ? "soal" : "materi";
+        docs.push({
+          id: `material:${course.id}:${m.id}`,
+          title: m.title,
+          subtitle: `${course.title} · PDF`,
+          href: `/courses/${course.id}/material/${m.id}`,
+          group: "Materi",
+          keywords: `pdf ${course.title} PDF ${kindLabel}`,
+          content: m.title,
+        });
+      });
+
+      // Fetch exams
+      const dbQuizzes = await db
+        .select({ id: quizTemplates.id, title: quizTemplates.title })
+        .from(quizTemplates)
+        .where(eq(quizTemplates.courseId, course.id));
+
+      const dbTryouts = await db
+        .select({ id: exams.id, title: exams.title })
+        .from(exams)
+        .where(and(eq(exams.courseId, course.id), eq(exams.type, "tryout"), eq(exams.status, "published")));
+
+      dbQuizzes.forEach((q) => {
+        docs.push({
+          id: `exam:${course.id}:${q.id}`,
+          title: q.title,
+          subtitle: `${course.title} · Kuis`,
+          href: `/courses/${course.id}/quiz/${q.id}`,
+          group: "Evaluasi",
+          keywords: `quiz ${course.title} ujian latihan soal`,
+          content: q.title,
+        });
+      });
+
+      dbTryouts.forEach((t) => {
+        docs.push({
+          id: `exam:${course.id}:${t.id}`,
+          title: t.title,
+          subtitle: `${course.title} · Tryout`,
+          href: `/courses/${course.id}/tryout/${t.id}`,
+          group: "Evaluasi",
+          keywords: `tryout ${course.title} ujian latihan soal`,
+          content: t.title,
+        });
+      });
+    }
+
+    return docs;
   } catch (error) {
     console.error("Error fetching student search documents, falling back to static:", error);
-    return allDocs;
+    return staticDocs;
   }
 }

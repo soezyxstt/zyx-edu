@@ -25,7 +25,7 @@ async function main() {
   const devUsers = [
     {
       id: "admin-1",
-      name: "Admin ZYX",
+      name: "Admin Zyx",
       email: "admin@zyx.edu",
       emailVerified: true,
       role: "admin" as const,
@@ -34,7 +34,7 @@ async function main() {
     },
     {
       id: "teacher-1",
-      name: "Guru ZYX",
+      name: "Guru Zyx",
       email: "teacher@zyx.edu",
       emailVerified: true,
       role: "teacher" as const,
@@ -43,7 +43,7 @@ async function main() {
     },
     {
       id: "student-1",
-      name: "Siswa ZYX",
+      name: "Siswa Zyx",
       email: "student@zyx.edu",
       emailVerified: true,
       role: "student" as const,
@@ -127,7 +127,7 @@ async function main() {
     });
     if (!existing) {
       await db.insert(enrollments).values(e);
-      console.log(`Enrollment for Siswa ZYX in course ${e.courseId} seeded.`);
+      console.log(`Enrollment for Siswa Zyx in course ${e.courseId} seeded.`);
     } else {
       console.log(`Enrollment ${e.id} already exists.`);
     }

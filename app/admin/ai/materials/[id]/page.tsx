@@ -23,12 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function MaterialDetailPage({ params }: Props) {
   await assertAdmin();
   const { id } = await params;
-  console.log("=== MaterialDetailPage ID ===", id);
 
   const instance = await db.query.aiMaterialInstances.findFirst({
     where: eq(aiMaterialInstances.id, id),
   });
-  console.log("=== MaterialDetailPage instance found ===", instance ? instance.id : "NULL");
 
   if (!instance) {
     notFound();
@@ -37,7 +35,6 @@ export default async function MaterialDetailPage({ params }: Props) {
   const course = await db.query.courses.findFirst({
     where: eq(courses.id, instance.courseId),
   });
-  console.log("=== MaterialDetailPage course found ===", course ? course.id : "NULL");
 
   if (!course) {
     notFound();

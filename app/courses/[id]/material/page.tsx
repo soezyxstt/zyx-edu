@@ -3,7 +3,7 @@ import { FileText } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { studentCardClass } from "@/components/course/course-surfaces";
 import { pageTitle } from "@/lib/site";
-import { getMaterialsForCourse } from "@/lib/student-course-fixtures";
+// Fixture imports removed
 import { getCourse } from "@/lib/course-utils";
 import { DocumentListClient } from "./document-list-client";
 import { Reveal } from "@/components/ui/reveal";
@@ -96,7 +96,7 @@ export default async function CourseMaterialListPage({ params }: Props) {
     title: m.title.replace(/^\[DRAF\]\s*/, ""),
     kind: "article" as const,
     docCategory: "materi" as const,
-    fileSize: "Materi ZYX",
+    fileSize: "Materi Zyx",
     completed: false,
     isPastYear: false,
     isPreview: true,
@@ -117,7 +117,7 @@ export default async function CourseMaterialListPage({ params }: Props) {
     chapterIds: m.chapterIds as string[],
   }));
 
-  const allMaterials = [...getMaterialsForCourse(id), ...mappedDiktats, ...mappedDb, ...mappedManual];
+  const allMaterials = [...mappedDiktats, ...mappedDb, ...mappedManual];
 
 
   return (

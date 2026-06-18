@@ -1,24 +1,26 @@
-# ZYX Academy
+# Zyx Academy
 
-Welcome to the **ZYX Academy** codebase. This is a Next.js (v15 App Router) web application.
+**Stack:** Next.js 16 (App Router), Drizzle ORM + Turso/SQLite, Better-Auth, Google Gemini, Pinecone/Vectorize, Cloudflare R2, Inngest.
 
-## 📖 Operational Documentation
+## Docs
 
-AI coding agents and human developers should use the following entrypoints for working on this project:
+| File | What it covers |
+|---|---|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Full system architecture: 4-layer design, all database tables, AI pipelines, directory map, data flows |
+| [DEVELOPMENT.md](docs/DEVELOPMENT.md) | Dev setup, commands, env vars, feature flags, code conventions |
+| [DATABASE.md](docs/DATABASE.md) | Schema domains, migration workflow, key design decisions |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Production architecture, Turso, Cloudflare Workers, services |
+| [features.md](docs/features.md) | User-facing workflows: roles, pipelines, quota rules |
 
-- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)**: The single source of truth for the current development state, completed milestones, blockers, architectural decisions, and design standard constraints (UI-STD).
-- **[AGENTS.md](AGENTS.md)**: Coding rules, constraints, and standard conventions for AI agents.
-- **[docs/features.md](docs/features.md)**: A detailed, straightforward guide explaining user lifecycles, core workflows, and automated system pipelines.
-- **[docs/globals.md](docs/globals.md)**: The global project rules, UI Build Standards (primitives, layout constraints), and service quota inventory.
-- **[docs/roadmap/README.md](docs/roadmap/README.md)**: The modular roadmap containing phases P0 through P10.
-- **[docs/tasks/](docs/tasks/)**: Isolated, granular task-level specs (e.g. `p3-01.md`, `p3-02.md`) to execute phase implementations incrementally.
-
-## 🛠️ Getting Started
-
-First, run the development server:
+## Quick Start
 
 ```bash
-npm run dev
+npm install
+cp .env.example .env.local   # fill in secrets
+npm run dev                   # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Reference
+
+- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)** — current development state, blockers, standing decisions
+- **[AGENTS.md](AGENTS.md)** — coding rules and conventions for AI agents

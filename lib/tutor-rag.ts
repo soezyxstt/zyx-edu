@@ -19,12 +19,15 @@ import {
  aiMaterialInstanceChunks,
  aiMaterialInstanceSections,
  knowledgeObjects,
+ aiQuestionBank,
+ assessmentObjects,
 } from "@/db/schema";
 import { inArray, and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { vectorStore } from "@/lib/vector-store";
 import { kvGet, kvPut } from "@/lib/kv-cache";
 import { PromptExecutor, type SystemPrompt } from "@/lib/prompt-executor";
+import { isMetaExamQuery, executeMetaQuery } from "./assessment-intelligence-service";
 import {
  buildLearnerProfile,
  countDueFlashcardsForConcept,
@@ -43,7 +46,7 @@ const TOP_K = 6;
 
 // ─── Contracts ────────────────────────────────────────────────────────────────
 
-export type TutorSourceType = "chapter" | "ko" | "question";
+export type TutorSourceType = "chapter" | "ko" | "question" | "practice_question" | "past_exam";
 
 export interface TutorSource {
  type: TutorSourceType;
@@ -150,9 +153,9 @@ interface GroundedVars {
 }
 
 const tutorGroundedAnswer: SystemPrompt<GroundedVars> = {
- version: "tutor_rag/grounded_answer/v1.4.0",
+ version: "tutor_rag/grounded_answer/v1.5.0",
  systemInstruction:
- "You are Zyra, a friendly and knowledgeable AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable ; like a smart kakak tingkat (senior student) who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'yuk', 'nih', 'ya') but stay accurate and clear. You have access to course material snippets that may or may not be relevant to the question. First decide if they actually address the question. If they do, answer ONLY from them and cite sources strictly by the ids in the source list. If they do not (the question is off-topic for this course), set covered=false, give a brief general answer, and cite nothing. IMPORTANT: Never reveal internal pipeline details to the student ; do not use words like 'excerpt', 'retrieved', 'snippet', 'context', 'source list', or any technical RAG terminology in your answer. Instead refer to course material naturally as 'materi kuliah', 'bahan ajar', or 'materi yang ada'. Never invent citations. Use markdown with LaTeX ($ inline, $$ display) for math, escaping backslashes for valid JSON. Never use em dashes or en dashes. Answer in the same language as the question.",
+ "You are Zyra, a friendly and knowledgeable AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable ; like a smart kakak tingkat (senior student) who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'yuk', 'nih', 'ya') but stay accurate and clear. You have access to course material snippets that may or may not be relevant to the question. First decide if they address the question. If they do, answer ONLY from them and cite sources strictly by the ids in the source list. If they do not, set covered=false, give a brief general answer, and cite nothing. IMPORTANT Socratic Safety rules: If the sources include past exam questions ('past_exam') or practice questions ('practice_question'), you must NEVER provide the direct solution or final answer values. Instead, explain the underlying general concept and formulas, and use Socratic scaffolding to guide the student step-by-step. If they ask you to solve it directly, generate an analogous question with different values and explain that one instead. Never reveal internal pipeline details to the student ; do not use words like 'excerpt', 'retrieved', 'snippet', 'context', 'source list', or any RAG terminology. Refer to materials as 'materi kuliah' or 'bahan ajar'. Never invent citations. Use markdown with LaTeX ($ inline, $$ display) for math. Never use em dashes or en dashes. Answer in the same language as the question.",
  userPrompt: (vars) => `QUESTION: ${vars.question}
 
 COURSE MATERIAL EXCERPTS:
@@ -164,7 +167,7 @@ ${vars.sourceList}
 Generate a single JSON object:
 {
  "covered": [true only if the excerpts actually address this question, else false],
- "answer": "[Markdown answer. IMPORTANT: Do NOT include any source ids or UUIDs inline in the answer text. Write the answer in natural prose only. Source attribution goes exclusively in the sourceIds array below.]",
+ "answer": "[Markdown answer. IMPORTANT: Do NOT include any source ids or UUIDs inline in the answer text. Write the answer in Socratic prose only. Source attribution goes exclusively in the sourceIds array below.]",
  "sourceIds": ["[ids you actually used ; only in this array, never embedded in the answer text; empty array when covered is false]"],
  "matchedConcepts": ["[concept names this question is about]"],
  "confidence": [0.0 to 1.0, how well the excerpts cover the question]
@@ -246,68 +249,166 @@ async function retrieve(
  chapterId: string | null,
  question: string
 ): Promise<RetrievedSource[]> {
- const matches = await vectorStore.query(`${courseId}_learning`, question, {
- topK: TOP_K,
- ...(chapterId ? { filter: { chapterId } } : {}),
- });
+ const [learningMatches, practiceMatches, pastExamMatches] = await Promise.all([
+  vectorStore.query(`${courseId}_learning`, question, {
+   topK: TOP_K,
+   ...(chapterId ? { filter: { chapterId } } : {}),
+  }),
+  vectorStore.query(`${courseId}_practice`, question, {
+   topK: TOP_K,
+   ...(chapterId ? { filter: { chapterId } } : {}),
+  }),
+  vectorStore.query(`${courseId}_past_exams`, question, {
+   topK: TOP_K,
+   ...(chapterId ? { filter: { chapterId } } : {}),
+  }),
+ ]);
 
- const relevant = matches.filter((m) => m.score >= SIMILARITY_FLOOR);
- if (relevant.length === 0) return [];
+ const relevantLearning = learningMatches.filter((m) => m.score >= SIMILARITY_FLOOR);
+ const relevantPractice = practiceMatches.filter((m) => m.score >= SIMILARITY_FLOOR);
+ const relevantPastExams = pastExamMatches.filter((m) => m.score >= SIMILARITY_FLOOR);
+
+ if (
+  relevantLearning.length === 0 &&
+  relevantPractice.length === 0 &&
+  relevantPastExams.length === 0
+ ) {
+  return [];
+ }
+
+ const combinedMatches = [
+  ...relevantLearning.map((m) => ({ ...m, sourceNs: "learning" as const })),
+  ...relevantPractice.map((m) => ({ ...m, sourceNs: "practice" as const })),
+  ...relevantPastExams.map((m) => ({ ...m, sourceNs: "past_exams" as const })),
+ ]
+  .sort((a, b) => b.score - a.score)
+  .slice(0, TOP_K);
 
  const chunkIds: string[] = [];
  const koIds: string[] = [];
- for (const m of relevant) {
- if (typeof m.metadata.chunk_id === "string" && m.metadata.chunk_id) {
- chunkIds.push(m.metadata.chunk_id as string);
- } else {
- koIds.push(m.id);
- }
+ const practiceQuestionIds: string[] = [];
+ const pastExamIds: string[] = [];
+
+ const rankMap = new Map<string, number>();
+ combinedMatches.forEach((m, idx) => {
+  if (m.sourceNs === "learning" && typeof m.metadata.chunk_id === "string" && m.metadata.chunk_id) {
+   rankMap.set(m.metadata.chunk_id, idx);
+  } else {
+   rankMap.set(m.id, idx);
+  }
+ });
+
+ for (const m of combinedMatches) {
+  if (m.sourceNs === "learning") {
+   if (typeof m.metadata.chunk_id === "string" && m.metadata.chunk_id) {
+    chunkIds.push(m.metadata.chunk_id);
+   } else {
+    koIds.push(m.id);
+   }
+  } else if (m.sourceNs === "practice") {
+   practiceQuestionIds.push(m.id);
+  } else if (m.sourceNs === "past_exams") {
+   pastExamIds.push(m.id);
+  }
  }
 
- const [chunkRows, koRows] = await Promise.all([
- chunkIds.length > 0
- ? db
- .select({
- id: aiMaterialInstanceChunks.id,
- chunkText: aiMaterialInstanceChunks.chunkText,
- sectionTitle: aiMaterialInstanceSections.title,
- materialInstanceId: aiMaterialInstanceSections.materialInstanceId,
- })
- .from(aiMaterialInstanceChunks)
- .innerJoin(
- aiMaterialInstanceSections,
- eq(aiMaterialInstanceChunks.sectionId, aiMaterialInstanceSections.id)
- )
- .where(inArray(aiMaterialInstanceChunks.id, chunkIds))
- : Promise.resolve([]),
- koIds.length > 0
- ? db
- .select()
- .from(knowledgeObjects)
- .where(and(inArray(knowledgeObjects.id, koIds), eq(knowledgeObjects.status, "active")))
- : Promise.resolve([]),
+ const [chunkRows, koRows, practiceRows, pastExamRows] = await Promise.all([
+  chunkIds.length > 0
+   ? db
+      .select({
+       id: aiMaterialInstanceChunks.id,
+       chunkText: aiMaterialInstanceChunks.chunkText,
+       sectionTitle: aiMaterialInstanceSections.title,
+       materialInstanceId: aiMaterialInstanceSections.materialInstanceId,
+      })
+      .from(aiMaterialInstanceChunks)
+      .innerJoin(
+       aiMaterialInstanceSections,
+       eq(aiMaterialInstanceChunks.sectionId, aiMaterialInstanceSections.id)
+      )
+      .where(inArray(aiMaterialInstanceChunks.id, chunkIds))
+   : Promise.resolve([]),
+  koIds.length > 0
+   ? db
+      .select()
+      .from(knowledgeObjects)
+      .where(and(inArray(knowledgeObjects.id, koIds), eq(knowledgeObjects.status, "active")))
+   : Promise.resolve([]),
+  practiceQuestionIds.length > 0
+   ? db
+      .select({
+       id: aiQuestionBank.id,
+       prompt: aiQuestionBank.prompt,
+       explanation: aiQuestionBank.explanation,
+      })
+      .from(aiQuestionBank)
+      .where(and(inArray(aiQuestionBank.id, practiceQuestionIds), eq(aiQuestionBank.status, "active")))
+   : Promise.resolve([]),
+  pastExamIds.length > 0
+   ? db
+      .select({
+       id: assessmentObjects.id,
+       questionMarkdown: assessmentObjects.questionMarkdown,
+       answerMarkdown: assessmentObjects.answerMarkdown,
+      })
+      .from(assessmentObjects)
+      .where(inArray(assessmentObjects.id, pastExamIds))
+   : Promise.resolve([]),
  ]);
 
- const sources: RetrievedSource[] = [];
+ const sourcesWithRank: { source: RetrievedSource; rank: number }[] = [];
+
  for (const c of chunkRows) {
- sources.push({
- type: "chapter",
- id: c.materialInstanceId,
- label: c.sectionTitle || "Materi",
- href: `/courses/${courseId}/material/${c.materialInstanceId}`,
- content: c.chunkText,
- });
+  sourcesWithRank.push({
+   source: {
+    type: "chapter",
+    id: c.materialInstanceId,
+    label: c.sectionTitle || "Materi",
+    href: `/courses/${courseId}/material/${c.materialInstanceId}`,
+    content: c.chunkText,
+   },
+   rank: rankMap.get(c.id) ?? 999,
+  });
  }
  for (const ko of koRows) {
- sources.push({
- type: "ko",
- id: ko.id,
- label: ko.title,
- href: `/courses/${courseId}/material`,
- content: `${ko.conceptName}: ${ko.content}`,
- });
+  sourcesWithRank.push({
+   source: {
+    type: "ko",
+    id: ko.id,
+    label: ko.title,
+    href: `/courses/${courseId}/material`,
+    content: `${ko.conceptName}: ${ko.content}`,
+   },
+   rank: rankMap.get(ko.id) ?? 999,
+  });
  }
- return sources;
+ for (const q of practiceRows) {
+  sourcesWithRank.push({
+   source: {
+    type: "practice_question",
+    id: q.id,
+    label: "Practice Question",
+    href: `/courses/${courseId}/practice`,
+    content: `Question: ${q.prompt}\nExplanation: ${q.explanation}`,
+   },
+   rank: rankMap.get(q.id) ?? 999,
+  });
+ }
+ for (const ae of pastExamRows) {
+  sourcesWithRank.push({
+   source: {
+    type: "past_exam",
+    id: ae.id,
+    label: "Past Exam Question",
+    href: `/courses/${courseId}/material`,
+    content: `Question: ${ae.questionMarkdown}\nSolution: ${ae.answerMarkdown || ""}`,
+   },
+   rank: rankMap.get(ae.id) ?? 999,
+  });
+ }
+
+ sourcesWithRank.sort((a, b) => a.rank - b.rank);
+ return sourcesWithRank.map((item) => item.source);
 }
 
 // ─── Tier 2 + Tier 3 (per student, never cached) ─────────────────────────────
@@ -380,8 +481,22 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
  base = { ...base, answer: sanitizeAnswer(base.answer) };
  await logCacheHit(studentId, "tutor_rag");
  } else {
- base = null;
- const retrieved = await retrieve(courseId, chapterId, question);
+  base = null;
+  let retrieved: RetrievedSource[] = [];
+  if (await isMetaExamQuery(question)) {
+   const statsSummary = await executeMetaQuery(courseId, question);
+   retrieved = [
+    {
+     type: "past_exam",
+     id: "system-stats",
+     label: "Exam Statistics Database",
+     href: `/courses/${courseId}/material`,
+     content: `Historical Exam Database Analytics Summary:\n${statsSummary}`,
+    },
+   ];
+  } else {
+   retrieved = await retrieve(courseId, chapterId, question);
+  }
 
   if (retrieved.length === 0) {
    const remaining = await UsageBudgetService.getRemainingPremium(studentId);

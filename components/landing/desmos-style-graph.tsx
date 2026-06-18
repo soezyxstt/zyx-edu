@@ -4,12 +4,12 @@ import { useId, useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /** Visual language loosely matched to Desmos (grid weight, axis emphasis, graph blue). */
-export const GRAPH_BLUE = "#2464b8";
-const BG = "#ffffff";
-const MINOR_GRID = "#ececec";
-const MAJOR_GRID = "#d6d6d6";
-const AXIS = "#1f2937";
-const LABEL = "#6b7280";
+export const GRAPH_BLUE = "var(--color-brand-primary)";
+const BG = "var(--color-card)";
+const MINOR_GRID = "var(--color-border)";
+const MAJOR_GRID = "var(--color-border-strong)";
+const AXIS = "var(--color-foreground)";
+const LABEL = "var(--color-muted-foreground)";
 
 type Props = {
   mode: "quadratic" | "sine";
@@ -88,21 +88,20 @@ export function CalculatorExpressionBar({
 }) {
   return (
     <div
-      className="flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b px-3 py-2.5"
-      style={{ backgroundColor: "#eef1f5", borderColor: "#dfe3e8" }}
+      className="flex max-w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b bg-muted px-3 py-2.5"
     >
       <span
-        className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded border px-1.5 text-[11px] font-bold text-white shadow-sm"
-        style={{ backgroundColor: GRAPH_BLUE, borderColor: "#1a4d8c" }}
+        className="inline-flex h-6 min-w-6 shrink-0 items-center justify-center rounded border border-transparent px-1.5 text-[11px] font-bold text-white shadow-sm"
+        style={{ backgroundColor: GRAPH_BLUE }}
         aria-hidden
       >
         f
       </span>
-      <code className="min-w-0 max-w-full wrap-break-word text-[13px] font-medium tracking-tight text-neutral-800">
+      <code className="min-w-0 max-w-full wrap-break-word text-[13px] font-medium tracking-tight text-foreground">
         {expression}
       </code>
       {subtitle ? (
-        <span className="min-w-0 max-w-full wrap-break-word text-[12px] font-normal text-neutral-500">{subtitle}</span>
+        <span className="min-w-0 max-w-full wrap-break-word text-[12px] font-normal text-muted-foreground">{subtitle}</span>
       ) : null}
     </div>
   );

@@ -7,7 +7,7 @@
  * 1. Compose & Send ; broadcast to All / Course / User with live preview
  * 2. Notification History ; paginated log of all sent notifications
  *
- * Design follows ZYX design system: font-heading/font-sans, semantic color tokens,
+ * Design follows Zyx design system: font-heading/font-sans, semantic color tokens,
  * no rounded-full on non-circular elements, no arbitrary hex colors.
  */
 

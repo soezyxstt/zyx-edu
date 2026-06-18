@@ -49,19 +49,20 @@
  --radius-3xl: calc(var(--radius) * 2.2);
  --radius-4xl: calc(var(--radius) * 2.6);
 
- /* ====== ZYX DESIGN SYSTEM (brand PDFs) ====== */
+ /* ====== Zyx DESIGN SYSTEM (brand PDFs) ====== */
  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
  --font-heading: var(--font-lexend), ui-sans-serif, sans-serif;
 
  /* Brand */
- --color-brand-primary: oklch(0.3653 0.0829 266.28);
- --color-brand-secondary: oklch(0.5956 0.1622 38.5);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: oklch(0.5956 0.1622 38.5);
  /** ZX merah-oranye untuk CTA underline, langkah aktif, fokus (terpisah dari `--accent` Shadcn). */
  --color-zx-accent: var(--zx-accent);
  /** Latar alternatif landing (abu lembut). */
- --color-surface: var(--surface);
+  --color-surface: var(--surface);
+  --color-marketing-navy: var(--marketing-navy);
 
- /* Tertiary */
+  /* Tertiary */
  --color-tertiary-1: oklch(0.7306 0.1243 176.08);
  --color-tertiary-2: oklch(0.8489 0.1353 76.8);
  --color-tertiary-3: oklch(0.7617 0.1145 240.09);
@@ -152,10 +153,12 @@
 :root {
  /* Marketing / aksen merek ZX (align `--color-brand-secondary`) */
  --zx-accent: oklch(0.5956 0.1622 38.5);
- /** Alias section surface ; sama dengan muted default */
- --surface: oklch(0.9067 0 0);
+  /** Alias section surface ; sama dengan muted default */
+  --surface: oklch(0.9067 0 0);
+  --brand-primary: oklch(0.3653 0.0829 266.28);
+  --marketing-navy: #1a2744;
 
- --background: oklch(1 0 0);
+  --background: oklch(1 0 0);
  --foreground: oklch(0.3211 0 0);
  --card: oklch(1 0 0);
  --card-foreground: oklch(0.3211 0 0);
@@ -203,18 +206,20 @@
 
 .dark {
  --zx-accent: oklch(0.6956 0.1522 38.5);
- --surface: oklch(0.4276 0 0);
+  --surface: oklch(0.4276 0 0);
+  --brand-primary: oklch(0.62 0.14 266.28);
+  --marketing-navy: oklch(0.48 0.1 266.28);
 
- --background: oklch(0.2308 0 0);
+  --background: oklch(0.2308 0 0);
  --foreground: oklch(1 0 0);
  --card: oklch(0.2768 0 0);
  --card-foreground: oklch(1 0 0);
  --popover: oklch(0.2768 0 0);
  --popover-foreground: oklch(1 0 0);
 
- --primary: oklch(0.3653 0.0829 266.28);
+ --primary: oklch(0.58 0.14 266.28);
  --primary-foreground: oklch(1 0 0);
- --primary-hover: oklch(0.43 0.0829 266.28);
+ --primary-hover: oklch(0.65 0.14 266.28);
 
  --secondary: oklch(0.5956 0.1622 38.5);
  --secondary-foreground: oklch(1 0 0);
@@ -750,7 +755,15 @@
  .sidebar-scroll-hidden::-webkit-scrollbar {
  display: none;
  }
+
+ /* KaTeX overflow formatting overrides */
+ .katex-display {
+ overflow-x: auto;
+ overflow-y: hidden;
+ max-width: 100%;
+ }
+
+ .katex-display > .katex {
+ white-space: nowrap;
+ }
 }
-
-
-

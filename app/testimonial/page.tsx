@@ -48,7 +48,7 @@ export default function TestimonialPage() {
  itemType="https://schema.org/Review"
  className="relative break-inside-avoid mb-6 flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-background"
  style={{
- boxShadow: `0 8px 32px -4px color-mix(in oklch, ${accent} 18%, transparent), 0 2px 10px -2px rgba(0,0,0,0.09)`,
+  boxShadow: `0 8px 32px -4px color-mix(in oklch, ${accent} 18%, transparent), 0 2px 10px -2px color-mix(in oklch, var(--color-foreground) 9%, transparent)`,
  }}
  >
  {/* Coloured accent strip */}

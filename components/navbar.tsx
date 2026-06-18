@@ -16,6 +16,7 @@ import {
 import { Logo } from "@/components/logo";
 import { NavProfileOrSignIn } from "@/components/nav-profile-or-sign-in";
 import { useCommandMenu } from "@/components/command-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -80,21 +81,22 @@ export function Navbar() {
  </nav>
 
  <div className="relative z-10 ml-auto flex min-w-0 shrink-0 items-center justify-end gap-1.5 md:gap-2.5">
- <button
- type="button"
- onClick={() => setSearchOpen(true)}
- title="Search"
- aria-label="Cari di situs (pintasan Ctrl+K atau ⌘K)"
- className="max-lg:hidden flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer"
- >
- <Search className="size-4 shrink-0" aria-hidden />
- <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
- {modKeyHint}
- </kbd>
- </button>
+  <button
+  type="button"
+  onClick={() => setSearchOpen(true)}
+  title="Search"
+  aria-label="Cari di situs (pintasan Ctrl+K atau ⌘K)"
+  className="max-lg:hidden flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer"
+  >
+  <Search className="size-4 shrink-0" aria-hidden />
+  <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
+  {modKeyHint}
+  </kbd>
+  </button>
 
+  <ThemeToggle />
 
- <NavProfileOrSignIn variant="toolbar" callbackURL="/dashboard" />
+  <NavProfileOrSignIn variant="toolbar" callbackURL="/dashboard" />
 
  <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
  <SheetTrigger asChild>
@@ -178,14 +180,15 @@ export function Navbar() {
  ))}
  </nav>
 
- {/* Profile / sign-in */}
- <div className="border-t border-border px-3 py-3 shrink-0">
- <NavProfileOrSignIn
- variant="sheet"
- callbackURL="/dashboard"
- onNavigate={() => setMobileOpen(false)}
- />
- </div>
+  {/* Profile / sign-in */}
+  <div className="border-t border-border px-3 py-3 shrink-0 flex items-center justify-between gap-2">
+  <ThemeToggle mode="sidebar" />
+  <NavProfileOrSignIn
+  variant="sheet"
+  callbackURL="/dashboard"
+  onNavigate={() => setMobileOpen(false)}
+  />
+  </div>
  </SheetContent>
  </Sheet>
  </div>

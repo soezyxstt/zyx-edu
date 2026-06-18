@@ -48,7 +48,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useScrollProgress } from "@/hooks/useScrollProgress";
-import { getCourseById } from "@/lib/student-course-fixtures";
+// Fixture imports removed
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { CourseMaterial } from "@/lib/student-course-fixtures";
 import { updateMaterialProgress } from "@/app/dashboard/actions";
@@ -69,6 +69,7 @@ type MaterialViewerProps = {
   termIndex?: TermIndexEntry[];
   /** EIF E3 feature flag (FEATURE_MATERIAL_LIVE), resolved on the server. */
   materialLiveEnabled?: boolean;
+  course?: { title: string } | null;
 };
 
 interface ChapterSummary {
@@ -411,13 +412,23 @@ function parseArticleSections(body: string, defaultTitle: string): { chapterTitl
   let chapterTitle = defaultTitle;
   let cleanBody = body;
 
-  const firstHeaderMatch = body.match(/##\s+Bab\s+\d+:\s+([^\n]+)/i) || body.match(/##\s+([^\n]+)/);
-  if (firstHeaderMatch) {
-    chapterTitle = firstHeaderMatch[0].replace(/^##\s+/, "").trim();
-    const headerIndex = body.indexOf(firstHeaderMatch[0]);
+  const h1Match = body.match(/^#\s+([^\n]+)/m);
+  if (h1Match) {
+    chapterTitle = h1Match[1].trim();
+    const headerIndex = body.indexOf(h1Match[0]);
     if (headerIndex !== -1) {
       const endOfHeading = body.indexOf("\n", headerIndex);
       cleanBody = body.slice(endOfHeading !== -1 ? endOfHeading : headerIndex);
+    }
+  } else {
+    const firstHeaderMatch = body.match(/##\s+Bab\s+\d+:\s+([^\n]+)/i) || body.match(/##\s+([^\n]+)/);
+    if (firstHeaderMatch) {
+      chapterTitle = firstHeaderMatch[0].replace(/^##\s+/, "").trim();
+      const headerIndex = body.indexOf(firstHeaderMatch[0]);
+      if (headerIndex !== -1) {
+        const endOfHeading = body.indexOf("\n", headerIndex);
+        cleanBody = body.slice(endOfHeading !== -1 ? endOfHeading : headerIndex);
+      }
     }
   }
 
@@ -432,31 +443,99 @@ function parseArticleSections(body: string, defaultTitle: string): { chapterTitl
   // Remove Concept Hierarchy block completely
   cleanBody = cleanBody.replace(/##\s+Concept\s+Hierarchy[\s\S]*?(?=(?:---|\r?\n###|\r?\n##|\r?\n####|$))/gi, "");
 
-  // 3. Promote ### to ##
-  const promoted = cleanBody.replace(/^(?:###\s+)/gm, "## ");
+  // 3. Parse into blocks
+  interface HeadingBlock {
+    level: 2 | 3;
+    title: string;
+    contentLines: string[];
+  }
 
-  // 4. Split into sections
-  const splitBody = promoted.startsWith("##") ? "\n" + promoted : promoted;
-  const rawSections = splitBody.split(/\r?\n##\s+/);
+  const blocks: HeadingBlock[] = [];
+  let currentBlock: HeadingBlock | null = null;
+  let introLines: string[] = [];
+
+  const lines = cleanBody.split(/\r?\n/);
+  for (const line of lines) {
+    const h2Match = line.match(/^##\s+(.*)/);
+    const h3Match = line.match(/^###\s+(.*)/);
+
+    if (h2Match) {
+      currentBlock = {
+        level: 2,
+        title: h2Match[1].trim(),
+        contentLines: []
+      };
+      blocks.push(currentBlock);
+    } else if (h3Match) {
+      currentBlock = {
+        level: 3,
+        title: h3Match[1].trim(),
+        contentLines: []
+      };
+      blocks.push(currentBlock);
+    } else {
+      if (currentBlock) {
+        currentBlock.contentLines.push(line);
+      } else {
+        introLines.push(line);
+      }
+    }
+  }
 
   const sections: ArticleSection[] = [];
   const formulaSections: ArticleSection[] = [];
+  let currentH2Intro: string = introLines.join("\n").trim();
 
-  rawSections.forEach(sec => {
-    const lines = sec.split("\n");
-    const title = lines[0].trim();
-    let content = lines.slice(1).join("\n").trim();
-    content = content.replace(/[\s\r\n]*---[\s\r\n]*$/, "").trim();
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (block.level === 2) {
+      let hasH3UnderIt = false;
+      for (let j = i + 1; j < blocks.length; j++) {
+        if (blocks[j].level === 2) break;
+        if (blocks[j].level === 3) {
+          hasH3UnderIt = true;
+          break;
+        }
+      }
 
-    if (!title || !content) return;
+      if (hasH3UnderIt) {
+        const blockContent = block.contentLines.join("\n").trim();
+        if (blockContent) {
+          if (currentH2Intro) {
+            currentH2Intro += "\n\n" + blockContent;
+          } else {
+            currentH2Intro = blockContent;
+          }
+        }
+      } else {
+        let content = block.contentLines.join("\n").trim();
+        if (currentH2Intro) {
+          content = currentH2Intro + "\n\n" + content;
+          currentH2Intro = "";
+        }
 
-    if (/^F-\d+/i.test(title)) {
-      const subHeading = `### ${title}\n\n`;
-      formulaSections.push({ title, content: subHeading + content });
-    } else {
-      sections.push({ title, content });
+        if (/^F-\d+/i.test(block.title)) {
+          const subHeading = `### ${block.title}\n\n`;
+          formulaSections.push({ title: block.title, content: subHeading + content });
+        } else {
+          sections.push({ title: block.title, content });
+        }
+      }
+    } else if (block.level === 3) {
+      let content = block.contentLines.join("\n").trim();
+      if (currentH2Intro) {
+        content = currentH2Intro + "\n\n" + content;
+        currentH2Intro = "";
+      }
+
+      if (/^F-\d+/i.test(block.title)) {
+        const subHeading = `### ${block.title}\n\n`;
+        formulaSections.push({ title: block.title, content: subHeading + content });
+      } else {
+        sections.push({ title: block.title, content });
+      }
     }
-  });
+  }
 
   if (formulaSections.length > 0) {
     const groupedContent = formulaSections.map(fs => fs.content).join("\n\n---\n\n");
@@ -488,7 +567,7 @@ const getConceptTags = (courseId: string, materialTitle: string) => {
   return ["Kalkulus", "Sains"];
 };
 
-export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, materialLiveEnabled }: MaterialViewerProps) {
+export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, materialLiveEnabled, course }: MaterialViewerProps) {
   const [done, setDone] = useState(material.completed);
   const [viewerType, setViewerType] = useState<"custom" | "chrome">("chrome");
   const [showDemoViewer, setShowDemoViewer] = useState(false);
@@ -994,7 +1073,6 @@ export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, mat
   ) : null;
 
   if (material.kind === "article" && material.body) {
-    const course = getCourseById(material.courseId);
     const conceptTags = getConceptTags(material.courseId, material.title);
     return (
       <div className="flex flex-col h-full w-full overflow-hidden bg-background">
@@ -1819,7 +1897,7 @@ export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, mat
                 <p className="text-body-sm text-muted-foreground mb-3 shrink-0">
                   Pratinjau PDF bawaan browser di bawah ini. Gunakan tombol unduh jika tidak termuat.
                 </p>
-                <div className="flex-1 w-full overflow-hidden border border-border bg-[#333] rounded-2xl relative shadow-md">
+                <div className="flex-1 w-full overflow-hidden border border-border bg-[#333] dark:bg-black-3 rounded-2xl relative shadow-md">
                   <iframe
                     title={material.title}
                     src={material.url}

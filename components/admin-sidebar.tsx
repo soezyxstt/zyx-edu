@@ -25,6 +25,7 @@ import { useSession, signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { useCommandMenu } from "@/components/command-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Tooltip,
   TooltipProvider,
@@ -318,26 +319,30 @@ export function AdminSidebar() {
           isCollapsed ? "md:w-[64px]" : "md:w-[248px]"
         )}
       >
-        {/* Header row: brand + collapse toggle */}
-        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
+        {/* Header row: brand + controls */}
+        <div className="flex h-14 shrink-0 items-center border-b border-border px-3 gap-2">
+          {/* Logo – fills remaining space when expanded */}
           {!isCollapsed && (
-            <Link href="/admin" aria-label="Panel Admin Zyx Academy" className="flex items-center">
+            <Link href="/admin" aria-label="Panel Admin Zyx Academy" className="flex flex-1 min-w-0 items-center">
               <Logo className="[--logo-height:1.75rem]" />
             </Link>
           )}
+          {isCollapsed && <div className="flex-1" />}
+
+          {/* Collapse toggle */}
           <SidebarTooltip label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} collapsed={isCollapsed}>
             <button
               type="button"
               onClick={isMobile ? () => setMobileOpen(false) : toggleCollapsed}
               aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className={cn(
-                "flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors",
-                isCollapsed && "mx-auto"
-              )}
+              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
             >
               {isCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
             </button>
           </SidebarTooltip>
+
+          {/* Theme toggle – only in header when expanded; collapsed puts it at nav bottom */}
+          {!isCollapsed && <ThemeToggle mode="sidebar" />}
         </div>
 
         {/* User Card */}
@@ -471,6 +476,13 @@ export function AdminSidebar() {
 
           {/* Spacer */}
           <div className="flex-1" />
+
+          {/* Theme toggle at bottom when collapsed (header hides it in collapsed state) */}
+          {isCollapsed && (
+            <div className="flex justify-center">
+              <ThemeToggle mode="sidebar" />
+            </div>
+          )}
 
           {/* Beranda Siswa */}
           <NavItem

@@ -20,6 +20,7 @@ import { parseMaterialIntoSections } from '@/lib/ingestion-parser';
 import { upsertChunkVector } from '@/lib/pinecone';
 import { extractKnowledgeObjectsForChapter } from '@/lib/ko-extractor';
 import { validateCanonicalMarkdown } from '@/lib/canonical-validator';
+import { storage } from '@/lib/storage';
 
 const BodySchema = z.object({
   courseId: z.string().min(1),
@@ -31,6 +32,7 @@ const BodySchema = z.object({
   keywords: z.array(z.string()).default([]),
   chapterIds: z.array(z.string()).default([]),
   type: z.enum(['learning', 'assessment']).default('learning'),
+  pdfKey: z.string().optional(), // R2 key of the uploaded source PDF
 });
 
 export async function POST(req: NextRequest) {
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { courseId, title, sourceType, rawText, summary, learningObjectives, keywords, chapterIds, type } =
+  const { courseId, title, sourceType, rawText, summary, learningObjectives, keywords, chapterIds, type, pdfKey } =
     parsed.data;
 
   // Run Pre-Ingestion Canonical Validation
@@ -57,6 +59,25 @@ export async function POST(req: NextRequest) {
     }, { status: 400 });
   }
 
+  // Upload pasted/uploaded canonical markdown to R2
+  const markdownBuffer = Buffer.from(rawText, 'utf-8');
+  const safeTitle = title.toLowerCase().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  const filename = `${safeTitle || 'canonical'}.md`;
+  const storageKey = `materials/markdown/${randomUUID()}-${filename}`;
+
+  const { key: canonicalMarkdownKey } = await storage.upload(
+    markdownBuffer,
+    filename,
+    'text/markdown',
+    {
+      key: storageKey,
+      metadata: {
+        uploadedBy: session.user.id,
+        title: title,
+      },
+    }
+  );
+
   const mtdId = randomUUID();
 
   if (type === 'assessment') {
@@ -66,6 +87,8 @@ export async function POST(req: NextRequest) {
       courseId,
       title,
       markdownContent: rawText,
+      originalPdfKey: pdfKey ?? null,
+      canonicalMarkdownKey: canonicalMarkdownKey,
       version: 1,
       status: 'active',
       type: 'assessment',
@@ -118,6 +141,8 @@ export async function POST(req: NextRequest) {
     courseId,
     title,
     markdownContent: rawText,
+    originalPdfKey: pdfKey ?? null,
+    canonicalMarkdownKey: canonicalMarkdownKey,
     version: 1,
     status: 'active',
     type: 'learning',
@@ -359,18 +384,11 @@ export async function DELETE(req: NextRequest) {
     try {
       const { deleteSectionVectors } = await import('@/lib/pinecone');
       await deleteSectionVectors(courseId, vectorIds);
-
-      // Also clear Pinecone course namespace
-      const { getNs } = await import('@/lib/pinecone');
-      await getNs(courseId).deleteAll();
     } catch (err) {
       console.error('Failed to delete vectors from Pinecone:', err);
     }
   })();
 
-  // Delete chapters and MTDs from Postgres to clear all derived/domain structures
-  await db.delete(chapters).where(eq(chapters.courseId, courseId));
-  await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.courseId, courseId));
   await db.delete(aiMaterialInstances).where(eq(aiMaterialInstances.id, id));
 
   // Await Pinecone deletion completion in background

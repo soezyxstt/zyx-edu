@@ -1,0 +1,41 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { storage } from '@/lib/storage';
+import { randomUUID } from 'crypto';
+
+export async function POST(req: NextRequest) {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user || session.user.role !== 'admin') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const formData = await req.formData();
+  const file = formData.get('file') as File | null;
+
+  if (!file) {
+    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  }
+
+  if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+    return NextResponse.json({ error: 'Only PDF files are accepted' }, { status: 400 });
+  }
+
+  const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+  if (file.size > MAX_SIZE_BYTES) {
+    return NextResponse.json({ error: 'File size exceeds 50 MB limit' }, { status: 413 });
+  }
+
+  const safeName = file.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '');
+  const storageKey = `materials/pdf/${randomUUID()}-${safeName}`;
+
+  const { key, url } = await storage.upload(file, safeName, 'application/pdf', {
+    key: storageKey,
+    metadata: {
+      uploadedBy: session.user.id,
+      originalName: file.name,
+    },
+  });
+
+  return NextResponse.json({ key, url }, { status: 201 });
+}

@@ -29,7 +29,7 @@ export default function Home() {
             "@context": "https://schema.org",
             "@type": "WebSite",
             "name": "Zyx Academy",
-            "alternateName": ["Zyx", "ZYX Academy"],
+            "alternateName": ["Zyx", "Zyx Academy"],
             "url": "https://www.zyxacademy.com",
           }),
         }}

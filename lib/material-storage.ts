@@ -9,8 +9,9 @@ import {
   user,
 } from "@/db/schema";
 import { eq, and, desc, asc } from "drizzle-orm";
-import { compileMarkdownToAST } from "./markdown-compiler";
-import { validateAST, WebsiteMaterialAST } from "./ast-validator";
+import { compileMarkdownToAST, compileMarkdown } from "./markdown-compiler";
+import { validateAST, WebsiteMaterialAST, CompiledMaterial, CompilerResult } from "./ast-validator";
+import { verifyKOCoverage } from "./ko-coverage-auditor";
 import { buildTermIndex } from "./term-index";
 import { buildConceptGraph } from "./graph-trace";
 import { env } from "./env";
@@ -116,12 +117,12 @@ export async function saveWebsiteMaterial(
   let compiledStatus: "success" | "failed" = "success";
   let compileError: string | undefined = undefined;
 
+  const compilerVersion = "2.1.0";
+  const schemaVersion = "1.0.0";
+  let compilerResult: CompilerResult;
+
   try {
-    structuredContent = await compileMarkdownToAST(
-      markdown,
-      chapterId,
-      chapterRecord.courseId
-    );
+    compilerResult = compileMarkdown(markdown, chapterId, chapterRecord.courseId);
   } catch (err: any) {
     compiledStatus = "failed";
     compileError = err.message || "Unknown compilation error";
@@ -130,18 +131,84 @@ export async function saveWebsiteMaterial(
       throw new Error(`Compilation failed. Publishing blocked: ${compileError}`);
     }
 
-    // Fallback stub AST for draft autosaves
-    structuredContent = {
-      schemaVersion: "1.0.0",
-      chapterId,
-      courseId: chapterRecord.courseId,
-      documentMetadata: {
-        title: chapterRecord.title,
-        lastModified: new Date().toISOString(),
-        estimatedReadingTimeMin: 0,
+    // Fallback stub compiler result
+    compilerResult = {
+      ast: {
+        schemaVersion,
+        compilerVersion,
+        chapterId,
+        courseId: chapterRecord.courseId,
+        documentMetadata: {
+          title: chapterRecord.title,
+          lastModified: new Date().toISOString(),
+          estimatedReadingTimeMin: 0,
+        },
+        blocks: [],
       },
-      blocks: [],
+      diagnostics: [
+        {
+          severity: "error",
+          code: "COMPILATION_FAILED",
+          message: compileError || "Unknown compilation error",
+        }
+      ],
+      stats: {
+        conceptCount: 0,
+        formulaCount: 0,
+        glossaryCount: 0,
+        visualCount: 0,
+        graphCount: 0,
+        diagramCount: 0,
+        flowchartCount: 0,
+        readingTime: 0,
+        averageConceptLength: 0,
+        averageFormulaLength: 0,
+        averageVisualDistance: 0,
+        averageGlossaryReferenceCount: 0,
+        quality: {
+          score: 0,
+          breakdown: {
+            glossaryCoverage: 0,
+            visualCoverage: 0,
+            formulaAtomization: 0,
+            visualReferenceCoverage: 0,
+          }
+        }
+      }
     };
+  }
+
+  const compiledMaterial: CompiledMaterial = {
+    markdown,
+    compilerResult,
+    compiledAt: new Date().toISOString(),
+    compilerVersion,
+    schemaVersion,
+  };
+
+  structuredContent = compiledMaterial;
+
+  // Run KO Coverage Auditing
+  let coverageStatus: "not_verified" | "fully_covered" | "partially_covered" | "coverage_failed" = "not_verified";
+  let coverageReport: any = {
+    totalKOs: 0,
+    mappedKOs: 0,
+    missingKOs: [],
+    formulaFailures: [],
+    issues: [],
+    verifiedAt: "",
+  };
+
+  if (compiledStatus === "success" && compilerResult.ast) {
+    try {
+      const verification = await verifyKOCoverage(chapterId, compilerResult.ast);
+      coverageStatus = verification.status;
+      coverageReport = verification.report;
+    } catch (verErr: any) {
+      console.error(`[KO Coverage] Verification failed with error:`, verErr);
+      coverageStatus = "coverage_failed";
+      coverageReport.issues = [verErr.message || "Unknown verification error"];
+    }
   }
 
   // 5. Execute DB transaction to update materials and append to version logs
@@ -167,6 +234,8 @@ export async function saveWebsiteMaterial(
           generationHash,
           isStale: false, // Reset stale flag on edit
           contentVersion: nextVersionNumber,
+          coverageStatus,
+          coverageReport,
           updatedAt: new Date(),
         })
         .where(eq(websiteMaterials.id, materialId));
@@ -186,6 +255,8 @@ export async function saveWebsiteMaterial(
         structuredContent,
         contentVersion: nextVersionNumber,
         status: "draft",
+        coverageStatus,
+        coverageReport,
       });
     }
 
@@ -280,7 +351,9 @@ export async function requestReview(chapterId: string): Promise<void> {
   }
 
   // Compiler validate is required to move to review
-  const validation = validateAST(material.structuredContent as WebsiteMaterialAST);
+  const content = material.structuredContent as any;
+  const ast = content?.compilerResult?.ast || content;
+  const validation = validateAST(ast);
   if (!validation.success) {
     throw new Error(
       `Cannot request review. Material validation failed:\n` +

@@ -30,10 +30,11 @@ import {
 import { useTutor } from "@/components/course/tutor-drawer";
 import { useSession, signOut } from "@/lib/auth-client";
 import { getStudentEnrollments, getCourseAction } from "@/app/dashboard/actions";
-import { getCourseById } from "@/lib/student-course-fixtures";
+// Fixture imports removed
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
 import { useCommandMenu } from "@/components/command-menu";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { StreakCalendarStrip } from "@/components/dashboard/streak-calendar-strip";
 import {
  Tooltip,
@@ -167,29 +168,24 @@ export function StudentSidebar({
  const [streakCurrent, setStreakCurrent] = useState<number | null>(null);
  const [weeklyActivity, setWeeklyActivity] = useState<boolean[]>([]);
 
- useEffect(() => {
-   if (!courseIdFromPath) {
-     setActiveCourse(undefined);
-     return;
-   }
-   const fixtureCourse = getCourseById(courseIdFromPath);
-   if (fixtureCourse) {
-     setActiveCourse(fixtureCourse);
-     return;
-   }
-   const enrolled = enrolledCourses.find((c) => c.id === courseIdFromPath);
-   if (enrolled) {
-     setActiveCourse(enrolled);
-     return;
-   }
-   getCourseAction(courseIdFromPath)
-     .then((course) => {
-       if (course) {
-         setActiveCourse(course);
-       }
-     })
-     .catch(console.error);
- }, [courseIdFromPath, enrolledCourses]);
+  useEffect(() => {
+    if (!courseIdFromPath) {
+      setActiveCourse(undefined);
+      return;
+    }
+    const enrolled = enrolledCourses.find((c) => c.id === courseIdFromPath);
+    if (enrolled) {
+      setActiveCourse(enrolled);
+      return;
+    }
+    getCourseAction(courseIdFromPath)
+      .then((course) => {
+        if (course) {
+          setActiveCourse(course);
+        }
+      })
+      .catch(console.error);
+  }, [courseIdFromPath, enrolledCourses]);
 
  useEffect(() => {
  setMounted(true);
@@ -421,6 +417,13 @@ export function StudentSidebar({
  </button>
  </SidebarTooltip>
 
+ {/* Theme toggle at bottom when collapsed */}
+ {c && (
+ <div className="flex justify-center">
+ <ThemeToggle mode="sidebar" />
+ </div>
+ )}
+
  <div className="flex-1" />
 
  {/* Sign out */}
@@ -542,6 +545,13 @@ export function StudentSidebar({
  collapsed={c}
  />
 
+ {/* Theme toggle at bottom when collapsed */}
+ {c && (
+ <div className="flex justify-center">
+ <ThemeToggle mode="sidebar" />
+ </div>
+ )}
+
  <div className="flex-1" />
 
  {/* Sign out */}
@@ -603,22 +613,22 @@ export function StudentSidebar({
  isCollapsed ? "md:w-[64px]" : "md:w-[248px]"
  )}
  >
- {/* Header row: brand + collapse toggle */}
- <div className="flex h-14 shrink-0 items-center justify-between border-b border-border px-3">
+ {/* Header row: brand + controls */}
+ <div className="flex h-14 shrink-0 items-center border-b border-border px-3 gap-2">
+ {/* Logo – fills remaining space when expanded */}
  {!isCollapsed && (
- <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex items-center">
+ <Link href="/dashboard" aria-label="Dashboard Zyx Academy" className="flex flex-1 min-w-0 items-center">
  <Logo className="[--logo-height:1.75rem]" />
  </Link>
  )}
+ {isCollapsed && <div className="flex-1" />}
+ {/* Collapse toggle */}
  <SidebarTooltip label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} collapsed={isCollapsed}>
  <button
  type="button"
  onClick={isMobile ? () => setMobileOpen(false) : toggleCollapsed}
  aria-label={isMobile ? "Close navigation" : isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
- className={cn(
- "flex size-8 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors",
- isCollapsed && "mx-auto"
- )}
+ className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
  >
  {isMobile
  ? <PanelLeftClose className="size-4" />
@@ -627,6 +637,8 @@ export function StudentSidebar({
  : <PanelLeftClose className="size-4" />}
  </button>
  </SidebarTooltip>
+ {/* Theme toggle – header when expanded; nav bottom when collapsed */}
+ {!isCollapsed && <ThemeToggle mode="sidebar" />}
  </div>
 
  {/* Search trigger */}

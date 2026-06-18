@@ -227,7 +227,23 @@ export async function executeDiktatPDFGeneration(
         errors: [`PDF renderer worker failed (${res.status}): ${text}`],
       };
     }
-    pdfBuffer = Buffer.from(await res.arrayBuffer());
+    // Parse response defensively - deployed renderer might return JSON-serialized byte object
+    const clonedRes = res.clone();
+    try {
+      const text = await clonedRes.text();
+      if (text.trim().startsWith("{") && text.includes('"0":')) {
+        const parsed = JSON.parse(text);
+        const bytes = Object.keys(parsed)
+          .map(Number)
+          .sort((a, b) => a - b)
+          .map(k => parsed[k]);
+        pdfBuffer = Buffer.from(bytes);
+      } else {
+        pdfBuffer = Buffer.from(await res.arrayBuffer());
+      }
+    } catch (err) {
+      pdfBuffer = Buffer.from(await res.arrayBuffer());
+    }
   } else {
     // Fallback to mock PDF for local dev (no Docker needed)
     pdfBuffer = Buffer.from(

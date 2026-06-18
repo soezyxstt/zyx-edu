@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { GraduationCap } from "lucide-react";
 import { CoursePageShell } from "@/components/course/course-page-shell";
 import { pageTitle } from "@/lib/site";
-import { getExamsForCourse } from "@/lib/student-course-fixtures";
+// Fixture imports removed
 import { getCourse } from "@/lib/course-utils";
 import { checkEnrollment } from "@/app/dashboard/actions";
 import { TryoutListClient } from "./tryout-list-client";
@@ -49,7 +49,7 @@ export default async function CourseTryoutListPage({ params }: Props) {
     };
   });
 
-  const allTryouts = [...getExamsForCourse(id, "tryout"), ...mappedDb];
+  const allTryouts = mappedDb;
 
   return (
     <CoursePageShell

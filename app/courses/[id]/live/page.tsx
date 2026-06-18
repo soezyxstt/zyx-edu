@@ -10,7 +10,7 @@ import { useLiveQuizSocket } from "@/components/live/use-live-quiz-socket";
 import { quizOptionClasses, quizOptionLetterClasses } from "@/components/course/quiz-option-styles";
 import type { QuizOptionState } from "@/components/course/quiz-option-styles";
 import { CoursePageShell } from "@/components/course/course-page-shell";
-import { getCourseById } from "@/lib/student-course-fixtures";
+// Fixture import removed
 import { getCourseAction } from "@/app/dashboard/actions";
 import { cn } from "@/lib/utils";
 
@@ -28,12 +28,7 @@ export default function LiveStudentPage() {
   const [course, setCourse] = useState<any>(undefined);
 
   useEffect(() => {
-    const fixtureCourse = getCourseById(courseId);
-    if (fixtureCourse) {
-      setCourse(fixtureCourse);
-    } else {
-      getCourseAction(courseId).then(setCourse).catch(console.error);
-    }
+    getCourseAction(courseId).then(setCourse).catch(console.error);
   }, [courseId]);
 
   const title = course ? `Kuis Langsung: ${course.title}` : "Kuis Langsung";

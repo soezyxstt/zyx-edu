@@ -1,11 +1,22 @@
 import { db } from "@/db";
-import { assessmentObjects, assessmentProfiles, coursePolicies, masterTeachingDocuments } from "@/db/schema";
-import { generateContentWithFallback, withGeminiRetry } from "@/lib/gemini";
+import {
+  assessmentObjects,
+  assessmentProfiles,
+  coursePolicies,
+  masterTeachingDocuments,
+  concepts,
+  conceptLocalizations,
+  knowledgeObjects,
+  assessmentObjectConcepts,
+  assessmentObjectKos
+} from "@/db/schema";
+import { generateContentWithFallback, withGeminiRetry, embedText } from "@/lib/gemini";
 import { USE_CASES } from "@/lib/ai-router";
 import { randomUUID } from "crypto";
 import { eq, and } from "drizzle-orm";
 import { z } from "zod";
-import { repairJsonString } from "./ko-utils";
+import { repairJsonString, slugify } from "./ko-utils";
+import { normalizeConceptName, cosineSimilarity } from "./ko-extractor";
 
 // Zod schema matching the required response from Gemini
 const AssessmentObjectExtractionSchema = z.object({
@@ -16,6 +27,8 @@ const AssessmentObjectExtractionSchema = z.object({
   pattern: z.enum(["direct_computation", "graph_interpretation", "proof", "parameter_analysis", "modeling"]),
   reasoningType: z.enum(["procedural", "conceptual", "analytical"]),
   estimatedSteps: z.number().int().min(1).max(10),
+  answerMarkdown: z.string().optional(),
+  options: z.array(z.string()).optional(),
 });
 
 /**
@@ -58,6 +71,99 @@ export function parseAssessmentMarkdownIntoBlocks(markdown: string): string[] {
   }
 
   return blocks;
+}
+
+/**
+ * Extracts Assessment Objects from a Canonical Assessment Markdown document using Gemini.
+ */
+/**
+ * Resolves a free-form concept name against the global Concept Registry.
+ * Uses exact matching, alias matching, cosine similarity vector search, and fallbacks.
+ * Auto-creates the Concept and Localization if no matching concept exists.
+ */
+async function resolveConceptId(conceptName: string): Promise<string> {
+  const normName = normalizeConceptName(conceptName);
+
+  // 1. Fetch registered localizations from the registry
+  const registeredLocalizations = await db
+    .select({
+      conceptId: conceptLocalizations.conceptId,
+      displayName: conceptLocalizations.displayName,
+      aliases: conceptLocalizations.aliases,
+      embedding: conceptLocalizations.embedding,
+    })
+    .from(conceptLocalizations);
+
+  // Step A: Deterministic Exact Match (and Aliases)
+  const matchedLoc = registeredLocalizations.find(loc => {
+    if (normalizeConceptName(loc.displayName) === normName) return true;
+    const aliases = Array.isArray(loc.aliases) ? loc.aliases : [];
+    return aliases.some(alias => normalizeConceptName(alias) === normName);
+  });
+
+  if (matchedLoc) {
+    return matchedLoc.conceptId;
+  }
+
+  // Step B: Cosine Similarity Matching
+  let embedding: number[] | null = null;
+  if (process.env.MOCK_GEMINI !== "true") {
+    try {
+      embedding = await withGeminiRetry(() => embedText(conceptName));
+    } catch (err) {
+      console.warn(`Failed to embed candidate concept "${conceptName}":`, err);
+    }
+  }
+
+  if (embedding) {
+    let bestMatch: typeof registeredLocalizations[0] | null = null;
+    let highestScore = 0;
+
+    for (const loc of registeredLocalizations) {
+      if (Array.isArray(loc.embedding) && loc.embedding.length > 0) {
+        const score = cosineSimilarity(embedding, loc.embedding);
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = loc;
+        }
+      }
+    }
+
+    if (bestMatch && highestScore > 0.90) {
+      return bestMatch.conceptId;
+    }
+  }
+
+  // Step C: If not matched, create new concept and localizations (deterministic fallback)
+  const newConceptId = randomUUID();
+  const slug = slugify(conceptName);
+
+  await db.insert(concepts).values({
+    id: newConceptId,
+    canonicalSlug: slug || `concept-${newConceptId.slice(0, 8)}`,
+    isVerified: false,
+  });
+
+  let newEmbedding: number[] | null = null;
+  if (process.env.MOCK_GEMINI !== "true" && !embedding) {
+    try {
+      newEmbedding = await withGeminiRetry(() => embedText(conceptName));
+    } catch {}
+  } else {
+    newEmbedding = embedding;
+  }
+
+  await db.insert(conceptLocalizations).values({
+    id: `cl-${randomUUID()}`,
+    conceptId: newConceptId,
+    lang: "id",
+    displayName: conceptName,
+    aliases: [],
+    technicalStandardTerm: "id",
+    embedding: newEmbedding,
+  });
+
+  return newConceptId;
 }
 
 /**
@@ -113,10 +219,12 @@ export async function extractAssessmentObjectsForMtd(
         pattern: block.includes("graph") ? "graph_interpretation" : "direct_computation",
         reasoningType: "procedural",
         estimatedSteps: 2,
+        answerMarkdown: "Mock explanation: Limit of f(x) as x approaches a is L.",
+        options: ["Option A", "Option B", "Option C", "Option D"],
       };
     } else {
-      // Call Gemini for structured metadata classification
-      const prompt = `Analyze the following engineering/math test question block and classify its attributes according to the schema provided.
+      // Call Gemini for structured metadata classification and content extraction
+      const prompt = `Analyze the following engineering/math test question block and classify its attributes, solution explanation, and multiple-choice options according to the schema provided.
 
 QUESTION BLOCK:
 """
@@ -131,7 +239,9 @@ You must return a single JSON object matching this schema:
   "concepts": ["concept name 1", "concept name 2"],
   "pattern": "direct_computation | graph_interpretation | proof | parameter_analysis | modeling",
   "reasoningType": "procedural | conceptual | analytical",
-  "estimatedSteps": [Integer representing estimated number of calculation steps, e.g. 1, 2, 3, 4]
+  "estimatedSteps": [Integer representing estimated number of calculation steps, e.g. 1, 2, 3, 4],
+  "answerMarkdown": "[Optional: Detailed markdown answer/solution explanation if available in the text block, else null]",
+  "options": [Optional: Array of options (strings) if questionType is multiple_choice or multiple_choices, else null]
 }
 
 Ensure all fields are fully populated and valid JSON is returned. Do not wrap in markdown code blocks.`;
@@ -160,13 +270,17 @@ Ensure all fields are fully populated and valid JSON is returned. Do not wrap in
           pattern: "direct_computation",
           reasoningType: "procedural",
           estimatedSteps: 2,
+          answerMarkdown: undefined,
+          options: undefined,
         };
       }
     }
 
+    const assessmentObjectId = `ao-${randomUUID()}`;
+
     // Save extracted object to Turso
     await db.insert(assessmentObjects).values({
-      id: `ao-${randomUUID()}`,
+      id: assessmentObjectId,
       courseId,
       sourceMtdId: mtdId,
       questionType: extracted.questionType,
@@ -176,7 +290,45 @@ Ensure all fields are fully populated and valid JSON is returned. Do not wrap in
       pattern: extracted.pattern,
       reasoningType: extracted.reasoningType,
       estimatedSteps: extracted.estimatedSteps,
+      questionMarkdown: block,
+      answerMarkdown: extracted.answerMarkdown || null,
+      options: extracted.options || null,
     });
+
+    // Concept-First Normalization and Mapping
+    for (const conceptName of extracted.concepts) {
+      try {
+        const conceptId = await resolveConceptId(conceptName);
+
+        // Link Assessment Object to Concept Registry
+        await db.insert(assessmentObjectConcepts).values({
+          id: `aoc-${randomUUID()}`,
+          assessmentObjectId,
+          conceptId,
+        });
+
+        // Link to ALL active KOs sharing this Concept ID
+        const activeKOs = await db
+          .select({ id: knowledgeObjects.id })
+          .from(knowledgeObjects)
+          .where(
+            and(
+              eq(knowledgeObjects.conceptId, conceptId),
+              eq(knowledgeObjects.status, "active")
+            )
+          );
+
+        for (const ko of activeKOs) {
+          await db.insert(assessmentObjectKos).values({
+            id: `aok-${randomUUID()}`,
+            assessmentObjectId,
+            koId: ko.id,
+          });
+        }
+      } catch (err) {
+        console.error(`[Assessment Ingest] Failed to resolve concept "${conceptName}" or map KOs:`, err);
+      }
+    }
   }
 
   // Recalculate dynamic course Assessment Profile after new objects are saved

@@ -11,7 +11,7 @@ import { pageTitle } from "@/lib/site";
 import { getMaterial, type CourseMaterial } from "@/lib/student-course-fixtures";
 import { getCourse } from "@/lib/course-utils";
 import { db } from "@/db";
-import { aiMaterialInstances, diktats, courseMaterials } from "@/db/schema";
+import { aiMaterialInstances, diktats, courseMaterials, websiteMaterials } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
@@ -46,6 +46,32 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
     }
   } catch (error) {
     console.error("Error fetching diktat record:", error);
+  }
+
+  // Check in websiteMaterials table
+  try {
+    const [webMatRecord] = await db
+      .select()
+      .from(websiteMaterials)
+      .where(eq(websiteMaterials.id, materialId));
+
+    if (webMatRecord) {
+      return {
+        id: webMatRecord.id,
+        courseId,
+        title: webMatRecord.title,
+        kind: "article" as const,
+        docCategory: "materi" as const,
+        fileSize: "Disusun otomatis",
+        body: webMatRecord.canonicalMarkdown,
+        completed: false,
+        isPastYear: false,
+        isPreview: true,
+        chapterId: webMatRecord.chapterId,
+      };
+    }
+  } catch (error) {
+    console.error("Error fetching website material record:", error);
   }
 
   // Check in course_materials table

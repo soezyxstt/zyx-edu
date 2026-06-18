@@ -49,7 +49,7 @@ messaging.onBackgroundMessage((payload) => {
 
  const { notification = {}, data = {} } = payload;
 
- const notificationTitle = notification.title || "ZYX Academy";
+ const notificationTitle = notification.title || "Zyx Academy";
  const notificationOptions = {
  body: notification.body || "",
  icon: notification.icon || "/logo-light.png",

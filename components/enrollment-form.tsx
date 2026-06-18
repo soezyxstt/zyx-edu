@@ -46,7 +46,7 @@ export function EnrollmentForm({ className, onSuccess }: { className?: string; o
           <KeyRound className="size-4 shrink-0 text-muted-foreground" aria-hidden />
           <input
             type="text"
-            placeholder="Masukkan token kelas (misal: ZYX-CALC-ABCD)"
+            placeholder="Masukkan token kelas (misal: Zyx-CALC-ABCD)"
             value={token}
             onChange={(e) => setToken(e.target.value)}
             disabled={loading}

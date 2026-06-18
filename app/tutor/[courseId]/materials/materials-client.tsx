@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { saveTutorMaterialAction, deleteTutorMaterialAction } from "@/app/actions/tutor-management";
+import { cleanSummary } from "@/lib/utils";
 
 interface MaterialChunk {
   chunkText: string;
@@ -158,7 +159,7 @@ export function MaterialsClient({ courseId, initialMaterials }: Props) {
                 </div>
               </CardHeader>
               <CardContent className="px-5 pb-4 flex-1">
-                <p className="text-body-sm text-muted-foreground line-clamp-3 leading-relaxed">{m.summary}</p>
+                <p className="text-body-sm text-muted-foreground line-clamp-3 leading-relaxed">{cleanSummary(m.summary)}</p>
               </CardContent>
               <div className="px-5 py-3.5 bg-muted/20 border-t border-border flex justify-end gap-2">
                 <Button variant="outline" size="sm" onClick={() => handleOpenEdit(m)} className="rounded-md border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted gap-1">

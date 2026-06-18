@@ -21,10 +21,10 @@ const buttonVariants = cva(
  "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
  link: "text-primary underline-offset-4 hover:underline",
  /** Landing/marketing CTAs ; navy fill, kept separate from `--primary`. */
- marketingPrimary:
- "rounded-md bg-[#1a2744] text-white hover:bg-[#1a2744]/90 hover:brightness-105 active:brightness-95 [&_svg]:text-white",
- marketingSecondary:
- "rounded-md border-2 border-[#1a2744] bg-background text-[#1a2744] hover:bg-[#1a2744]/5",
+  marketingPrimary:
+  "rounded-md bg-marketing-navy text-white hover:bg-marketing-navy/90 hover:brightness-105 active:brightness-95 [&_svg]:text-white",
+  marketingSecondary:
+  "rounded-md border-2 border-marketing-navy bg-background text-marketing-navy hover:bg-marketing-navy/5",
  },
  size: {
  default:

@@ -469,7 +469,7 @@ export const bookingsRelations = relations(bookings, ({ one }) => ({
 
 // ───────────────────────────────────────────────────────────// Enums for AI domain
 
-// New Enums for ZYX Content Ecosystem (Revision v4 - Frozen)
+// New Enums for Zyx Content Ecosystem (Revision v4 - Frozen)
 
 // A. ai_material_instances ; top-level knowledge asset metadata
 export const aiMaterialInstances = sqliteTable(
@@ -605,6 +605,12 @@ export const aiQuestionBank = sqliteTable(
  reviewStatus: text("review_status").$type<"generated" | "reviewed" | "published" | "flagged" | "retired">().default("generated").notNull(),
  qualityScore: real("quality_score").default(1.0).notNull(),
  useCount: integer("use_count").default(0).notNull(),
+ styledAfterAssessmentObjectId: text("styled_after_assessment_object_id")
+ .references(() => assessmentObjects.id, { onDelete: "set null" }),
+ pattern: text("pattern"),
+ reasoningType: text("reasoning_type"),
+ applicationLevel: integer("application_level"),
+ estimatedSteps: integer("estimated_steps"),
  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
  },
  (table) => [
@@ -760,6 +766,8 @@ export const masterTeachingDocuments = sqliteTable(
  .references(() => driveItem.id, { onDelete: "set null" }),
  title: text("title").notNull(),
  markdownContent: text("markdown_content").notNull(),
+ originalPdfKey: text("original_pdf_key"),
+ canonicalMarkdownKey: text("canonical_markdown_key"),
  version: integer("version").default(1).notNull(),
  status: text("status").default("draft").notNull(), // 'draft', 'active', 'archived'
  type: text("type").$type<"learning" | "assessment">().default("learning").notNull(),
@@ -884,6 +892,28 @@ export const websiteMaterials = sqliteTable(
  .$type<Array<{ term: string; conceptId: string; conceptName: string }>>(),
  contentVersion: integer("content_version").default(1).notNull(),
  status: text("status").default("draft").notNull(),
+ coverageStatus: text("coverage_status")
+    .$type<"not_verified" | "fully_covered" | "partially_covered" | "coverage_failed">()
+    .default("not_verified")
+    .notNull(),
+  coverageReport: text("coverage_report", { mode: "json" })
+    .$type<{
+      totalKOs: number;
+      mappedKOs: number;
+      missingKOs: Array<{ id: string; title: string; type: string }>;
+      formulaFailures: Array<{ koId: string; expected: string; actual: string; reason: string }>;
+      issues: string[];
+      verifiedAt: string;
+    }>()
+    .$defaultFn(() => ({
+      totalKOs: 0,
+      mappedKOs: 0,
+      missingKOs: [],
+      formulaFailures: [],
+      issues: [],
+      verifiedAt: ""
+    }))
+    .notNull(),
  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
  updatedAt: integer("updated_at", { mode: "timestamp" })
  .defaultNow()
@@ -1081,12 +1111,51 @@ export const assessmentObjects = sqliteTable(
     pattern: text("pattern").notNull(),
     reasoningType: text("reasoning_type").notNull(),
     estimatedSteps: integer("estimated_steps").notNull(),
+    questionMarkdown: text("question_markdown").default("").notNull(),
+    answerMarkdown: text("answer_markdown"),
+    options: text("options", { mode: "json" }).$type<string[]>(),
     createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
   }
+);
+
+// Join table: Assessment Objects to Concepts (Concept-First Mapping)
+export const assessmentObjectConcepts = sqliteTable(
+  "assessment_object_concepts",
+  {
+    id: text("id").primaryKey(),
+    assessmentObjectId: text("assessment_object_id")
+      .notNull()
+      .references(() => assessmentObjects.id, { onDelete: "cascade" }),
+    conceptId: text("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("idx_ao_concepts_ao").on(table.assessmentObjectId),
+    index("idx_ao_concepts_concept").on(table.conceptId),
+  ]
+);
+
+// Join table: Assessment Objects to specific tested KOs
+export const assessmentObjectKos = sqliteTable(
+  "assessment_object_kos",
+  {
+    id: text("id").primaryKey(),
+    assessmentObjectId: text("assessment_object_id")
+      .notNull()
+      .references(() => assessmentObjects.id, { onDelete: "cascade" }),
+    koId: text("ko_id")
+      .notNull()
+      .references(() => knowledgeObjects.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("idx_ao_kos_ao").on(table.assessmentObjectId),
+    index("idx_ao_kos_ko").on(table.koId),
+  ]
 );
 
 // 11.6. assessment_profiles

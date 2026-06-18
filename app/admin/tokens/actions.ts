@@ -90,8 +90,8 @@ export async function generateEnrollmentToken(courseIds: string[], capacity: num
   // Generate unique 8 alphanumeric characters
   const unique8 = randomUUID().split("-")[0].toUpperCase();
   
-  // Format: ZYX-{unique_8_letters_and_numbers}-{#people}-{#courses}
-  const token = `ZYX-${unique8}-${capacity}-${courseIds.length}`;
+  // Format: Zyx-{unique_8_letters_and_numbers}-{#people}-{#courses}
+  const token = `Zyx-${unique8}-${capacity}-${courseIds.length}`;
 
   try {
     await db.transaction(async (tx) => {

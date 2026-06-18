@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, type ReactNode } from "react";
+import React, { useState, useEffect, type ReactNode } from "react";
 import katex from "katex";
 import { 
   Info, 
@@ -13,6 +13,28 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { compileMarkdown } from "@/lib/markdown-compiler";
+import { ASTBlock } from "@/lib/ast-validator";
+import { getLayoutedGraph, LayoutDiagnostics } from "@/lib/visual-layout-service";
+import * as math from "mathjs";
+import ReactFlow, { Edge, Node } from "reactflow";
+import "reactflow/dist/style.css";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  ScatterChart,
+  Scatter,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell
+} from "recharts";
 
 // --- Types ---
 
@@ -29,7 +51,7 @@ interface Block {
 }
 
 interface MarkdownRendererProps {
-  content: string;
+  content: string | ASTBlock[];
   className?: string;
 }
 
@@ -96,6 +118,37 @@ function parseInline(text: string): ReactNode[] {
         />
       );
       index += mathInlineMatch[0].length;
+      continue;
+    }
+
+    // 2b. Visual and Glossary Reference (e.g. [[visual:step-response]] or [[kecepatan]])
+    const doubleBracketMatch = remaining.match(/^\[\[(.*?)\]\]/);
+    if (doubleBracketMatch) {
+      flushText();
+      const rawRef = doubleBracketMatch[1].trim();
+      if (rawRef.toLowerCase().startsWith("visual:")) {
+        const visualId = rawRef.slice(7).trim();
+        result.push(
+          <a
+            key={`visref-${index}`}
+            href={`#${visualId}`}
+            className="text-brand-primary font-semibold hover:underline decoration-brand-primary/40 underline-offset-4"
+          >
+            Visual [{visualId}]
+          </a>
+        );
+      } else {
+        result.push(
+          <span
+            key={`termref-${index}`}
+            className="text-brand-secondary font-semibold border-b border-dashed border-brand-secondary/40 cursor-help"
+            title={`Glosarium: ${rawRef}`}
+          >
+            {rawRef}
+          </span>
+        );
+      }
+      index += doubleBracketMatch[0].length;
       continue;
     }
 
@@ -194,6 +247,14 @@ function parseInline(text: string): ReactNode[] {
   return result;
 }
 
+export function renderRichText(content: any): React.ReactNode {
+  if (content === null || content === undefined) return null;
+  if (typeof content === "string") {
+    return parseInline(content);
+  }
+  return content;
+}
+
 // --- Block-Level Parser ---
 
 function parseMarkdown(text: string): Block[] {
@@ -281,21 +342,74 @@ function parseMarkdown(text: string): Block[] {
     }
 
     // 5. Lists
-    const listPattern = /^(\s*)([-*]|\d+\.)\s+(.*)$/;
+    const listPattern = /^(\s*)([-*+]|\d+\.)\s+(.*)$/;
     if (listPattern.test(line)) {
       const items: { text: string; ordered: boolean }[] = [];
-      while (i < lines.length && listPattern.test(lines[i])) {
-        const match = lines[i].match(listPattern);
-        if (match) {
-          const marker = match[2];
+      let inMath = false;
+      
+      while (i < lines.length) {
+        const currentLine = lines[i];
+        const currentTrimmed = currentLine.trim();
+
+        // Track multiline math block
+        const mathBlocksCount = (currentLine.match(/\$\$/g) || []).length;
+        if (mathBlocksCount % 2 === 1) {
+          inMath = !inMath;
+        }
+
+        // Check if the current line starts a new list item
+        const listMatch = currentLine.match(listPattern);
+        if (listMatch && !inMath) {
+          const marker = listMatch[2];
           const isOrdered = /^\d/.test(marker);
           items.push({
-            text: match[3].trim(),
+            text: listMatch[3].trim(),
             ordered: isOrdered,
           });
+          i++;
+          continue;
+        }
+
+        // Check for list termination
+        if (!inMath) {
+          if (
+            currentTrimmed.startsWith("```") ||
+            currentTrimmed === "---" || currentTrimmed === "***" || currentTrimmed === "___" ||
+            /^(#{1,6})\s+/.test(currentLine) ||
+            currentTrimmed.startsWith(">") ||
+            (currentTrimmed.startsWith("|") && currentTrimmed.endsWith("|") && currentTrimmed.length > 2)
+          ) {
+            break;
+          }
+        }
+
+        // Empty line handling
+        if (currentTrimmed === "" && !inMath) {
+          let nextIdx = i + 1;
+          while (nextIdx < lines.length && lines[nextIdx].trim() === "") {
+            nextIdx++;
+          }
+          if (nextIdx >= lines.length) {
+            i = nextIdx; // consume trailing empty lines
+            break;
+          }
+          const nextLine = lines[nextIdx];
+          const nextIsListItem = listPattern.test(nextLine);
+          const nextHasIndent = nextLine.startsWith(" ") || nextLine.startsWith("\t");
+          
+          if (!nextIsListItem && !nextHasIndent) {
+            // It's a paragraph outside the list, stop parsing list
+            break;
+          }
+        }
+
+        // Append line to current list item
+        if (items.length > 0) {
+          items[items.length - 1].text += "\n" + currentLine;
         }
         i++;
       }
+
       blocks.push({
         type: "list",
         items,
@@ -476,7 +590,7 @@ function AlertCallout({
           {config.label}
         </div>
         <div className="text-body-sm leading-relaxed text-foreground/90 font-sans">
-          {parseInline(content)}
+          {renderRichText(content)}
         </div>
       </div>
     </div>
@@ -580,7 +694,7 @@ function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) 
         y1={padT}
         x2={mapX(gx)}
         y2={padT + plotH}
-        stroke={major ? "#d6d6d6" : "#ececec"}
+        stroke={major ? "var(--color-border-strong)" : "var(--color-border)"}
         strokeWidth={major ? 1 : 0.65}
       />
     );
@@ -595,7 +709,7 @@ function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) 
         y1={mapY(gy)}
         x2={padL + plotW}
         y2={mapY(gy)}
-        stroke={major ? "#d6d6d6" : "#ececec"}
+        stroke={major ? "var(--color-border-strong)" : "var(--color-border)"}
         strokeWidth={major ? 1 : 0.65}
       />
     );
@@ -613,19 +727,19 @@ function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) 
           className="h-8 font-mono text-body-sm rounded-lg bg-background border-border/80 focus-visible:ring-brand-primary py-1"
         />
       </div>
-      <div className="relative bg-white">
+      <div className="relative bg-card">
         <svg viewBox="0 0 600 312" className="h-[240px] w-full max-w-full md:h-[278px]">
           <g aria-hidden>{gridLines}</g>
-          {showXAxis && <line x1={padL} y1={y0} x2={padL + plotW} y2={y0} stroke="#1f2937" strokeWidth={1.75} />}
-          {showYAxis && <line x1={x0} y1={padT} x2={x0} y2={padT + plotH} stroke="#1f2937" strokeWidth={1.75} />}
+          {showXAxis && <line x1={padL} y1={y0} x2={padL + plotW} y2={y0} stroke="var(--color-foreground)" strokeWidth={1.75} />}
+          {showYAxis && <line x1={x0} y1={padT} x2={x0} y2={padT + plotH} stroke="var(--color-foreground)" strokeWidth={1.75} />}
           
           {xTicks.map((xv) => (
-            <text key={`xt-${xv}`} x={mapX(xv)} y={padT + plotH + 22} textAnchor="middle" fill="#6b7280" fontSize={11} fontFamily="system-ui">
+            <text key={`xt-${xv}`} x={mapX(xv)} y={padT + plotH + 22} textAnchor="middle" fill="var(--color-muted-foreground)" fontSize={11} fontFamily="system-ui">
               {xv}
             </text>
           ))}
           {yTicks.map((yv) => (
-            <text key={`yt-${yv}`} x={padL - 10} y={mapY(yv)} textAnchor="end" dominantBaseline="middle" fill="#6b7280" fontSize={11} fontFamily="system-ui">
+            <text key={`yt-${yv}`} x={padL - 10} y={mapY(yv)} textAnchor="end" dominantBaseline="middle" fill="var(--color-muted-foreground)" fontSize={11} fontFamily="system-ui">
               {yv}
             </text>
           ))}
@@ -638,7 +752,7 @@ function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) 
             <path
               d={graphPath}
               fill="none"
-              stroke="#2464b8"
+              stroke="var(--color-brand-primary)"
               strokeWidth={3}
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -651,164 +765,734 @@ function InteractiveGraphWidget({ initialFormula }: { initialFormula: string }) 
   );
 }
 
-// --- Main Component ---
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
-  const blocks = parseMarkdown(content);
-  const hasTextColor = className && /\btext-\w+/.test(className);
+function ChartRenderer({ data, title, caption }: { data: any; title?: string; caption?: string }) {
+  const chartType = data.chartType;
+  const xLabel = data.xLabel;
+  const yLabel = data.yLabel;
+  
+  const formattedData = (data.data || []).map((point: any) => ({
+    x: point[0],
+    y: point[1],
+  }));
+
+  const renderChart = () => {
+    switch (chartType) {
+      case "bar":
+        return (
+          <BarChart data={formattedData}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+            <XAxis dataKey="x" label={xLabel ? { value: xLabel, position: "insideBottom", offset: -5 } : undefined} />
+            <YAxis label={yLabel ? { value: yLabel, angle: -90, position: "insideLeft" } : undefined} />
+            <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", borderRadius: "12px" }} />
+            <Bar dataKey="y" fill="var(--color-brand-primary)" radius={[4, 4, 0, 0]} />
+          </BarChart>
+        );
+      case "scatter":
+        return (
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+            <XAxis type="number" dataKey="x" name={xLabel || "X"} />
+            <YAxis type="number" dataKey="y" name={yLabel || "Y"} />
+            <Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", borderRadius: "12px" }} />
+            <Scatter name="Data" data={formattedData} fill="var(--color-brand-primary)" />
+          </ScatterChart>
+        );
+      case "pie":
+        const COLORS = ["var(--color-brand-primary)", "var(--color-brand-secondary)", "var(--color-tertiary-1)", "var(--color-tertiary-2)", "var(--color-tertiary-3)"];
+        return (
+          <PieChart>
+            <Pie data={formattedData} dataKey="y" nameKey="x" cx="50%" cy="50%" outerRadius={80} fill="var(--color-brand-primary)" label>
+              {formattedData.map((entry: any, index: number) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", borderRadius: "12px" }} />
+          </PieChart>
+        );
+      case "line":
+      default:
+        return (
+          <LineChart data={formattedData}>
+            <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+            <XAxis dataKey="x" label={xLabel ? { value: xLabel, position: "insideBottom", offset: -5 } : undefined} />
+            <YAxis label={yLabel ? { value: yLabel, angle: -90, position: "insideLeft" } : undefined} />
+            <Tooltip contentStyle={{ backgroundColor: "var(--color-card)", borderColor: "var(--color-border)", borderRadius: "12px" }} />
+            <Line type="monotone" dataKey="y" stroke="var(--color-brand-primary)" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+          </LineChart>
+        );
+    }
+  };
 
   return (
-    <div className={cn(
-      "markdown-article text-left space-y-4 font-sans select-text",
-      !hasTextColor && "text-foreground/90",
-      className
-    )}>
-      {blocks.map((block, idx) => {
-        switch (block.type) {
-          case "p":
-            return (
-              <p key={idx} className="text-body-base leading-relaxed">
-                {parseInline(block.content || "")}
-              </p>
-            );
-
-          case "h": {
-            const hLvl = block.level || 2;
-            const headingClasses = {
-              1: "text-h2 font-heading font-bold mt-8 mb-4 border-b border-border/60 pb-2.5 tracking-tight",
-              2: "text-h3 font-heading font-bold mt-7 mb-3 tracking-tight",
-              3: "text-h4 font-heading font-bold mt-6 mb-3 tracking-tight",
-              4: "text-h5 font-heading font-semibold mt-5 mb-2.5 tracking-tight",
-              5: "text-h6 font-heading font-semibold mt-4 mb-2 tracking-tight",
-              6: "text-body-base font-heading font-semibold text-muted-foreground mt-4 mb-2 tracking-tight",
-            };
-            const cls = headingClasses[hLvl as 1 | 2 | 3 | 4 | 5 | 6] || headingClasses[2];
-            
-            // Map headers to native semantic levels but style via Lexend theme
-            const HeadingTag = `h${hLvl}` as any;
-            return (
-              <HeadingTag key={idx} className={cls}>
-                {parseInline(block.content || "")}
-              </HeadingTag>
-            );
-          }
-
-          case "code":
-            if (block.language === "desmos" || block.language === "desmos-graph") {
-              return (
-                <InteractiveGraphWidget
-                  key={idx}
-                  initialFormula={block.content || ""}
-                />
-              );
-            }
-            return (
-              <CodeBlock
-                key={idx}
-                language={block.language || "plaintext"}
-                code={block.content || ""}
-              />
-            );
-
-          case "list": {
-            const isOrdered = block.items?.[0]?.ordered || false;
-            const ListTag = isOrdered ? "ol" : "ul";
-            return (
-              <ListTag
-                key={idx}
-                className={cn(
-                  "my-4 pl-6 space-y-1.5 leading-relaxed text-body-base",
-                  isOrdered ? "list-decimal" : "list-disc"
-                )}
-              >
-                {block.items?.map((item, itemIdx) => (
-                  <li key={itemIdx} className="pl-1">
-                    {parseInline(item.text)}
-                  </li>
-                ))}
-              </ListTag>
-            );
-          }
-
-          case "blockquote":
-            return (
-              <blockquote
-                key={idx}
-                className="my-5 pl-5 border-l-4 border-primary/50 text-muted-foreground italic bg-muted/20 py-2.5 pr-4 rounded-r-xl leading-relaxed text-body-md"
-              >
-                {parseInline(block.content || "")}
-              </blockquote>
-            );
-
-          case "alert":
-            return (
-              <AlertCallout
-                key={idx}
-                type={block.alertType || "note"}
-                content={block.content || ""}
-              />
-            );
-
-          case "table": {
-            const alignments = block.alignments || [];
-            return (
-              <div key={idx} className="my-6 overflow-x-auto rounded-2xl border border-border shadow-2xs">
-                <table className="w-full text-left border-collapse text-body-sm">
-                  <thead>
-                    <tr className="bg-muted/80 text-foreground font-semibold border-b border-border/80">
-                      {block.headers?.map((header, headIdx) => {
-                        const align = alignments[headIdx] || "left";
-                        return (
-                          <th
-                            key={headIdx}
-                            className={cn(
-                              "px-4 py-3 font-heading font-bold select-none text-foreground/95",
-                              align === "center" && "text-center",
-                              align === "right" && "text-right"
-                            )}
-                          >
-                            {parseInline(header)}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {block.rows?.map((row, rowIdx) => (
-                      <tr
-                        key={rowIdx}
-                        className="border-b border-border/40 last:border-b-0 odd:bg-card/30 even:bg-muted/20 transition-colors hover:bg-muted/30"
-                      >
-                        {row.map((cell, cellIdx) => {
-                          const align = alignments[cellIdx] || "left";
-                          return (
-                            <td
-                              key={cellIdx}
-                              className={cn(
-                                "px-4 py-3 text-foreground/80 font-normal leading-relaxed",
-                                align === "center" && "text-center",
-                                align === "right" && "text-right"
-                              )}
-                            >
-                              {parseInline(cell)}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          }
-
-          case "hr":
-            return <hr key={idx} className="my-8 border-t border-border/80" />;
-
-          default:
-            return null;
-        }
-      })}
+    <div className="my-6 p-5 border border-border bg-card shadow-xs rounded-xl text-center">
+      {title && <h4 className="font-heading text-body-base font-bold text-foreground mb-4">{renderRichText(title)}</h4>}
+      <div className="w-full h-[300px] flex items-center justify-center">
+        <ResponsiveContainer width="100%" height="100%">
+          {renderChart()}
+        </ResponsiveContainer>
+      </div>
+      {caption && <p className="mt-3 text-body-sm text-muted-foreground italic">{renderRichText(caption)}</p>}
     </div>
   );
+}
+
+function GraphRenderer({ data, title, caption }: { data: any; title?: string; caption?: string }) {
+  const functions = data.functions || [];
+  const domain = data.domain || { min: -10, max: 10 };
+  const samples = data.samples || 200;
+
+  const [hoverPoint, setHoverPoint] = useState<{ x: number; y: number; clientX: number; clientY: number } | null>(null);
+
+  const svgW = 600;
+  const svgH = 400;
+  const pad = 40;
+
+  const xMin = domain.min;
+  const xMax = domain.max;
+
+  let yVals: number[] = [];
+  const curves = functions.map((fnStr: string) => {
+    let code: any = null;
+    try {
+      const cleanFn = fnStr.replace(/^\s*y\s*=\s*/, "").trim();
+      code = math.compile(cleanFn);
+    } catch (err) {
+      console.error("MathJS compilation failed for:", fnStr, err);
+      return [];
+    }
+
+    const points: [number, number][] = [];
+    const step = (xMax - xMin) / (samples - 1);
+    for (let i = 0; i < samples; i++) {
+      const x = xMin + i * step;
+      try {
+        const y = code.evaluate({ x });
+        if (typeof y === "number" && !isNaN(y) && isFinite(y)) {
+          points.push([x, y]);
+          yVals.push(y);
+        }
+      } catch (err) {
+      }
+    }
+    return points;
+  });
+
+  let yMin = -10;
+  let yMax = 10;
+  if (yVals.length > 0) {
+    const computedMin = Math.min(...yVals);
+    const computedMax = Math.max(...yVals);
+    const padding = (computedMax - computedMin) * 0.1 || 1;
+    yMin = Math.max(computedMin - padding, -100);
+    yMax = Math.min(computedMax + padding, 100);
+    if (yMin > -1) yMin = -2;
+    if (yMax < 1) yMax = 2;
+  }
+
+  const mapX = (x: number) => pad + ((x - xMin) / (xMax - xMin)) * (svgW - 2 * pad);
+  const mapY = (y: number) => svgH - pad - ((y - yMin) / (yMax - yMin)) * (svgH - 2 * pad);
+  const invX = (svgX: number) => xMin + ((svgX - pad) / (svgW - 2 * pad)) * (xMax - xMin);
+
+  const getPathData = (points: [number, number][]) => {
+    if (points.length === 0) return "";
+    let d = "";
+    points.forEach((pt) => {
+      const sx = mapX(pt[0]);
+      const sy = mapY(pt[1]);
+      if (sx >= pad && sx <= svgW - pad && sy >= pad && sy <= svgH - pad) {
+        if (d === "") d = `M ${sx} ${sy}`;
+        else d += ` L ${sx} ${sy}`;
+      }
+    });
+    return d;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clientX = e.clientX - rect.left;
+    const clientY = e.clientY - rect.top;
+
+    const svgX = (clientX / rect.width) * svgW;
+    const x = invX(svgX);
+
+    if (x >= xMin && x <= xMax && curves.length > 0) {
+      const firstCurve = curves[0];
+      if (firstCurve.length > 0) {
+        let closest = firstCurve[0];
+        let minDist = Math.abs(firstCurve[0][0] - x);
+        for (const pt of firstCurve) {
+          const dist = Math.abs(pt[0] - x);
+          if (dist < minDist) {
+            minDist = dist;
+            closest = pt;
+          }
+        }
+        setHoverPoint({
+          x: closest[0],
+          y: closest[1],
+          clientX: (mapX(closest[0]) / svgW) * rect.width,
+          clientY: (mapY(closest[1]) / svgH) * rect.height,
+        });
+        return;
+      }
+    }
+    setHoverPoint(null);
+  };
+
+  const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#ca8a04"];
+  const originX = mapX(0);
+  const originY = mapY(0);
+
+  return (
+    <div className="my-6 p-5 border border-border bg-card shadow-xs rounded-xl text-center relative select-none">
+      {title && <h4 className="font-heading text-body-base font-bold text-foreground mb-4">{renderRichText(title)}</h4>}
+      <div className="w-full max-w-[600px] mx-auto bg-card relative">
+        <svg
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          className="w-full h-auto border border-border/60 rounded-lg bg-zinc-50/50 dark:bg-zinc-950/20"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={() => setHoverPoint(null)}
+        >
+          {Array.from({ length: 11 }).map((_, i) => {
+            const gridX = pad + (i / 10) * (svgW - 2 * pad);
+            const gridY = pad + (i / 10) * (svgH - 2 * pad);
+            return (
+              <React.Fragment key={i}>
+                <line x1={gridX} y1={pad} x2={gridX} y2={svgH - pad} className="stroke-muted/40" strokeWidth={0.5} />
+                <line x1={pad} y1={gridY} x2={svgW - pad} y2={gridY} className="stroke-muted/40" strokeWidth={0.5} />
+              </React.Fragment>
+            );
+          })}
+
+          {originY >= pad && originY <= svgH - pad && (
+            <line x1={pad} y1={originY} x2={svgW - pad} y2={originY} className="stroke-foreground/60" strokeWidth={1.5} />
+          )}
+          {originX >= pad && originX <= svgW - pad && (
+            <line x1={originX} y1={pad} x2={originX} y2={svgH - pad} className="stroke-foreground/60" strokeWidth={1.5} />
+          )}
+
+          {curves.map((curve: [number, number][], curveIdx: number) => (
+            <path
+              key={curveIdx}
+              d={getPathData(curve)}
+              fill="none"
+              stroke={COLORS[curveIdx % COLORS.length]}
+              strokeWidth={2.5}
+            />
+          ))}
+
+          {hoverPoint && (
+            <circle
+              cx={mapX(hoverPoint.x)}
+              cy={mapY(hoverPoint.y)}
+              r={6}
+              className="fill-brand-secondary stroke-white"
+              strokeWidth={1.5}
+            />
+          )}
+        </svg>
+
+        {hoverPoint && (
+          <div
+            className="absolute z-10 pointer-events-none bg-zinc-900/90 text-white rounded-lg px-2.5 py-1.5 text-xs font-mono shadow-md border border-zinc-700/50"
+            style={{
+              left: `${hoverPoint.clientX + 10}px`,
+              top: `${hoverPoint.clientY - 40}px`,
+            }}
+          >
+            x: {hoverPoint.x.toFixed(2)}
+            <br />
+            y: {hoverPoint.y.toFixed(2)}
+          </div>
+        )}
+      </div>
+      {caption && <p className="mt-3 text-body-sm text-muted-foreground italic">{renderRichText(caption)}</p>}
+    </div>
+  );
+}
+
+function FlowchartDiagramRenderer({ data, title, caption }: { data: any; title?: string; caption?: string }) {
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [layoutDiag, setLayoutDiag] = useState<LayoutDiagnostics | null>(null);
+
+  const astNodes = data.nodes || [];
+  const astEdges = data.edges || [];
+
+  useEffect(() => {
+    if (astNodes.length === 0) {
+      setError("VisualRenderError: No nodes generated. Confirm edge descriptions use valid 'A --> B' syntax.");
+      setLoading(false);
+      return;
+    }
+    if (astEdges.length === 0) {
+      setError("VisualRenderError: No edges generated. Confirm edge descriptions use valid 'A --> B' syntax.");
+      setLoading(false);
+      return;
+    }
+
+    const computeLayout = async () => {
+      try {
+        setError(null);
+        setLoading(true);
+
+        const reactFlowNodes = astNodes.map((n: any) => ({
+          id: n.id,
+          data: { label: n.label },
+          position: { x: 0, y: 0 },
+          style: {
+            background: "var(--color-card)",
+            color: "var(--color-foreground)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "8px",
+            padding: "8px 12px",
+            fontSize: "13px",
+            fontWeight: "600",
+            textAlign: "center",
+            boxShadow: "0 1px 3px 0 rgba(0,0,0,0.05)",
+          },
+        }));
+
+        const reactFlowEdges = astEdges.map((e: any, idx: number) => ({
+          id: `e-${idx}`,
+          source: e.source,
+          target: e.target,
+          label: e.label,
+          animated: true,
+          style: { stroke: "var(--color-border)" },
+        }));
+
+        const layoutResult = await getLayoutedGraph(reactFlowNodes, reactFlowEdges);
+
+        console.log("ReactFlow Pipeline:", {
+          nodes: reactFlowNodes,
+          edges: reactFlowEdges,
+          layoutedNodes: layoutResult.nodes,
+          layoutedEdges: layoutResult.edges,
+          diagnostics: layoutResult.diagnostics,
+        });
+
+        setNodes(layoutResult.nodes);
+        setEdges(layoutResult.edges);
+        setLayoutDiag(layoutResult.diagnostics);
+      } catch (err: any) {
+        console.error("ReactFlow layout parsing failed:", err);
+        setError(`VisualRenderError: ELK layout failed: ${err.message || err}`);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    computeLayout();
+  }, [data]);
+
+  return (
+    <div className="my-6 p-5 border border-border bg-card shadow-xs rounded-xl text-center">
+      {title && <h4 className="font-heading text-body-base font-bold text-foreground mb-4">{renderRichText(title)}</h4>}
+      <div className="w-full h-[350px] border border-border/60 rounded-lg bg-zinc-50/50 dark:bg-zinc-950/20 overflow-hidden relative">
+        {error ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-6 bg-destructive/5 text-destructive border border-destructive/20 rounded-lg">
+            <AlertTriangle className="size-8 mb-2 text-destructive" />
+            <span className="font-semibold text-body-sm">Diagram Parsing Failed</span>
+            <span className="text-xs text-muted-foreground mt-1 text-center max-w-[80%]">
+              {error}
+            </span>
+          </div>
+        ) : loading ? (
+          <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm font-sans">
+            Menghitung tata letak...
+          </div>
+        ) : (
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={false}
+            panOnDrag={false}
+            zoomOnScroll={false}
+            fitView
+          />
+        )}
+      </div>
+      {layoutDiag && (
+        <div className="mt-2 text-left text-[10px] text-muted-foreground font-mono">
+          Layout duration: {layoutDiag.layoutTimeMs}ms | Cache hit: {layoutDiag.cacheHit ? "YES" : "NO"} | Nodes: {layoutDiag.nodeCount} | Edges: {layoutDiag.edgeCount}
+        </div>
+      )}
+      {caption && <p className="mt-3 text-body-sm text-muted-foreground italic">{renderRichText(caption)}</p>}
+    </div>
+  );
+}
+
+export function VisualRenderer({
+  id,
+  visualType,
+  title,
+  caption,
+  data
+}: {
+  id: string;
+  visualType: "chart" | "graph" | "flowchart" | "diagram";
+  title?: string;
+  caption?: string;
+  data: any;
+}) {
+  switch (visualType) {
+    case "chart":
+      return <ChartRenderer data={data} title={title} caption={caption} />;
+    case "graph":
+      return <GraphRenderer data={data} title={title} caption={caption} />;
+    case "flowchart":
+    case "diagram":
+      return <FlowchartDiagramRenderer data={data} title={title} caption={caption} />;
+    default:
+      return null;
+  }
+}
+
+function ASTBlockRenderer({ block }: { block: ASTBlock }) {
+  switch (block.type) {
+    case "p":
+      return (
+        <p className="text-body-base leading-relaxed">
+          {renderRichText(block.content)}
+        </p>
+      );
+
+    case "h": {
+      const hLvl = block.level || 2;
+      const headingClasses = {
+        1: "text-h2 font-heading font-bold mt-8 mb-4 border-b border-border/60 pb-2.5 tracking-tight",
+        2: "text-h3 font-heading font-bold mt-7 mb-3 tracking-tight",
+        3: "text-h4 font-heading font-bold mt-6 mb-3 tracking-tight",
+        4: "text-h5 font-heading font-semibold mt-5 mb-2.5 tracking-tight",
+        5: "text-h6 font-heading font-semibold mt-4 mb-2 tracking-tight",
+        6: "text-body-base font-heading font-semibold text-muted-foreground mt-4 mb-2 tracking-tight",
+      };
+      const cls = headingClasses[hLvl as 1 | 2 | 3 | 4 | 5 | 6] || headingClasses[2];
+      const HeadingTag = `h${hLvl}` as any;
+      return (
+        <HeadingTag className={cls}>
+          {renderRichText(block.content)}
+        </HeadingTag>
+      );
+    }
+
+    case "list": {
+      const isOrdered = block.items?.[0]?.ordered || false;
+      const ListTag = isOrdered ? "ol" : "ul";
+      return (
+        <ListTag
+          className={cn(
+            "my-4 pl-6 space-y-1.5 leading-relaxed text-body-base",
+            isOrdered ? "list-decimal" : "list-disc"
+          )}
+        >
+          {block.items?.map((item: any, itemIdx: number) => (
+            <li key={itemIdx} className="pl-1">
+              {renderRichText(item.text)}
+            </li>
+          ))}
+        </ListTag>
+      );
+    }
+
+    case "blockquote":
+      return (
+        <blockquote
+          className="my-5 pl-5 border-l-4 border-primary/50 text-muted-foreground italic bg-muted/20 py-2.5 pr-4 rounded-r-xl leading-relaxed text-body-md"
+        >
+          {renderRichText(block.content)}
+        </blockquote>
+      );
+
+    case "table": {
+      const alignments = block.alignments || [];
+      return (
+        <div className="my-6 overflow-x-auto rounded-2xl border border-border shadow-2xs">
+          <table className="w-full text-left border-collapse text-body-sm">
+            <thead>
+              <tr className="bg-muted/80 text-foreground font-semibold border-b border-border/80">
+                {block.headers?.map((header: string, headIdx: number) => {
+                  const align = alignments[headIdx] || "left";
+                  return (
+                    <th
+                      key={headIdx}
+                      className={cn(
+                        "px-4 py-3 font-heading font-bold select-none text-foreground/95",
+                        align === "center" && "text-center",
+                        align === "right" && "text-right"
+                      )}
+                    >
+                      {renderRichText(header)}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows?.map((row: string[], rowIdx: number) => (
+                <tr
+                  key={rowIdx}
+                  className="border-b border-border/40 last:border-b-0 odd:bg-card/30 even:bg-muted/20 transition-colors hover:bg-muted/30"
+                >
+                  {row.map((cell: string, cellIdx: number) => {
+                    const align = alignments[cellIdx] || "left";
+                    return (
+                      <td
+                        key={cellIdx}
+                        className={cn(
+                          "px-4 py-3 text-foreground/80 font-normal leading-relaxed",
+                          align === "center" && "text-center",
+                          align === "right" && "text-right"
+                        )}
+                      >
+                        {renderRichText(cell)}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
+
+    case "code":
+      if (block.language === "desmos" || block.language === "desmos-graph") {
+        return (
+          <InteractiveGraphWidget
+            initialFormula={block.content}
+          />
+        );
+      }
+      return (
+        <CodeBlock
+          language={block.language || "plaintext"}
+          code={block.content}
+        />
+      );
+
+    case "hr":
+      return <hr className="my-8 border-t border-border/80" />;
+
+    case "concept":
+      return (
+        <div id={block.id} className="p-5 border border-border bg-card shadow-xs rounded-xl text-left my-6">
+          <h3 className="text-h4 font-heading font-bold text-foreground mb-3">{renderRichText(block.content.title)}</h3>
+          <MarkdownRenderer content={block.content.bodyMarkdown} />
+        </div>
+      );
+
+    case "formula":
+      const formulaHtml = katex.renderToString(block.content.latex, { throwOnError: false, displayMode: true });
+      return (
+        <div id={block.id} className="p-5 border border-border bg-card shadow-xs rounded-xl text-left my-6">
+          <h4 className="text-h5 font-heading font-bold text-foreground mb-3">{block.content.title ? renderRichText(block.content.title) : "Formula"}</h4>
+          <div className="my-4 overflow-x-auto text-center w-full max-w-full" dangerouslySetInnerHTML={{ __html: formulaHtml }} />
+          {block.content.interpretation && (
+            <div className="mt-3 text-body-sm text-muted-foreground leading-relaxed">
+              <MarkdownRenderer content={block.content.interpretation} />
+            </div>
+          )}
+          {block.content.symbols && block.content.symbols.length > 0 && (
+            <div className="mt-4 overflow-x-auto">
+              <table className="w-full text-left text-body-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-border/85 text-muted-foreground font-semibold">
+                    <th className="py-2 pr-4">Simbol</th>
+                    <th className="py-2 pr-4">Satuan</th>
+                    <th className="py-2 pr-4">Keterangan</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.content.symbols.map((param, idx) => (
+                    <tr key={idx} className="border-b border-border/40 last:border-0">
+                      <td className="py-2 pr-4 font-mono font-bold text-brand-secondary">{renderRichText(param.symbol)}</td>
+                      <td className="py-2 pr-4 text-muted-foreground">{renderRichText(param.unit || "-")}</td>
+                      <td className="py-2 pr-4 text-foreground/80">{renderRichText(param.definition)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+
+    case "formula_reference":
+      const refHtml = katex.renderToString(block.content.latex, { throwOnError: false, displayMode: false });
+      return (
+        <div className="my-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-muted/30 font-medium">
+          <span className="text-body-sm text-muted-foreground">{block.content.label ? renderRichText(block.content.label) : "Formula Reference"}:</span>
+          <span dangerouslySetInnerHTML={{ __html: refHtml }} />
+        </div>
+      );
+
+    case "engineering_insight":
+      return (
+        <div className="my-6 p-5 border border-violet-500/20 bg-violet-500/5 text-violet-950 dark:text-violet-50 rounded-xl">
+          <div className="flex items-center gap-2 text-violet-600 dark:text-violet-400 font-heading font-bold uppercase tracking-wider text-body-xs mb-2">
+            <Sparkles className="size-4 shrink-0" />
+            <span>Wawasan Teknik ({block.metadata.discipline})</span>
+          </div>
+          <h4 className="text-body-base font-bold mb-2 text-foreground">{renderRichText(block.content.title)}</h4>
+          <MarkdownRenderer content={block.content.applicationMarkdown} />
+        </div>
+      );
+
+    case "example":
+      return (
+        <div id={block.id} className="p-5 border border-border bg-card shadow-xs rounded-xl text-left my-6 border-l-4 border-l-brand-primary">
+          <div className="text-body-xs font-bold font-heading uppercase tracking-wider text-brand-primary mb-2">Contoh Soal ({block.metadata.difficulty})</div>
+          <div className="text-body-base text-foreground mb-4">
+            <MarkdownRenderer content={block.content.problemStatement} />
+          </div>
+          <div className="mt-4 pt-4 border-t border-border/45 space-y-4">
+            <div className="font-heading font-bold text-body-sm text-muted-foreground uppercase tracking-wide">Solusi:</div>
+            {block.content.solutionSteps.map((step, idx) => (
+              <div key={idx} className="flex gap-3">
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-brand-primary/10 text-brand-primary text-body-xs font-bold">{step.stepIndex}</span>
+                <div className="flex-1">
+                  <div className="font-semibold text-body-sm mb-1">{renderRichText(step.label)}</div>
+                  <div className="text-body-sm text-foreground/80">
+                    <MarkdownRenderer content={step.explanationMarkdown} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+
+    case "misconception":
+      return (
+        <div id={block.id} className="my-6 border border-border rounded-xl overflow-hidden shadow-xs">
+          <div className="p-4 bg-zinc-50 dark:bg-zinc-900/40 border-b border-border font-heading font-bold text-body-sm text-foreground">
+            Membongkar Mitos & Kesalahpahaman
+          </div>
+          <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+            <div className="p-5 bg-rose-500/5 text-left">
+              <strong className="text-rose-600 dark:text-rose-400 font-heading text-body-xs uppercase tracking-wider block mb-2">Salah paham umum:</strong>
+              <div className="text-body-sm text-foreground/90 font-medium italic">&ldquo;{renderRichText(block.content.myth)}&rdquo;</div>
+            </div>
+            <div className="p-5 bg-emerald-500/5 text-left">
+              <strong className="text-emerald-600 dark:text-emerald-400 font-heading text-body-xs uppercase tracking-wider block mb-2">Koreksi ilmiah:</strong>
+              <div className="text-body-sm text-foreground/90 font-medium leading-relaxed">
+                <MarkdownRenderer content={block.content.correctionMarkdown} />
+              </div>
+            </div>
+          </div>
+          {block.content.physicalRationaleMarkdown && (
+            <div className="p-5 bg-muted/10 text-left border-t border-border">
+              <strong className="text-muted-foreground font-heading text-body-xs uppercase tracking-wider block mb-2">Rasionalisasi Fisika:</strong>
+              <div className="text-body-sm text-muted-foreground leading-relaxed">
+                <MarkdownRenderer content={block.content.physicalRationaleMarkdown} />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+    case "exercise":
+      return (
+        <div id={block.id} className="p-5 border border-border bg-card shadow-xs rounded-xl text-left my-6 border-l-4 border-l-brand-secondary">
+          <div className="text-body-xs font-bold font-heading uppercase tracking-wider text-brand-secondary mb-2">Latihan Mandiri</div>
+          <div className="text-body-base text-foreground leading-relaxed mb-4">
+            <MarkdownRenderer content={block.content.questionMarkdown} />
+          </div>
+        </div>
+      );
+
+    case "summary":
+      return (
+        <div className="p-5 border border-border bg-card shadow-xs rounded-xl text-left my-6">
+          <div className="font-heading font-bold text-body-sm text-muted-foreground uppercase tracking-wide mb-3">Ringkasan Bab:</div>
+          <ul className="list-disc pl-5 space-y-2 text-body-sm text-foreground/80 leading-relaxed">
+            {block.content.bullets.map((bullet, idx) => (
+              <li key={idx} className="pl-1">
+                <MarkdownRenderer content={bullet} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+
+    case "warning":
+    case "note":
+      return (
+        <AlertCallout
+          type={block.type}
+          content={block.content.messageMarkdown}
+        />
+      );
+
+    case "glossary_term":
+      return (
+        <div className="p-4 border border-border bg-card/60 shadow-2xs rounded-xl my-4 flex gap-3.5 leading-relaxed text-left">
+          <Info className="size-5 text-brand-primary shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="text-body-sm font-bold text-foreground mb-1">Glosarium: {renderRichText(block.content.term)}</div>
+            <div className="text-body-sm text-muted-foreground leading-relaxed">{renderRichText(block.content.definition)}</div>
+          </div>
+        </div>
+      );
+
+    case "visual":
+      return (
+        <VisualRenderer
+          id={block.id}
+          visualType={block.visualType}
+          title={block.title}
+          caption={block.caption}
+          data={block.data}
+        />
+      );
+
+    default:
+      return null;
+  }
+}
+
+export function ASTRenderer({ blocks, className }: { blocks: ASTBlock[]; className?: string }) {
+  const hasTextColor = className && /\btext-\w+/.test(className);
+  const sortedBlocks = [...blocks].sort((a, b) => a.globalOrderIndex - b.globalOrderIndex);
+
+  return (
+    <div
+      className={cn(
+        "markdown-article text-left space-y-6 font-sans select-text",
+        !hasTextColor && "text-foreground/90",
+        className
+      )}
+    >
+      {sortedBlocks.map((block, idx) => (
+        <ASTBlockRenderer key={block.id || idx} block={block} />
+      ))}
+    </div>
+  );
+}
+
+export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+  if (typeof content !== "string") {
+    return <ASTRenderer blocks={content} className={className} />;
+  }
+
+  try {
+    const result = compileMarkdown(content);
+    return <ASTRenderer blocks={result.ast.blocks} className={className} />;
+  } catch (err) {
+    console.error("Visual compiler failed, fallback to raw rendering:", err);
+    return (
+      <div className="p-4 bg-status-error/10 border border-status-error/25 text-status-error rounded-xl text-body-sm font-sans">
+        <strong>Visual Compiler Error:</strong>
+        <p className="mt-1 font-mono text-xs">{err instanceof Error ? err.message : String(err)}</p>
+      </div>
+    );
+  }
 }

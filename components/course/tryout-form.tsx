@@ -49,19 +49,11 @@ export function TryoutForm({ courseId, exam }: TryoutFormProps) {
   const [uploadingFile, setUploadingFile] = useState<Record<string, string>>({});
 
   const handleSubmit = useCallback(async () => {
-    const isMock = ["tryout-calc-mid"].includes(exam.id);
-    
     try {
-      if (!isMock) {
-        // Save to Database
-        const res = await submitTryoutAction(courseId, exam.id, answers);
-        if (res.success) {
-          toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar.");
-        }
-      } else {
-        const currentAttempts = parseInt(localStorage.getItem(`zyx-tryout-attempts-${exam.id}`) || "0", 10);
-        localStorage.setItem(`zyx-tryout-attempts-${exam.id}`, (currentAttempts + 1).toString());
-        toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar untuk soal esai.");
+      // Save to Database
+      const res = await submitTryoutAction(courseId, exam.id, answers);
+      if (res.success) {
+        toast.success("Tryout selesai dikumpulkan! Menunggu penilaian pengajar.");
       }
     } catch (err: any) {
       console.error("Error submitting tryout:", err);
