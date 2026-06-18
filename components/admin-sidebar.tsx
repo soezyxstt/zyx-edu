@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   FolderOpen,
@@ -14,91 +14,19 @@ import {
   ClipboardList,
   GraduationCap,
   LogOut,
-  Search,
-  PanelLeftOpen,
-  PanelLeftClose,
   Bell,
   Activity,
   BarChart3,
 } from "lucide-react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
-import { Logo } from "@/components/logo";
-import { useCommandMenu } from "@/components/command-menu";
-import { ThemeToggle } from "@/components/theme-toggle";
-import {
-  Tooltip,
-  TooltipProvider,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
+import { SidebarShell, NavItem } from "@/components/sidebar-shell";
 
-/* ─────────────────────────────────────────────────────────────────
-   SidebarTooltip
-   ───────────────────────────────────────────────────────────────── */
-function SidebarTooltip({
-  label,
-  children,
-  collapsed,
-}: {
-  label: string;
-  children: React.ReactNode;
-  collapsed: boolean;
-}) {
-  if (!collapsed) return <>{children}</>;
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent side="right">{label}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────────────
-   AdminSidebar
-   ───────────────────────────────────────────────────────────────── */
 export function AdminSidebar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const router = useRouter();
-  const { setOpen: setSearchOpen } = useCommandMenu();
-
-  // Initialize to safe defaults to prevent server/client hydration mismatch
-  const [collapsed, setCollapsed] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
-
-  const [mounted, setMounted] = useState(false);
-  const [modKeyHint, setModKeyHint] = useState("Ctrl + K");
-
-  useEffect(() => {
-    setMounted(true);
-    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    setModKeyHint(/Mac|iPhone|iPod|iPad/i.test(ua) ? "⌘K" : "Ctrl + K");
-
-    // Retrieve storage or screen layout status after mounting
-    const stored = localStorage.getItem("admin-sidebar-collapsed");
-    if (stored !== null) {
-      setCollapsed(stored === "true");
-    } else {
-      setCollapsed(window.innerWidth < 768);
-    }
-
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   useEffect(() => {
     if (!profileOpen) return;
@@ -111,31 +39,6 @@ export function AdminSidebar() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [profileOpen]);
 
-  const isCollapsed = isMobile ? false : collapsed;
-
-  const sidebarRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    if (!mobileOpen) return;
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(e.target as Node)) {
-        setMobileOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, [mobileOpen]);
-
-  const toggleCollapsed = useCallback(() => {
-    setCollapsed((v) => {
-      const next = !v;
-      localStorage.setItem("admin-sidebar-collapsed", String(next));
-      return next;
-    });
-  }, []);
-
   const handleLogout = async () => {
     await signOut();
     window.location.href = "/";
@@ -145,60 +48,11 @@ export function AdminSidebar() {
     return pathname === href || (href !== "/admin" && pathname.startsWith(href));
   };
 
-  /* ── Nav item helper ──────────────────────────────── */
-  const NavItem = ({
-    href,
-    icon: Icon,
-    label,
-    active,
-    onClick,
-    className,
-  }: {
-    href?: string;
-    icon: React.ElementType;
-    label: string;
-    active?: boolean;
-    onClick?: (e: React.MouseEvent) => void;
-    className?: string;
-  }) => {
-    const baseClass = cn(
-      "flex items-center gap-3 rounded-xl px-3 py-2.5 text-body-sm font-medium transition-colors w-full",
-      active
-        ? "bg-brand-primary/10 text-brand-primary font-semibold"
-        : "text-muted-foreground hover:bg-muted hover:text-foreground",
-      isCollapsed && "justify-center px-0 size-10 mx-auto",
-      className
-    );
-
-    const content = (
-      <>
-        <Icon className="size-5 shrink-0" />
-        {!isCollapsed && <span>{label}</span>}
-      </>
-    );
-
-    const inner = href ? (
-      <Link href={href} onClick={onClick as undefined} className={baseClass}>
-        {content}
-      </Link>
-    ) : (
-      <button type="button" onClick={onClick} className={cn(baseClass, "cursor-pointer")}>
-        {content}
-      </button>
-    );
-
-    return (
-      <SidebarTooltip label={label} collapsed={isCollapsed}>
-        {inner}
-      </SidebarTooltip>
-    );
-  };
-
-  const UserCard = ({ c = false }: { c?: boolean }) => {
+  const topSection = (c: boolean) => {
     if (!session?.user) return null;
 
     return (
-      <div className="relative" ref={profileRef}>
+      <div className="shrink-0 relative" ref={profileRef}>
         <button
           type="button"
           onClick={() => setProfileOpen(!profileOpen)}
@@ -272,235 +126,150 @@ export function AdminSidebar() {
     );
   };
 
-  return (
-    <>
-      {/* Mobile Backdrop Overlay */}
-      {mounted && (
-        <div
-          style={{
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            backdropFilter: "blur(4px)",
-            opacity: mobileOpen ? 1 : 0,
-            pointerEvents: mobileOpen ? "auto" : "none",
-            transition: "opacity 300ms ease-in-out, backdrop-filter 300ms ease-in-out"
-          }}
-          className="fixed inset-0 z-40 md:hidden cursor-pointer"
-          onClick={() => setMobileOpen(false)}
+  const bottomSection = (c: boolean) => {
+    return (
+      <nav className={cn(
+        "flex flex-col gap-1 pb-4 font-sans text-left",
+        c ? "px-1 items-center" : "px-3"
+      )}>
+        <NavItem
+          href="/dashboard"
+          icon={GraduationCap}
+          label="Beranda Siswa"
+          className="text-tertiary-1 hover:bg-tertiary-1/10 hover:text-tertiary-1 font-semibold"
+          collapsed={c}
         />
-      )}
+      </nav>
+    );
+  };
 
-      {/* Mobile Floating Trigger Button */}
-      {mounted && (
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open navigation"
-          className="flex size-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground hover:text-foreground shadow-sm fixed top-3 left-3 z-40 md:hidden"
-        >
-          <PanelLeftOpen className="size-4" />
-        </button>
-      )}
-
-      <aside
-        ref={sidebarRef}
-        style={{
-          top: 0,
-          height: "100svh",
-          transform: mobileOpen ? "translateX(0)" : undefined
-        }}
+  const navContent = (c: boolean) => {
+    return (
+      <nav
         className={cn(
-          "flex flex-col shrink-0 overflow-hidden",
-          "border-r border-border bg-card",
-          "transition-transform duration-300 ease-in-out",
-          // Mobile sheet mode - starts translated off-screen, width clamped
-          "fixed inset-y-0 left-0 z-50 shadow-xl w-[clamp(248px,80vw,300px)] -translate-x-full",
-          // Desktop persistent mode - sticky, translated to 0, no shadow, custom width
-          "md:sticky md:translate-x-0 md:z-30 md:shadow-none",
-          isCollapsed ? "md:w-[64px]" : "md:w-[248px]"
+          "flex flex-1 flex-col gap-1 py-4 font-sans text-left",
+          c
+            ? "px-1 items-center overflow-y-hidden sidebar-scroll-hidden"
+            : "px-3 overflow-y-auto sidebar-scroll"
         )}
       >
-        {/* Header row: brand + controls */}
-        <div className="flex h-14 shrink-0 items-center border-b border-border px-3 gap-2">
-          {/* Logo – fills remaining space when expanded */}
-          {!isCollapsed && (
-            <Link href="/admin" aria-label="Panel Admin Zyx Academy" className="flex flex-1 min-w-0 items-center">
-              <Logo className="[--logo-height:1.75rem]" />
-            </Link>
-          )}
-          {isCollapsed && <div className="flex-1" />}
+        <NavItem
+          href="/admin"
+          icon={LayoutDashboard}
+          label="Panel Admin"
+          active={isLinkActive("/admin")}
+          collapsed={c}
+        />
 
-          {/* Collapse toggle */}
-          <SidebarTooltip label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"} collapsed={isCollapsed}>
-            <button
-              type="button"
-              onClick={isMobile ? () => setMobileOpen(false) : toggleCollapsed}
-              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
-            </button>
-          </SidebarTooltip>
+        <NavItem
+          href="/admin/courses"
+          icon={GraduationCap}
+          label="Mata Kuliah"
+          active={isLinkActive("/admin/courses")}
+          collapsed={c}
+        />
 
-          {/* Theme toggle – only in header when expanded; collapsed puts it at nav bottom */}
-          {!isCollapsed && <ThemeToggle mode="sidebar" />}
-        </div>
+        <NavItem
+          href="/admin/files"
+          icon={FolderOpen}
+          label="File Storage"
+          active={isLinkActive("/admin/files")}
+          collapsed={c}
+        />
 
-        {/* User Card */}
-        <div className="shrink-0">
-          {mounted && <UserCard c={isCollapsed} />}
-        </div>
+        <NavItem
+          href="/admin/tokens"
+          icon={KeyRound}
+          label="Token Aktivasi"
+          active={isLinkActive("/admin/tokens")}
+          collapsed={c}
+        />
 
-        {/* Search trigger */}
-        <div className="px-3 pt-3 shrink-0">
-          <SidebarTooltip label={`Search  ${modKeyHint}`} collapsed={isCollapsed}>
-            <button
-              type="button"
-              onClick={() => setSearchOpen(true)}
-              className={cn(
-                "flex items-center justify-center gap-2 rounded-xl border border-border bg-muted/40 px-3 py-2 text-muted-foreground transition-all hover:bg-muted/70 hover:text-foreground cursor-pointer",
-                isCollapsed ? "size-10 mx-auto px-0" : "w-full"
-              )}
-            >
-              <Search className="size-4 shrink-0" />
-              {!isCollapsed && (
-                <kbd className="bg-muted px-1.5 py-0.5 rounded border border-border text-[10px] font-mono leading-none font-semibold">
-                  {modKeyHint}
-                </kbd>
-              )}
-            </button>
-          </SidebarTooltip>
-        </div>
+        <NavItem
+          href="/admin/ai/materials"
+          icon={BookText}
+          label="Materi"
+          active={isLinkActive("/admin/ai/materials")}
+          collapsed={c}
+        />
 
-        {/* Navigation */}
-        <nav
-          className={cn(
-            "flex flex-1 flex-col gap-1 py-4 font-sans text-left",
-            isCollapsed
-              ? "px-1 items-center overflow-y-hidden sidebar-scroll-hidden"
-              : "px-3 overflow-y-auto sidebar-scroll"
-          )}
-        >
-          <NavItem
-            href="/admin"
-            icon={LayoutDashboard}
-            label="Panel Admin"
-            active={isLinkActive("/admin")}
-          />
+        <NavItem
+          href="/admin/ai/diktats"
+          icon={Archive}
+          label="Kompilasi Diktat"
+          active={isLinkActive("/admin/ai/diktats")}
+          collapsed={c}
+        />
 
-          {/* Mata Kuliah */}
-          <NavItem
-            href="/admin/courses"
-            icon={GraduationCap}
-            label="Mata Kuliah"
-            active={isLinkActive("/admin/courses")}
-          />
+        <NavItem
+          href="/admin/ai/jobs"
+          icon={Zap}
+          label="Generasi Soal"
+          active={isLinkActive("/admin/ai/jobs")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/files"
-            icon={FolderOpen}
-            label="File Storage"
-            active={isLinkActive("/admin/files")}
-          />
+        <NavItem
+          href="/admin/ai/questions"
+          icon={ListChecks}
+          label="Bank Soal"
+          active={isLinkActive("/admin/ai/questions")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/tokens"
-            icon={KeyRound}
-            label="Token Aktivasi"
-            active={isLinkActive("/admin/tokens")}
-          />
+        <NavItem
+          href="/admin/ai/quizzes"
+          icon={ClipboardList}
+          label="Template Kuis"
+          active={isLinkActive("/admin/ai/quizzes")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/ai/materials"
-            icon={BookText}
-            label="Materi"
-            active={isLinkActive("/admin/ai/materials")}
-          />
+        <NavItem
+          href="/admin/ai/distractors"
+          icon={BarChart3}
+          label="Analitik Distraktor"
+          active={isLinkActive("/admin/ai/distractors")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/ai/diktats"
-            icon={Archive}
-            label="Kompilasi Diktat"
-            active={isLinkActive("/admin/ai/diktats")}
-          />
+        <NavItem
+          href="/admin/ai/keys"
+          icon={KeyRound}
+          label="API Keys"
+          active={isLinkActive("/admin/ai/keys")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/ai/jobs"
-            icon={Zap}
-            label="Generasi Soal"
-            active={isLinkActive("/admin/ai/jobs")}
-          />
+        <NavItem
+          href="/admin/notifications"
+          icon={Bell}
+          label="Push Notification"
+          active={isLinkActive("/admin/notifications")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/ai/questions"
-            icon={ListChecks}
-            label="Bank Soal"
-            active={isLinkActive("/admin/ai/questions")}
-          />
+        <NavItem
+          href="/admin/ops"
+          icon={Activity}
+          label="Ops Monitor"
+          active={isLinkActive("/admin/ops")}
+          collapsed={c}
+        />
 
-          <NavItem
-            href="/admin/ai/quizzes"
-            icon={ClipboardList}
-            label="Template Kuis"
-            active={isLinkActive("/admin/ai/quizzes")}
-          />
+        <div className="flex-1" />
+      </nav>
+    );
+  };
 
-  <NavItem
-    href="/admin/ai/distractors"
-    icon={BarChart3}
-    label="Analitik Distraktor"
-    active={isLinkActive("/admin/ai/distractors")}
-  />
-
-  <NavItem
-    href="/admin/ai/keys"
-    icon={KeyRound}
-    label="API Keys"
-    active={isLinkActive("/admin/ai/keys")}
-  />
-
-          {/* Push Notification */}
-          <NavItem
-            href="/admin/notifications"
-            icon={Bell}
-            label="Push Notification"
-            active={isLinkActive("/admin/notifications")}
-          />
-
-          {/* Ops Monitor */}
-          <NavItem
-            href="/admin/ops"
-            icon={Activity}
-            label="Ops Monitor"
-            active={isLinkActive("/admin/ops")}
-          />
-
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Theme toggle at bottom when collapsed (header hides it in collapsed state) */}
-          {isCollapsed && (
-            <div className="flex justify-center">
-              <ThemeToggle mode="sidebar" />
-            </div>
-          )}
-
-          {/* Beranda Siswa */}
-          <NavItem
-            href="/dashboard"
-            icon={GraduationCap}
-            label="Beranda Siswa"
-            className="text-tertiary-1 hover:bg-tertiary-1/10 hover:text-tertiary-1 font-semibold"
-          />
-
-          {/* Sign out */}
-          <NavItem
-            icon={LogOut}
-            label="Keluar"
-            onClick={handleLogout}
-            className="text-muted-foreground hover:bg-status-error/10 hover:text-status-error"
-          />
-        </nav>
-      </aside>
-    </>
+  return (
+    <SidebarShell
+      collapsedKey="admin-sidebar-collapsed"
+      logoHref="/admin"
+      logoLabel="Panel Admin Zyx Academy"
+      nav={navContent}
+      topSection={topSection}
+      bottomSection={bottomSection}
+    />
   );
 }

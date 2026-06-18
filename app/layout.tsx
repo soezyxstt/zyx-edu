@@ -4,9 +4,7 @@ import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import "./globals.css";
 import { uploadRouter } from "@/app/api/uploadthing/core";
-import { AppChrome } from "@/components/app-chrome";
 import { AppToaster } from "@/components/app-toaster";
-import { env } from "@/lib/env";
 import { DesmosCalculatorScript } from "@/components/desmos-calculator-script";
 import { pageTitle, siteDescription } from "@/lib/site";
 import { PushPermissionInit } from "@/components/notifications/push-permission-init";
@@ -14,6 +12,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "next-themes";
+import { TutorProvider } from "@/components/course/tutor-drawer";
+import { CommandMenuProvider } from "@/components/command-menu";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -71,13 +71,11 @@ export default function RootLayout({
   >
   Langsung ke isi utama
   </a>
-  <AppChrome
-  showStudyPath={env.FEATURE_STUDY_PATH === "1"}
-  showMastery={env.FEATURE_MASTERY === "1"}
-  showLive={env.FEATURE_LIVE === "1"}
-  >
-  {children}
-  </AppChrome>
+  <TutorProvider>
+   <CommandMenuProvider>
+    {children}
+   </CommandMenuProvider>
+  </TutorProvider>
   <AppToaster />
   {/* Silent FCM permission + token registration ; no UI rendered */}
   <PushPermissionInit />

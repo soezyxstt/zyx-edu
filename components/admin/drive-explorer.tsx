@@ -29,7 +29,7 @@ import {
  driveDeleteItems,
  driveMoveItems,
  driveRenameItem,
-} from "@/app/admin/files/actions";
+} from "@/app/(admin)/admin/files/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
  Dialog,

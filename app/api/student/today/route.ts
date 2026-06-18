@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { env } from "@/lib/env";
-import { getStudentEnrollments } from "@/app/dashboard/actions";
+import { getStudentEnrollments } from "@/app/(student)/dashboard/actions";
 import { getOrUpdateStreak, getWeeklyActivity } from "@/lib/streak-service";
 import { getOrBuildTodayRecommendation } from "@/lib/recommendation-service";
 

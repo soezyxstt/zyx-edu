@@ -18,7 +18,7 @@ Vercel (Next.js App Router)
 
 1. Connect repo to Vercel
 2. Set all env vars from `lib/env.ts` in Vercel dashboard
-3. Deploy — App Router + Server Actions work natively
+3. Deploy ; App Router + Server Actions work natively
 
 ## Turso Database
 

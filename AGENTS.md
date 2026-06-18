@@ -157,3 +157,9 @@ Use the **`photo-*`** classes on `<img>` or `next/image` for consistent crop, ra
 2. **Color**: **`foreground` / `muted-foreground` / `primary` / `border`** before raw brand or `gray-*`.
 3. **Images**: Pick **`photo-hero` | `photo-card` | `photo-banner` | `photo-thumb` | `photo-inline`** by layout role.
 4. **Dark mode**: Test with **`.dark`**; rely on semantic tokens so components stay consistent.
+
+---
+
+## No Em/En Dashes
+
+- Never use em dashes or en dashes (long hyphen characters) in any file. Use `;`, `,`, or `.` instead. This applies to code comments, UI copy, metadata descriptions, and documentation.

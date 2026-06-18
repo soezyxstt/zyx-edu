@@ -9,16 +9,16 @@
 Every content asset exists in one of four layers, from source to student-facing product:
 
 ```
- Human Artifacts     — Original PDFs in R2 (archival/student reference only)
- Canonical Content   — Verified Markdown documents (source of truth)
- Structured Knowledge — Derived objects (KOs, assessment objects, profiles, policies)
- AI Products         — Compiled interactive assets (popovers, flashcards, quizzes, diktats)
+ Human Artifacts     ; Original PDFs in R2 (archival/student reference only)
+ Canonical Content   ; Verified Markdown documents (source of truth)
+ Structured Knowledge ; Derived objects (KOs, assessment objects, profiles, policies)
+ AI Products         ; Compiled interactive assets (popovers, flashcards, quizzes, diktats)
 ```
 
-- **Layer 1 — Human Artifacts**: Original PDFs uploaded to Cloudflare R2 solely for archival and student reference. AI systems do not parse them directly.
-- **Layer 2 — Canonical Content**: Verified Markdown documents stored in Turso. Two types: *Learning Canonical* (`calculus_chapter_4.md`) and *Assessment Canonical* (`uts_2024.md`). These are the official academic sources of truth.
-- **Layer 3 — Structured Knowledge**: Automatically extracted from Canonical Content. Includes Knowledge Objects (concept graph, flashcards, Zyra context), Assessment Objects (structured questions, difficulty, patterns), Assessment Profiles (dynamic summary metrics), and Course Policies (static teacher-defined rules).
-- **Layer 4 — AI Products**: Compiled interactive assets served to students — interactive popovers, flashcards, printable diktats, quiz questions.
+- **Layer 1 ; Human Artifacts**: Original PDFs uploaded to Cloudflare R2 solely for archival and student reference. AI systems do not parse them directly.
+- **Layer 2 ; Canonical Content**: Verified Markdown documents stored in Turso. Two types: *Learning Canonical* (`calculus_chapter_4.md`) and *Assessment Canonical* (`uts_2024.md`). These are the official academic sources of truth.
+- **Layer 3 ; Structured Knowledge**: Automatically extracted from Canonical Content. Includes Knowledge Objects (concept graph, flashcards, Zyra context), Assessment Objects (structured questions, difficulty, patterns), Assessment Profiles (dynamic summary metrics), and Course Policies (static teacher-defined rules).
+- **Layer 4 ; AI Products**: Compiled interactive assets served to students ; interactive popovers, flashcards, printable diktats, quiz questions.
 
 ---
 
@@ -26,10 +26,10 @@ Every content asset exists in one of four layers, from source to student-facing 
 
 ```
 Course (courses)
- └── Chapter (chapters) — ordered by orderIndex
-      ├── Knowledge Object (knowledge_objects) — typed: definition|formula|example|misconception|exercise|summary|objective|concept_overview
-      │    ├── has concept (concepts) via conceptId — canonical cross-course concept
-      │    │    └── localizations (concept_localizations) — id/en display names + aliases
+ └── Chapter (chapters) ; ordered by orderIndex
+      ├── Knowledge Object (knowledge_objects) ; typed: definition|formula|example|misconception|exercise|summary|objective|concept_overview
+      │    ├── has concept (concepts) via conceptId ; canonical cross-course concept
+      │    │    └── localizations (concept_localizations) ; id/en display names + aliases
       │    ├── belongs to MTD (master_teaching_documents) via mtdId
       │    │    └── MTD has type: "learning" | "assessment"
       │    ├── feeds into → website_materials (compiled chapter material)
@@ -38,17 +38,17 @@ Course (courses)
       │    ├── feeds into → knowledge_relationships (prerequisite/related/extends graph)
       │    ├── feeds into → vector_sync_queue (Pinecone/Vectorize sync)
       │    └── feeds into → learning_events (mastery tracking)
-      ├── Website Material (website_materials) — 1 per chapter, compiled from KOs
-      │    └── Versions (website_material_versions) — edit history
-      ├── Flashcard Set (flashcard_sets) — 1 per chapter, generated from KOs
-      │    └── Flashcards (flashcards) — individual front/back cards
-      ├── Diktat (diktats) — compiled PDF, references MTD
-      ├── Student Progress (student_chapter_progress) — per-student unlock/completion
-      ├── AI Generation Job (ai_generation_jobs) — tracks Gemini work
-      └── Course Materials (course_materials) — uploaded PDFs (materi_kelas / contoh_soal)
+      ├── Website Material (website_materials) ; 1 per chapter, compiled from KOs
+      │    └── Versions (website_material_versions) ; edit history
+      ├── Flashcard Set (flashcard_sets) ; 1 per chapter, generated from KOs
+      │    └── Flashcards (flashcards) ; individual front/back cards
+      ├── Diktat (diktats) ; compiled PDF, references MTD
+      ├── Student Progress (student_chapter_progress) ; per-student unlock/completion
+      ├── AI Generation Job (ai_generation_jobs) ; tracks Gemini work
+      └── Course Materials (course_materials) ; uploaded PDFs (materi_kelas / contoh_soal)
 
 Assessment-specific (for type="assessment" MTDs):
- └── Assessment Object (assessment_objects) — parsed from assessment canonical
+ └── Assessment Object (assessment_objects) ; parsed from assessment canonical
       ├── questionType, difficulty, pattern, reasoningType, estimatedSteps
       ├── concepts (json array of concept references)
       └── feeds into → assessment_profiles (per-course rollup)
@@ -66,7 +66,7 @@ Assessment-specific (for type="assessment" MTDs):
 
 ---
 
-## 3. Database Schema — All Tables
+## 3. Database Schema ; All Tables
 
 ### Auth Domain (Better-Auth)
 | Table | Purpose |
@@ -79,7 +79,7 @@ Assessment-specific (for type="assessment" MTDs):
 ### Course & Enrollment
 | Table | Purpose |
 |---|---|
-| `courses` | Course catalog — title, category (enum of ~55 majors), description |
+| `courses` | Course catalog ; title, category (enum of ~55 majors), description |
 | `enrollments` | User→Course with expiry date (semester lock) |
 | `groups` | Student groups (batch/class cohorts) |
 | `group_members` | User→Group M:N |
@@ -112,7 +112,7 @@ Assessment-specific (for type="assessment" MTDs):
 #### Knowledge Architecture
 | Table | Purpose |
 |---|---|
-| `knowledge_objects` | Atomic learning unit — typed, bloom-leveled, difficulty, importance, linked to concept + MTD + chapter |
+| `knowledge_objects` | Atomic learning unit ; typed, bloom-leveled, difficulty, importance, linked to concept + MTD + chapter |
 | `knowledge_relationships` | KO→KO edges: prerequisite, related, extends, example_of, misconception_of |
 | `concepts` | Canonical cross-course concept registry (slug-based) |
 | `concept_localizations` | id\|en display names + aliases + embeddings per concept |
@@ -122,13 +122,13 @@ Assessment-specific (for type="assessment" MTDs):
 | Table | Purpose |
 |---|---|
 | `assessment_objects` | Extracted assessment metadata per MTD: questionType, difficulty, applicationLevel, pattern, reasoningType, estimatedSteps, concepts |
-| `assessment_profiles` | One per course: difficultyDistribution, commonPatterns, topContexts — automatically computed from assessment_objects |
-| `course_policies` | One per course: maxApplicationLevel, maxEstimatedSteps, forbiddenContexts, allowedPatterns — teacher-defined |
+| `assessment_profiles` | One per course: difficultyDistribution, commonPatterns, topContexts ; automatically computed from assessment_objects |
+| `course_policies` | One per course: maxApplicationLevel, maxEstimatedSteps, forbiddenContexts, allowedPatterns ; teacher-defined |
 
 #### Published Assets
 | Table | Purpose |
 |---|---|
-| `website_materials` | Compiled chapter material — canonicalMarkdown + structuredContent (AST JSON) + termIndex, generationHash, isStale, slug |
+| `website_materials` | Compiled chapter material ; canonicalMarkdown + structuredContent (AST JSON) + termIndex, generationHash, isStale, slug |
 | `website_material_versions` | Edit history with author tracking |
 | `flashcard_sets` | Per-chapter flashcard sets, hash-versioned, sourceMtdId, isStale |
 | `flashcards` | Front/back/explanation, linked to KO |
@@ -158,7 +158,7 @@ Assessment-specific (for type="assessment" MTDs):
 #### Vector Sync
 | Table | Purpose |
 |---|---|
-| `vector_sync_queue` | Transactional outbox for Pinecone/Vectorize sync — upsert/delete, retry with backoff, namespace field for multi-index routing |
+| `vector_sync_queue` | Transactional outbox for Pinecone/Vectorize sync ; upsert/delete, retry with backoff, namespace field for multi-index routing |
 
 #### Mastery & Analytics
 | Table | Purpose |
@@ -194,7 +194,7 @@ Assessment-specific (for type="assessment" MTDs):
 ```
 Upload PDF via UploadThing or direct R2
   │
-  ├──→ Admin Drive (/admin/files) — Google-Drive-style folder tree
+  ├──→ Admin Drive (/admin/files) ; Google-Drive-style folder tree
   │
   ├──→ Create Master Teaching Document (MTD)
   │    ├── Select type: "learning" or "assessment"
@@ -318,20 +318,20 @@ Student redeems enrollment token
      └── Quick links to materials/quizzes/flashcards
 
   → Course Portal (/courses/[id]):
-     ├── Material viewer — renders website_materials (markdown + AST)
+     ├── Material viewer ; renders website_materials (markdown + AST)
      │    └── Interactive popover on terms (termIndex → concept lookup)
-     ├── Quiz player — selects questions from ai_question_bank via quiz_templates.selectionRules
+     ├── Quiz player ; selects questions from ai_question_bank via quiz_templates.selectionRules
      │    ├── Creates student_quiz_attempts with question snapshot + masteryBefore
      │    ├── Auto-grades MC, flags essays as pending_review
      │    ├── Records learning_events for mastery update
      │    └── Shows results with mistake feedback (attempt_feedback)
-     ├── Tryout — timed exam mode
-     ├── Flashcards — SM-2 spaced repetition (student_flashcard_progress)
-     ├── Live quiz — join via code, real-time leaderboard (WebSocket/SSE via zyxrealtime Worker)
-     ├── AI Tutor — Gemini chat with RAG (Pinecone vector search, namespace: "learning")
-     ├── Tutor Booking — book slots from tutor_slots
-     ├── Leaderboard — per-course ranking
-     └── My Results — attempt history + mastery graph
+     ├── Tryout ; timed exam mode
+     ├── Flashcards ; SM-2 spaced repetition (student_flashcard_progress)
+     ├── Live quiz ; join via code, real-time leaderboard (WebSocket/SSE via zyxrealtime Worker)
+     ├── AI Tutor ; Gemini chat with RAG (Pinecone vector search, namespace: "learning")
+     ├── Tutor Booking ; book slots from tutor_slots
+     ├── Leaderboard ; per-course ranking
+     └── My Results ; attempt history + mastery graph
 
 Mastery System (background, Inngest cron):
   learning_events → student_concept_mastery recomputed
@@ -371,88 +371,88 @@ Mastery System (background, Inngest cron):
 
 ```
 app/
-├── courses/[id]/        — Course portal (material, quiz, tryout, flashcard, live, mastery, path, leaderboard, my-results)
-├── dashboard/           — Student hub (active classes, weak concepts, recommendations)
+├── courses/[id]/        ; Course portal (material, quiz, tryout, flashcard, live, mastery, path, leaderboard, my-results)
+├── dashboard/           ; Student hub (active classes, weak concepts, recommendations)
 ├── admin/
-│   ├── ai/              — AI generation: materials, questions, quizzes, diktats, distractors, jobs, keys, analytics
-│   ├── courses/         — Course CRUD
-│   ├── files/           — UploadThing drive explorer
-│   └── tokens/          — Enrollment token management
+│   ├── ai/              ; AI generation: materials, questions, quizzes, diktats, distractors, jobs, keys, analytics
+│   ├── courses/         ; Course CRUD
+│   ├── files/           ; UploadThing drive explorer
+│   └── tokens/          ; Enrollment token management
 ├── api/
-│   ├── uploadthing/     — UploadThing route handler
-│   ├── inngest/         — Inngest serve endpoint
-│   ├── admin/           — Admin API routes (materials, canonical validation, type selection)
-│   ├── quiz/            — Quiz submission endpoints
-│   └── storage/         — R2 signed URLs
-├── about/               — About page
-├── plans/               — Pricing plans
-├── testimonial/         — Testimonials
-├── profile/             — User profile
-├── settings/            — User settings
-├── tutor/               — Tutor portal
-└── feedback/            — Feedback forms
+│   ├── uploadthing/     ; UploadThing route handler
+│   ├── inngest/         ; Inngest serve endpoint
+│   ├── admin/           ; Admin API routes (materials, canonical validation, type selection)
+│   ├── quiz/            ; Quiz submission endpoints
+│   └── storage/         ; R2 signed URLs
+├── about/               ; About page
+├── plans/               ; Pricing plans
+├── testimonial/         ; Testimonials
+├── profile/             ; User profile
+├── settings/            ; User settings
+├── tutor/               ; Tutor portal
+└── feedback/            ; Feedback forms
 
 lib/
-├── db/                  — Database client & schema
-├── ai/                  — AI utilities & analytics
-├── storage/             — Storage abstraction (UploadThing + R2 providers)
+├── db/                  ; Database client & schema
+├── ai/                  ; AI utilities & analytics
+├── storage/             ; Storage abstraction (UploadThing + R2 providers)
 
 ├── (AI Core)
-│   ├── gemini.ts                — Gemini provider (generateContentWithFallback, embedText)
-│   ├── ai-router.ts             — Use-case → model routing with fallback chains
-│   ├── canonical-validator.ts   — Pre-ingestion markdown structure validation (vNext)
-│   ├── assessment-extractor.ts  — Assessment MTD parsing & classification (vNext)
-│   ├── pedagogical-validator.ts — Policy-guarded question validation (vNext)
-│   ├── question-blueprint-engine.ts — Per-KO blueprint generation (vNext)
-│   ├── question-validator.ts    — Structural validation of generated questions
-│   ├── distractor-mapper.ts     — Maps wrong options to misconception KOs
-│   ├── generation-pipeline.ts   — Question generation orchestration
-│   ├── ko-extractor.ts          — KO extraction from learning-type MTDs
-│   ├── ko-utils.ts              — Shared utilities (repairJson, slugify, etc.)
-│   ├── material-generator.ts    — Website material generation (Gemini → markdown)
-│   ├── material-storage.ts      — Save compiled material + AST + versioning
-│   ├── flashcard-generator.ts   — Flashcard generation
-│   ├── question-generator.ts    — Question generation + validation
-│   ├── diktat-generator.ts      — PDF compilation via Puppeteer
-│   ├── ingestion-parser.ts      — Markdown → sections → chunks
-│   ├── markdown-compiler.ts     — Custom markdown → AST parser
-│   ├── ast-validator.ts         — Zod AST validation
-│   ├── term-index.ts            — Build interactive term index
-│   ├── term-match.ts            — Term matching for popover
-│   └── graph-trace.ts           — Concept graph construction
+│   ├── gemini.ts                ; Gemini provider (generateContentWithFallback, embedText)
+│   ├── ai-router.ts             ; Use-case → model routing with fallback chains
+│   ├── canonical-validator.ts   ; Pre-ingestion markdown structure validation (vNext)
+│   ├── assessment-extractor.ts  ; Assessment MTD parsing & classification (vNext)
+│   ├── pedagogical-validator.ts ; Policy-guarded question validation (vNext)
+│   ├── question-blueprint-engine.ts ; Per-KO blueprint generation (vNext)
+│   ├── question-validator.ts    ; Structural validation of generated questions
+│   ├── distractor-mapper.ts     ; Maps wrong options to misconception KOs
+│   ├── generation-pipeline.ts   ; Question generation orchestration
+│   ├── ko-extractor.ts          ; KO extraction from learning-type MTDs
+│   ├── ko-utils.ts              ; Shared utilities (repairJson, slugify, etc.)
+│   ├── material-generator.ts    ; Website material generation (Gemini → markdown)
+│   ├── material-storage.ts      ; Save compiled material + AST + versioning
+│   ├── flashcard-generator.ts   ; Flashcard generation
+│   ├── question-generator.ts    ; Question generation + validation
+│   ├── diktat-generator.ts      ; PDF compilation via Puppeteer
+│   ├── ingestion-parser.ts      ; Markdown → sections → chunks
+│   ├── markdown-compiler.ts     ; Custom markdown → AST parser
+│   ├── ast-validator.ts         ; Zod AST validation
+│   ├── term-index.ts            ; Build interactive term index
+│   ├── term-match.ts            ; Term matching for popover
+│   └── graph-trace.ts           ; Concept graph construction
 
 ├── (Vector & Search)
-│   ├── vector-store.ts          — Store abstraction (Pinecone / Vectorize / dual)
-│   ├── pinecone.ts              — Pinecone client driver
-│   ├── vectorize-client.ts      — Cloudflare Vectorize client
-│   └── context-assembly.ts      — RAG context assembly for AI tutor
+│   ├── vector-store.ts          ; Store abstraction (Pinecone / Vectorize / dual)
+│   ├── pinecone.ts              ; Pinecone client driver
+│   ├── vectorize-client.ts      ; Cloudflare Vectorize client
+│   └── context-assembly.ts      ; RAG context assembly for AI tutor
 
 ├── (Jobs)
-│   ├── inngest.ts               — Inngest client
-│   └── inngest-functions.ts     — Background job handlers (vector sync, assessment ingest, mastery, etc.)
+│   ├── inngest.ts               ; Inngest client
+│   └── inngest-functions.ts     ; Background job handlers (vector sync, assessment ingest, mastery, etc.)
 
 ├── (Learning Analytics)
-│   ├── mastery-store.ts         — Mastery score computation
-│   ├── learner-profile.ts       — Student profile aggregation
-│   ├── recommendation-service.ts — Daily recommendations
-│   ├── intervention-service.ts  — Intervention generation
-│   ├── mistake-feedback.ts      — Per-question mistake analysis
-│   ├── reflection-service.ts    — Weekly reflection generation
-│   ├── streak-service.ts        — Streak computation
-│   ├── study-path-service.ts    — Personalized study paths
-│   └── cohort-analytics.ts      — Cohort-level analytics
+│   ├── mastery-store.ts         ; Mastery score computation
+│   ├── learner-profile.ts       ; Student profile aggregation
+│   ├── recommendation-service.ts ; Daily recommendations
+│   ├── intervention-service.ts  ; Intervention generation
+│   ├── mistake-feedback.ts      ; Per-question mistake analysis
+│   ├── reflection-service.ts    ; Weekly reflection generation
+│   ├── streak-service.ts        ; Streak computation
+│   ├── study-path-service.ts    ; Personalized study paths
+│   └── cohort-analytics.ts      ; Cohort-level analytics
 
 ├── (Infrastructure)
-│   ├── drive.ts                 — Admin drive folder/file operations
-│   ├── uploadthing.ts           — UploadThing client components
-│   ├── kv-cache.ts              — KV cache wrapper
-│   ├── env.ts                   — Environment variables & feature flags
-│   ├── auth.ts / auth-client.ts / auth-redirect.ts — Auth helpers
-│   ├── pubic-app-url.ts         — Public URL helper
-│   └── whatsapp-admin.ts        — WhatsApp admin notifications
+│   ├── drive.ts                 ; Admin drive folder/file operations
+│   ├── uploadthing.ts           ; UploadThing client components
+│   ├── kv-cache.ts              ; KV cache wrapper
+│   ├── env.ts                   ; Environment variables & feature flags
+│   ├── auth.ts / auth-client.ts / auth-redirect.ts ; Auth helpers
+│   ├── pubic-app-url.ts         ; Public URL helper
+│   └── whatsapp-admin.ts        ; WhatsApp admin notifications
 ├── notifications/
-│   └── jobs.ts                  — Push notification job logic
-└── site.ts, site-search.ts, testimonials.ts, youtube.ts — Static content
+│   └── jobs.ts                  ; Push notification job logic
+└── site.ts, site-search.ts, testimonials.ts, youtube.ts ; Static content
 ```
 
 ---
@@ -494,9 +494,9 @@ lib/
                └──────────────────┘
 
 Cloudflare Workers (deployed via wrangler):
-  ├── zyx-vector-api     — Vectorize upsert/query/delete proxy
-  ├── zyxrealtime         — Live quiz WebSocket/SSE server
-  └── zyxacademydiktat    — Puppeteer PDF renderer (hosted on Railway)
+  ├── zyx-vector-api     ; Vectorize upsert/query/delete proxy
+  ├── zyxrealtime         ; Live quiz WebSocket/SSE server
+  └── zyxacademydiktat    ; Puppeteer PDF renderer (hosted on Railway)
 ```
 
 ### Key Production Differences from Dev
@@ -512,7 +512,7 @@ Cloudflare Workers (deployed via wrangler):
 | **Analytics** | None | Vercel Analytics + Speed Insights + Sentry |
 
 ### Feature Flags (env `FEATURE_*`)
-Gradual rollout via env vars — all default to off unless set to `"1"`:
+Gradual rollout via env vars ; all default to off unless set to `"1"`:
 ```
 FEATURE_MASTERY, FEATURE_TODAY, FEATURE_EMBED, FEATURE_MISCONCEPTION,
 FEATURE_REMEDIATION, FEATURE_MATERIAL_LIVE, FEATURE_FC_DIFFICULTY,

@@ -1,4 +1,4 @@
-# Zyx Academy — Features & Workflows
+# Zyx Academy ; Features & Workflows
 
 ## What It Is
 
@@ -36,7 +36,7 @@ Zyx Academy is an AI-powered learning management platform. It takes expert teach
 
 ### MTD → Knowledge Objects (KO)
 1. Admin uploads a markdown master document
-2. Gemini extracts atomic KOs — each a definition, formula, misconception, example, or exercise
+2. Gemini extracts atomic KOs ; each a definition, formula, misconception, example, or exercise
 3. Each KO tagged with Bloom's level, difficulty, type, LaTeX math
 4. KOs synced to vector database for RAG search (`course_{courseId}_learning` namespace)
 
@@ -48,7 +48,7 @@ Zyx Academy is an AI-powered learning management platform. It takes expert teach
 
 ### Flashcards (SM-2 Spaced Repetition)
 - Cards auto-generated from KOs per chapter
-- SM-2 algorithm schedules reviews with recall grades 1–4
+- SM-2 algorithm schedules reviews with recall grades 1;4
 - Ease factor adjusts card difficulty dynamically
 - Safety floor recovery prevents forgetting after long intervals
 
@@ -72,6 +72,6 @@ Zyx Academy is an AI-powered learning management platform. It takes expert teach
 ## Money & Quota Rules
 
 - AI quota spent only on: tutoring, mistake feedback, content generation
-- Streaks, recommendations, study paths, reflections — all deterministic SQL
+- Streaks, recommendations, study paths, reflections ; all deterministic SQL
 - Students capped at 30 AI requests/day
 - KV writes capped at 900/day; reads unrestricted

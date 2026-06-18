@@ -27,32 +27,32 @@ bun run dev                  # http://localhost:3000
 Configured via `.env.local`. All vars are validated at startup by `lib/env.ts` (`@t3-oss/env-nextjs`).
 
 ### Required
-- `DATABASE_URL` — local SQLite path (e.g. `file:dev.db`) or Turso URL
-- `BETTER_AUTH_SECRET` — 32+ char high-entropy secret (`openssl rand -base64 32`)
-- `BETTER_AUTH_URL` — app origin for OAuth callbacks
-- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — Google OAuth
-- `UPLOADTHING_TOKEN` — UploadThing API token
-- `GEMINI_API_KEY` — Google Gemini API key (4-key rotation supported)
-- `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` — Inngest job queue
+- `DATABASE_URL` ; local SQLite path (e.g. `file:dev.db`) or Turso URL
+- `BETTER_AUTH_SECRET` ; 32+ char high-entropy secret (`openssl rand -base64 32`)
+- `BETTER_AUTH_URL` ; app origin for OAuth callbacks
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` ; Google OAuth
+- `UPLOADTHING_TOKEN` ; UploadThing API token
+- `GEMINI_API_KEY` ; Google Gemini API key (4-key rotation supported)
+- `INNGEST_EVENT_KEY` / `INNGEST_SIGNING_KEY` ; Inngest job queue
 
-### Optional — Storage
-- `R2_ENDPOINT`, `R2_BUCKET`, `R2_PUBLIC_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` — Cloudflare R2
-- `STORAGE_PROVIDER_MODE` — `r2` (default) or `uploadthing`
+### Optional ; Storage
+- `R2_ENDPOINT`, `R2_BUCKET`, `R2_PUBLIC_URL`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` ; Cloudflare R2
+- `STORAGE_PROVIDER_MODE` ; `r2` (default) or `uploadthing`
 
-### Optional — AI Gateway
-- `CF_AI_GATEWAY_URL`, `CF_AI_GATEWAY_TOKEN` — Cloudflare AI Gateway
-- `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN` — KV cache for tutor
+### Optional ; AI Gateway
+- `CF_AI_GATEWAY_URL`, `CF_AI_GATEWAY_TOKEN` ; Cloudflare AI Gateway
+- `CF_ACCOUNT_ID`, `CF_KV_NAMESPACE_ID`, `CF_API_TOKEN` ; KV cache for tutor
 
-### Optional — Vector Store
-- `PINECONE_API_KEY`, `PINECONE_INDEX_NAME` — Pinecone (default)
-- `VECTOR_STORE` — `pinecone` (dev) | `dual` | `vectorize`
-- `VECTORIZE_WORKER_URL`, `VECTORIZE_SHARED_SECRET` — Cloudflare Vectorize
+### Optional ; Vector Store
+- `PINECONE_API_KEY`, `PINECONE_INDEX_NAME` ; Pinecone (default)
+- `VECTOR_STORE` ; `pinecone` (dev) | `dual` | `vectorize`
+- `VECTORIZE_WORKER_URL`, `VECTORIZE_SHARED_SECRET` ; Cloudflare Vectorize
 
-### Optional — Production Services
-- `DIKTAT_RENDERER_URL`, `DIKTAT_RENDERER_SECRET` — Puppeteer PDF service
-- `NEXT_PUBLIC_REALTIME_URL`, `LIVE_HMAC_SECRET` — Live quiz Worker
-- `WHATSAPP_ADMIN_NUMBER` — Admin WhatsApp notifications
-- `SENTRY_*` — Error tracking
+### Optional ; Production Services
+- `DIKTAT_RENDERER_URL`, `DIKTAT_RENDERER_SECRET` ; Puppeteer PDF service
+- `NEXT_PUBLIC_REALTIME_URL`, `LIVE_HMAC_SECRET` ; Live quiz Worker
+- `WHATSAPP_ADMIN_NUMBER` ; Admin WhatsApp notifications
+- `SENTRY_*` ; Error tracking
 
 ## Feature Flags
 

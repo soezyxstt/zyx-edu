@@ -233,7 +233,7 @@ export class GeminiKeyPool {
     for (const key of this.keys) {
       const state = this.getSchedulerState(key.id, modelId);
 
-      // Check RPD (daily quota) — skip if exhausted for today
+      // Check RPD (daily quota); skip if exhausted for today
       const todayCount = this.cleanAndGetRpd(state);
       if (todayCount >= state.rpdLimit) {
         continue;

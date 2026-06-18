@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { saveCourse, deleteCourse, getCourseChapters, saveChapter, deleteChapter } from "@/app/admin/courses/actions";
+import { saveCourse, deleteCourse, getCourseChapters, saveChapter, deleteChapter } from "@/app/(admin)/admin/courses/actions";
 import { Edit, Trash2, Check, X, Layers, Plus, Loader2, ListOrdered } from "lucide-react";
 import {
   Dialog,

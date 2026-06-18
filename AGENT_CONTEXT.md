@@ -81,7 +81,7 @@ None
 - Lists: `divide-y divide-border`, each row `py-3 flex items-center justify-between gap-4`. Not card grids.
 - Cards only where spec says Card: `bg-card border border-border shadow-sm rounded-xl`. No nested cards.
 - Mobile: single column under `sm:`, test at 380px.
-- Dark mode: semantic tokens only — `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-muted`, `text-primary`, `text-status-*`. Zero raw hex, zero default Tailwind palette.
+- Dark mode: semantic tokens only; `bg-background`, `text-foreground`, `text-muted-foreground`, `border-border`, `bg-muted`, `text-primary`, `text-status-*`. Zero raw hex, zero default Tailwind palette.
 
 ### Page Ornaments
 
@@ -105,7 +105,7 @@ Every standalone page gets `<PageOrnaments variant="..." />` as first child insi
 - No `rounded-full` on anything that is not a perfect 1:1 circle (avatar, status dot).
 - No nested cards, card-in-card, stat card grids.
 - No new fonts, no gradient backgrounds (except `PageOrnaments` radial glows), no purple, no centered hero on app pages.
-- No em/en dashes in UI copy.
+- No em/en dashes anywhere in the codebase. Use `;`, `,`, or `.` instead.
 
 ---
 

@@ -51,7 +51,7 @@ import { useScrollProgress } from "@/hooks/useScrollProgress";
 // Fixture imports removed
 import { getYoutubeEmbedUrl } from "@/lib/youtube";
 import type { CourseMaterial } from "@/lib/student-course-fixtures";
-import { updateMaterialProgress } from "@/app/dashboard/actions";
+import { updateMaterialProgress } from "@/app/(student)/dashboard/actions";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
 import { MathText } from "@/components/course/math-text";

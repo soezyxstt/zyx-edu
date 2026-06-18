@@ -24,7 +24,7 @@ import { getSiteSearchDocuments, getSiteSearchShortcutIds } from "@/lib/site-sea
 import { groupOrderIndex } from "@/lib/site-search";
 import type { SiteSearchDocument } from "@/lib/site-search-index";
 import { cn } from "@/lib/utils";
-import { getStudentSearchDocuments } from "@/app/dashboard/search-actions";
+import { getStudentSearchDocuments } from "@/app/(student)/dashboard/search-actions";
 import Fuse from "fuse.js";
 
 type CommandMenuContextValue = {

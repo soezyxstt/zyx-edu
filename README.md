@@ -22,5 +22,5 @@ bun run dev                   # http://localhost:3000
 
 ## Reference
 
-- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)** — current development state, blockers, standing decisions
-- **[AGENTS.md](AGENTS.md)** — coding rules and conventions for AI agents
+- **[AGENT_CONTEXT.md](AGENT_CONTEXT.md)**; current development state, blockers, standing decisions
+- **[AGENTS.md](AGENTS.md)**; coding rules and conventions for AI agents

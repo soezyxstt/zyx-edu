@@ -1483,9 +1483,9 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     return <ASTRenderer blocks={content} className={className} />;
   }
 
+  let result: ReturnType<typeof compileMarkdown>;
   try {
-    const result = compileMarkdown(content);
-    return <ASTRenderer blocks={result.ast.blocks} className={className} />;
+    result = compileMarkdown(content);
   } catch (err) {
     console.error("Visual compiler failed, fallback to raw rendering:", err);
     return (
@@ -1495,4 +1495,6 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
       </div>
     );
   }
+
+  return <ASTRenderer blocks={result.ast.blocks} className={className} />;
 }

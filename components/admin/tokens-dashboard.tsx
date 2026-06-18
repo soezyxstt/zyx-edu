@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy, Trash2, KeyRound, Check, RefreshCw, User, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { generateEnrollmentToken, deleteEnrollmentToken } from "@/app/admin/tokens/actions";
+import { generateEnrollmentToken, deleteEnrollmentToken } from "@/app/(admin)/admin/tokens/actions";
 import {
   Dialog,
   DialogContent,
