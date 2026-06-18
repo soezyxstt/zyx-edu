@@ -25,7 +25,7 @@ Vercel (Next.js App Router)
 ### Setup
 ```bash
 # Install Turso CLI
-npm install -g turso
+bun install -g turso
 turso auth login
 
 # Create database
@@ -41,7 +41,7 @@ turso db create-token zyx-academy
 
 ### Migration
 ```bash
-npm run db:push:prod   # safe runner: backup → migrate → verify
+bun run db:push:prod   # safe runner: backup → migrate → verify
 ```
 
 The production migration script (`db/push-prod.ts`):

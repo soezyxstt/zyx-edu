@@ -64,15 +64,15 @@ export function NavProfileOrSignIn({
  )}
  >
  {session.user.image ? (
- // eslint-disable-next-line @next/next/no-img-element
- <img
- src={session.user.image}
- alt=""
- width={40}
- height={40}
- className="border-border size-10 shrink-0 rounded-full border object-cover"
- referrerPolicy="no-referrer"
- />
+  // eslint-disable-next-line @next/next/no-img-element
+  <img
+  src={session.user.image}
+  alt={label}
+  width={40}
+  height={40}
+  className="border-border size-10 shrink-0 rounded-full border object-cover"
+  referrerPolicy="no-referrer"
+  />
  ) : (
  <span className="bg-muted border-border flex size-10 shrink-0 items-center justify-center rounded-full border">
  <User className="text-muted-foreground size-5" aria-hidden />
@@ -122,15 +122,15 @@ export function NavProfileOrSignIn({
  >
  {session.user.image ? (
  // Google avatars ; plain img avoids expanding next/image remotePatterns here.
- // eslint-disable-next-line @next/next/no-img-element
- <img
- src={session.user.image}
- alt=""
- width={32}
- height={32}
- className="border-border max-lg:size-9 max-lg:border-0 shrink-0 rounded-full border object-cover lg:size-8"
- referrerPolicy="no-referrer"
- />
+  // eslint-disable-next-line @next/next/no-img-element
+  <img
+  src={session.user.image}
+  alt={label}
+  width={32}
+  height={32}
+  className="border-border max-lg:size-9 max-lg:border-0 shrink-0 rounded-full border object-cover lg:size-8"
+  referrerPolicy="no-referrer"
+  />
  ) : (
  <span className="bg-muted border-border flex max-lg:size-9 shrink-0 items-center justify-center rounded-full border lg:size-8">
  <User className="text-muted-foreground size-4" aria-hidden />

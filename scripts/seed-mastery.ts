@@ -1,6 +1,6 @@
 /**
  * Seed mastery for 5 test students and verify stored vs on-the-fly scores.
- * Run with: npx tsx scripts/seed-mastery.ts
+ * Run with: bunx tsx scripts/seed-mastery.ts
  */
 import 'dotenv/config';
 import { db } from '../lib/db/index';

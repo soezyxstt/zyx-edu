@@ -1,15 +1,15 @@
 import { MetadataRoute } from "next";
-import { listCourses } from "@/lib/student-course-fixtures";
+import { db } from "@/db";
+import { courses, aiMaterialInstances, diktats, quizTemplates, exams } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  // Check the environment variable for domain, with fallback
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     (process.env.NEXT_PUBLIC_VERCEL_URL
       ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
       : "https://www.zyxacademy.com");
 
-  // Core static/marketing paths
   const staticPaths = ["", "/about", "/plans", "/testimonial", "/courses"];
 
   const staticEntries = staticPaths.map((path) => ({
@@ -19,14 +19,95 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: path === "" ? 1.0 : 0.8,
   }));
 
-  // Dynamic courses catalog entries
-  const courses = listCourses();
-  const courseEntries = courses.map((course) => ({
-    url: `${baseUrl}/courses/${course.id}`,
+  const allCourses = await db
+    .select({ id: courses.id })
+    .from(courses);
+
+  const courseEntries = allCourses.flatMap((c) => [
+    {
+      url: `${baseUrl}/courses/${c.id}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/courses/${c.id}/leaderboard`,
+      lastModified: new Date(),
+      changeFrequency: "daily" as const,
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/courses/${c.id}/mastery`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.4,
+    },
+    {
+      url: `${baseUrl}/courses/${c.id}/path`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    },
+    {
+      url: `${baseUrl}/courses/${c.id}/flashcard`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.4,
+    },
+  ]);
+
+  const allMaterials = await db
+    .select({ id: aiMaterialInstances.id, courseId: aiMaterialInstances.courseId })
+    .from(aiMaterialInstances);
+
+  const materialEntries = allMaterials.map((m) => ({
+    url: `${baseUrl}/courses/${m.courseId}/material/${m.id}`,
     lastModified: new Date(),
-    changeFrequency: "weekly" as const,
+    changeFrequency: "monthly" as const,
     priority: 0.6,
   }));
 
-  return [...staticEntries, ...courseEntries];
+  const allDiktats = await db
+    .select({ id: diktats.id, courseId: diktats.courseId })
+    .from(diktats)
+    .where(eq(diktats.status, "ready"));
+
+  const diktatEntries = allDiktats.map((d) => ({
+    url: `${baseUrl}/courses/${d.courseId}/material/${d.id}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  const allQuizzes = await db
+    .select({ id: quizTemplates.id, courseId: quizTemplates.courseId })
+    .from(quizTemplates);
+
+  const quizEntries = allQuizzes.map((q) => ({
+    url: `${baseUrl}/courses/${q.courseId}/quiz/${q.id}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  const allTryouts = await db
+    .select({ id: exams.id, courseId: exams.courseId })
+    .from(exams)
+    .where(and(eq(exams.type, "tryout"), eq(exams.status, "published")));
+
+  const tryoutEntries = allTryouts.map((t) => ({
+    url: `${baseUrl}/courses/${t.courseId}/tryout/${t.id}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly" as const,
+    priority: 0.5,
+  }));
+
+  return [
+    ...staticEntries,
+    ...courseEntries,
+    ...materialEntries,
+    ...diktatEntries,
+    ...quizEntries,
+    ...tryoutEntries,
+  ];
 }

@@ -14,11 +14,11 @@ Connection managed by `lib/db/index.ts` — auto-detects production from `NODE_E
 ```bash
 # 1. Edit db/schema.ts (Drizzle ORM — sqliteTable)
 # 2. Generate migration files:
-npm run db:generate
+bun run db:generate
 # 3. Apply locally:
-npm run db:migrate
+bun run db:migrate
 # 4. Push to production (safe: backup + verify):
-npm run db:push:prod
+bun run db:push:prod
 ```
 
 Never hand-edit files in `drizzle/`.

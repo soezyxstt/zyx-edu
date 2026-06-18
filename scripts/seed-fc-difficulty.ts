@@ -1,6 +1,6 @@
 /**
  * E4: verify the difficulty-blended SM-2 scheduler and difficulty prior.
- * Pure math, no DB. Run: npx tsx scripts/seed-fc-difficulty.ts
+ * Pure math, no DB. Run: bunx tsx scripts/seed-fc-difficulty.ts
  */
 import "dotenv/config";
 import { calculateNextReview, difficultyFirstInterval } from "../lib/flashcard-scheduler";

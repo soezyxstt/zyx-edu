@@ -181,8 +181,8 @@ async function waitForServer(): Promise<ChildProcess | null> {
     return null;
   }
 
-  console.log("Next.js server is not running. Starting 'npm run dev'...");
-  const child = spawn("npm", ["run", "dev"], {
+  console.log("Next.js server is not running. Starting 'bun run dev'...");
+  const child = spawn("bun", ["run", "dev"], {
     stdio: "inherit",
     shell: true
   });

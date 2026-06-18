@@ -1,6 +1,6 @@
 /**
  * Seed fixtures for the P3 grounded-tutor gate tests.
- * Idempotent. Run with: npx tsx scripts/seed-tutor-rag.ts
+ * Idempotent. Run with: bunx tsx scripts/seed-tutor-rag.ts
  *
  * Creates a Kalkulus course with knowledge objects matching docs/tutor-eval.md,
  * two students (weak vs strong on "Aturan rantai"), an eval student, a budget

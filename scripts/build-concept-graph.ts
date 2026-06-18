@@ -1,6 +1,6 @@
 /**
  * E5: rebuild the concept-graph rollup for one course or all courses.
- * Run: npx tsx scripts/build-concept-graph.ts [courseId]
+ * Run: bunx tsx scripts/build-concept-graph.ts [courseId]
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";

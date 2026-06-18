@@ -19,7 +19,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const course = await getCourse(id);
   return {
     title: pageTitle(course ? `${course.title} - Tryout` : "Tryout"),
-    description: "Daftar tryout kelas",
+    description: course
+      ? `Daftar tryout ${course.title} — simulasi ujian untuk persiapan UTS dan UAS.`
+      : "Daftar tryout — simulasi ujian untuk persiapan UTS dan UAS.",
   };
 }
 

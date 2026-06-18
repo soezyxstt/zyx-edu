@@ -1,6 +1,6 @@
 /**
  * Seed and verification script for Phase 5 Study Paths.
- * Run with: npx tsx scripts/seed-paths.ts
+ * Run with: bunx tsx scripts/seed-paths.ts
  */
 import 'dotenv/config';
 import { randomUUID } from "node:crypto";

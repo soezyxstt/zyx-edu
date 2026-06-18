@@ -1,6 +1,6 @@
 /**
  * R2 smoke test: put → get (byte-equal check) → delete.
- * Run with: npx tsx scripts/r2-smoke.ts
+ * Run with: bunx tsx scripts/r2-smoke.ts
  * Requires R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in env.
  */
 import 'dotenv/config';

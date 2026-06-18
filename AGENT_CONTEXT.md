@@ -7,8 +7,8 @@ This document is the single, authoritative, compact source of truth for the proj
 ## 1. Execution Rules
 
 1. Before writing code, read `db/schema.ts` and `lib/env.ts` for current schema/env state.
-2. DB changes: edit `db/schema.ts` only, then `npm run db:generate` then `npm run db:migrate`. Never hand-edit `drizzle/`. Production push: `npm run db:push:prod`.
-3. After every meaningful edit batch: `npm run lint` and `npm run build`. Both must pass with zero new errors before next step.
+2. DB changes: edit `db/schema.ts` only, then `bun run db:generate` then `bun run db:migrate`. Never hand-edit `drizzle/`. Production push: `bun run db:push:prod`.
+3. After every meaningful edit batch: `bun run lint` and `bun run build`. Both must pass with zero new errors before next step.
 4. Every feature ships behind the `FEATURE_*` env flag named in `lib/env.ts`. Flag absent or `"0"` = invisible.
 5. Already built, DO NOT REBUILD: KO extraction, RAG sync, question generation, quiz attempts, SM-2 flashcards, diktat PDFs, website materials, admin AI portal.
 6. AI quota is spent only on tutoring, mistake feedback, and content generation. Streaks, recommendations, study paths, reflections, analytics are deterministic SQL + rules.

@@ -39,7 +39,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: pageTitle(course && template ? `${course.title} - ${template.title}` : "Kuis"),
-    description: template?.title ?? "Kuis course",
+    description: course && template
+      ? `Kerjakan kuis ${template.title} — bagian dari ${course.title}.`
+      : "Kerjakan kuis interaktif untuk mengukur pemahaman.",
   };
 }
 

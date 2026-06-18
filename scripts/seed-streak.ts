@@ -1,6 +1,6 @@
 /**
  * Gate 2.3 verification: streak math
- * Usage: npx tsx scripts/seed-streak.ts
+ * Usage: bunx tsx scripts/seed-streak.ts
  *
  * Tests 3 scenarios against the streak service:
  *   1. Consecutive days  → increments correctly

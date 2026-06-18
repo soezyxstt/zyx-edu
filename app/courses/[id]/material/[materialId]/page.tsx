@@ -148,7 +148,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const material = await fetchMaterial(id, materialId);
   return {
     title: pageTitle(course && material ? `${course.title} - ${material.title}` : "Materi"),
-    description: material?.title ?? "Materi course",
+    description: material && course
+      ? `Baca materi ${material.title} — bagian dari ${course.title}.`
+      : "Baca materi pelajaran dan diktat kuliah.",
   };
 }
 

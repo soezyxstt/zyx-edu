@@ -58,6 +58,46 @@ export async function getStudentSearchDocuments(): Promise<SiteSearchDocument[]>
         content: `${course.title}. ${course.description || ""}`,
       });
 
+      docs.push({
+        id: `course:${course.id}:mastery`,
+        title: `Penguasaan — ${course.title}`,
+        subtitle: `Course · Mastery`,
+        href: `/courses/${course.id}/mastery`,
+        group: "Course",
+        keywords: `mastery penguasaan ${course.title}`,
+        content: `Peta penguasaan materi untuk ${course.title}`,
+      });
+
+      docs.push({
+        id: `course:${course.id}:path`,
+        title: `Jalur belajar — ${course.title}`,
+        subtitle: `Course · Study Path`,
+        href: `/courses/${course.id}/path`,
+        group: "Course",
+        keywords: `study path jalur belajar ${course.title}`,
+        content: `Rencana studi terpersonalisasi untuk ${course.title}`,
+      });
+
+      docs.push({
+        id: `course:${course.id}:flashcard`,
+        title: `Flashcard — ${course.title}`,
+        subtitle: `Course · Flashcard`,
+        href: `/courses/${course.id}/flashcard`,
+        group: "Course",
+        keywords: `flashcard kartu ingatan ${course.title}`,
+        content: `Kartu ingatan untuk ${course.title}`,
+      });
+
+      docs.push({
+        id: `course:${course.id}:leaderboard`,
+        title: `Papan skor — ${course.title}`,
+        subtitle: `Course · Leaderboard`,
+        href: `/courses/${course.id}/leaderboard`,
+        group: "Course",
+        keywords: `leaderboard papan skor peringkat ${course.title}`,
+        content: `Papan peringkat siswa untuk ${course.title}`,
+      });
+
       // Fetch materials
       const dbMats = await db
         .select({ id: aiMaterialInstances.id, title: aiMaterialInstances.title })

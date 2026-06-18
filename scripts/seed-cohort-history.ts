@@ -4,7 +4,7 @@
  * Then builds a fresh analytics snapshot.
  *
  * Run after seed-demo-cohort.ts:
- * npx tsx scripts/seed-cohort-history.ts
+ * bunx tsx scripts/seed-cohort-history.ts
  *
  * Safe to re-run: history rows use onConflictDoNothing, interventions skip on conflict.
  */

@@ -13,7 +13,7 @@ export default function RouteTemplate({
       {/* Root Layer: Manages structural layout and handles the final cleanup display switch */}
       <motion.div
         key="route-loader-layer"
-        className="fixed inset-0 z-99999 flex items-center justify-center pointer-events-none"
+        className="fixed inset-0 z-99999 flex items-center justify-center"
         initial={{ display: 'flex'}}
         animate={{ transitionEnd: { display: 'none' } }}
         transition={{ delay: 2.0 }} // Keeps the layer alive until the logo fully finishes
@@ -22,9 +22,9 @@ export default function RouteTemplate({
           It fades out completely at 1.2s, while the logo text gradients are finishing up.
         */}
         <motion.div 
-          className="absolute inset-0 bg-background pointer-events-none"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
+          className="absolute inset-0 bg-background backdrop-blur-sm dark:backdrop-blur-md"
+          initial={{ opacity: 1, display: 'block' }}
+          animate={{ opacity: 0, display: 'none' }}
           transition={{ duration: 1.5, ease: 'linear', delay: 0.3 }} // Starts fading at 0.7s, gone by 1.2s
         />
 
@@ -32,9 +32,9 @@ export default function RouteTemplate({
           Stays fully opaque while drawing, then fades out cleanly at the very end.
         */}
         <motion.div 
-          className="w-[180px] h-[180px] md:w-[220px] md:h-[220px] rounded-full flex items-center justify-center bg-transparent shadow-sm relative z-10"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
+          className="w-45 h-45 md:w-55 md:h-55 rounded-full flex items-center justify-center bg-transparent shadow-sm relative z-10"
+          initial={{ opacity: 1, display: 'block' }}
+          animate={{ opacity: 0, display: 'none' }}
           transition={{ duration: 1.6, ease: 'easeInOut', delay: 0.3 }} // Fades out the logo elements at 1.8s
         >
           <div className="w-[70%] h-[70%] relative">

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { assertAdmin } from "@/lib/uploadthing-admin";
 import { ASTInspectorClient } from "./ast-inspector-client";
+import { pageTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Zyx AST Inspector & Debugger",
+  title: pageTitle("Zyx AST Inspector & Debugger"),
   description: "Debug and inspect canonical markdown compilation pipelines.",
 };
 

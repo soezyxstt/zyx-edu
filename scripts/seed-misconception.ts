@@ -1,7 +1,7 @@
 /**
  * E1: seed + verify distractor mapping, analytics, and deterministic feedback.
- * Run with: FEATURE_MISCONCEPTION=1 npx tsx scripts/seed-misconception.ts
- * (PowerShell: $env:FEATURE_MISCONCEPTION=1; npx tsx scripts/seed-misconception.ts)
+ * Run with: FEATURE_MISCONCEPTION=1 bunx tsx scripts/seed-misconception.ts
+ * (PowerShell: $env:FEATURE_MISCONCEPTION=1; bunx tsx scripts/seed-misconception.ts)
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";

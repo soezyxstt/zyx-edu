@@ -1,7 +1,7 @@
 /**
  * E2: seed + verify quiz remediation builder (mastery delta + root cause + estimate).
  * Reuses the E0 fabric, so run after seed-embed has created the graph is NOT required;
- * this script builds its own course. Run: npx tsx scripts/seed-remediation.ts
+ * this script builds its own course. Run: bunx tsx scripts/seed-remediation.ts
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";

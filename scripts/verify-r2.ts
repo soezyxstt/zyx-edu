@@ -2,7 +2,7 @@
  * verify-r2.ts
  * Health check: verify that every DB file key exists in R2 (size > 0)
  * and resolves to an HTTP 200 via its public CDN URL.
- * Run with: npx tsx scripts/verify-r2.ts
+ * Run with: bunx tsx scripts/verify-r2.ts
  */
 import 'dotenv/config';
 import { db } from '../lib/db/index';

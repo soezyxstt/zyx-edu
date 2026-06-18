@@ -1,6 +1,6 @@
 /**
  * Seed historical snapshots to test and verify concept trends.
- * Run with: npx tsx scripts/seed-trends.ts
+ * Run with: bunx tsx scripts/seed-trends.ts
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";

@@ -8,7 +8,7 @@
  * Gate 8.3 passes when overlap@5 >= 80% across all queries.
  *
  * Usage:
- * npx tsx scripts/shadow-compare.ts
+ * bunx tsx scripts/shadow-compare.ts
  *
  * Required env vars (from .env or shell):
  * PINECONE_API_KEY, PINECONE_INDEX_NAME

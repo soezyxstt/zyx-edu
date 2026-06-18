@@ -10,7 +10,7 @@
  * SESSION_ID ; pre-created session ID (create via POST /api/live/sessions first)
  *
  * Usage:
- * npx tsx scripts/load-test-live.ts
+ * bunx tsx scripts/load-test-live.ts
  *
  * Node 22+ required for native WebSocket. Node 20 needs --experimental-websocket.
  */

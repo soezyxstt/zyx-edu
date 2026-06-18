@@ -53,6 +53,30 @@ export default async function CourseOverviewPage({ params }: Props) {
   const session = await auth.api.getSession({ headers: await headers() });
   const studentId = session?.user?.id;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Course",
+        name: course.title,
+        description: course.description ?? undefined,
+        provider: {
+          "@type": "Organization",
+          name: "Zyx Academy",
+          sameAs: "https://www.zyxacademy.com",
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Beranda", item: "https://www.zyxacademy.com" },
+          { "@type": "ListItem", position: 2, name: "Courses", item: "https://www.zyxacademy.com/courses" },
+          { "@type": "ListItem", position: 3, name: course.title },
+        ],
+      },
+    ],
+  };
+
   const materials = await getCourseMaterials(id, studentId);
   const quizzes = await getCourseQuizzes(id);
   const tryouts = await getCourseTryouts(id);
@@ -75,8 +99,13 @@ export default async function CourseOverviewPage({ params }: Props) {
   // Strip the dash-separated suffix list from the description copy
   const shortDescription = course.description ? course.description.split(" - ")[0] : "";
 
- return (
- <CoursePageShell title={course.title} description={shortDescription} icon={BookOpen}>
+  return (
+  <>
+  <script
+    type="application/ld+json"
+    dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+  />
+  <CoursePageShell title={course.title} description={shortDescription} icon={BookOpen}>
  <Reveal>
  {/* ── Enrollment banner (unenrolled only) ─────────────────────────── */}
  {!isEnrolled && (
@@ -376,6 +405,7 @@ export default async function CourseOverviewPage({ params }: Props) {
  {/* ── Trivia Harian (demoted, below the fold content) ─────────────── */}
  <DailyQuizSection courseId={id} courseTitle={course.title} dailyTrivia={dailyTrivia} />
  </Reveal>
- </CoursePageShell>
- );
+  </CoursePageShell>
+  </>
+  );
 }

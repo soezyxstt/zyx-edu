@@ -1,7 +1,7 @@
 /**
  * delete-uploadthing-files.ts
  * Deletes the legacy UploadThing files from the server via UTAPI.
- * Run with: npx tsx scripts/delete-uploadthing-files.ts
+ * Run with: bunx tsx scripts/delete-uploadthing-files.ts
  */
 import 'dotenv/config';
 import { UTApi } from 'uploadthing/server';

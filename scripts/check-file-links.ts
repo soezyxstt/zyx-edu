@@ -1,7 +1,7 @@
 /**
  * check-file-links.ts
  * Provider-agnostic check: verifies HTTP 200 status over every file URL in DB.
- * Run with: npx tsx scripts/check-file-links.ts
+ * Run with: bunx tsx scripts/check-file-links.ts
  */
 import 'dotenv/config';
 import { db } from '../lib/db/index';

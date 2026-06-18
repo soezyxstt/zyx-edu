@@ -9,7 +9,7 @@ import { pageTitle } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: pageTitle("Teaching"),
-  description: "Cohort analytics for your courses.",
+  description: "Analitik cohort dan manajemen kelas untuk tutor Zyx Academy.",
 };
 
 export default async function TutorPage() {

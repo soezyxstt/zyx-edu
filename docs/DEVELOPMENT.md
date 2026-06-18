@@ -3,24 +3,24 @@
 ## Quick Start
 
 ```bash
-npm install
+bun install
 cp .env.example .env.local  # fill in secrets
-npm run dev                  # http://localhost:3000
+bun run dev                  # http://localhost:3000
 ```
 
 ## Available Commands
 
 | Command | Purpose |
 |---------|---------|
-| `npm run dev` | Start dev server (Turbo mode) |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `npm run typecheck` | npx tsc --noEmit |
-| `npm run db:generate` | Generate Drizzle migration from schema changes |
-| `npm run db:migrate` | Apply migrations to local SQLite |
-| `npm run db:push:prod` | Safe production migration (backup + verify) |
-| `npm run db:seed` | Seed local DB with test data |
+| `bun run dev` | Start dev server (Turbo mode) |
+| `bun run build` | Production build |
+| `bun run start` | Start production server |
+| `bun run lint` | Run ESLint |
+| `bun run typecheck` | bunx tsc --noEmit |
+| `bun run db:generate` | Generate Drizzle migration from schema changes |
+| `bun run db:migrate` | Apply migrations to local SQLite |
+| `bun run db:push:prod` | Safe production migration (backup + verify) |
+| `bun run db:seed` | Seed local DB with test data |
 
 ## Environment Variables
 
@@ -77,7 +77,7 @@ All gated by `FEATURE_*` env vars. Absent or `"0"` = hidden/disabled.
 
 ## Code Conventions
 
-- **DB schema**: `db/schema.ts` only. Edit → `npm run db:generate` → `npm run db:migrate`. Never hand-edit `drizzle/`.
+- **DB schema**: `db/schema.ts` only. Edit → `bun run db:generate` → `bun run db:migrate`. Never hand-edit `drizzle/`.
 - **Auth**: Better-Auth (credentials + Google OAuth). Role-based: `admin`, `teacher`, `student`.
 - **AI calls**: All Gemini traffic routes through Cloudflare AI Gateway when `CF_AI_GATEWAY_URL` is set.
 - **Cost rule**: AI quota is spent only on tutoring, mistake feedback, and content generation. Streaks, recommendations, study paths, reflections are deterministic SQL + logic.
@@ -85,7 +85,7 @@ All gated by `FEATURE_*` env vars. Absent or `"0"` = hidden/disabled.
 ## Type Checking & Linting
 
 ```bash
-npm run lint          # ESLint
-npx tsc --noEmit      # Full type check
-npm run build         # Production build (catches all errors)
+bun run lint          # ESLint
+bunx tsc --noEmit      # Full type check
+bun run build         # Production build (catches all errors)
 ```

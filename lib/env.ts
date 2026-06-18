@@ -118,9 +118,9 @@ export const env = createEnv({
  * Hanya angka; `+`/spasi diperbolehkan.
  */
  NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
- /** Base URL of the Cloudflare Worker for real-time quiz (P9). e.g. https://zyx-realtime.workers.dev */
- NEXT_PUBLIC_REALTIME_URL: z.string().url().optional(),
- },
+  /** Base URL of the Cloudflare Worker for real-time quiz (P9). e.g. https://zyx-realtime.workers.dev */
+  NEXT_PUBLIC_REALTIME_URL: z.string().url().optional(),
+  },
  runtimeEnv: {
  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
  NEXT_PUBLIC_DESMOS_API_KEY: process.env.NEXT_PUBLIC_DESMOS_API_KEY,
@@ -171,7 +171,7 @@ export const env = createEnv({
  LIVE_HMAC_SECRET: process.env.LIVE_HMAC_SECRET,
  FEATURE_REFLECTION: process.env.FEATURE_REFLECTION,
  FEATURE_REFLECTION_EMAIL: process.env.FEATURE_REFLECTION_EMAIL,
- NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
+  NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
  VECTOR_STORE: process.env.VECTOR_STORE,
  VECTORIZE_WORKER_URL: process.env.VECTORIZE_WORKER_URL,
   VECTORIZE_SHARED_SECRET: process.env.VECTORIZE_SHARED_SECRET,

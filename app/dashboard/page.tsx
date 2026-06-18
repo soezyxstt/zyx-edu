@@ -41,7 +41,8 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: pageTitle("Dashboard Siswa"),
-  description: "Selamat datang di ruang belajar personal Anda.",
+  description:
+    "Pantau progres belajar, materi, kuis, tryout ITB TPB — semua dalam satu ruang belajar personal.",
 };
 
 export default async function DashboardPage() {

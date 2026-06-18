@@ -7,7 +7,7 @@ const email = process.argv[2]; // pass the email on the CLI
 let role: "admin" | "student" | "teacher" = "admin";
 
 if (!email) {
-  console.error("Usage: npx tsx scripts/promote-user.ts user@example.com");
+  console.error("Usage: bunx tsx scripts/promote-user.ts user@example.com");
   process.exit(1);
 }
 

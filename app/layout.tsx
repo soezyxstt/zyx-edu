@@ -17,6 +17,7 @@ import { ThemeProvider } from "next-themes";
 import Script from "next/script";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.zyxacademy.com"),
   title: pageTitle(),
   description: siteDescription,
   openGraph: {
@@ -26,6 +27,7 @@ export const metadata: Metadata = {
     siteName: "Zyx Academy",
     locale: "id_ID",
     type: "website",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
 };
 

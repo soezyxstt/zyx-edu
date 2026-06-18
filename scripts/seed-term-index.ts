@@ -1,6 +1,6 @@
 /**
  * E3: seed + verify the material term index and the KO-backed popover data.
- * Run: npx tsx scripts/seed-term-index.ts
+ * Run: bunx tsx scripts/seed-term-index.ts
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";

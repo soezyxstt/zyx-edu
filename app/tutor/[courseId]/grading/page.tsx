@@ -14,6 +14,9 @@ export async function generateMetadata({ params }: Props) {
   const [c] = await db.select({ title: courses.title }).from(courses).where(eq(courses.id, courseId)).limit(1);
   return {
     title: pageTitle(c ? `Penilaian Tryout: ${c.title}` : "Penilaian Tryout"),
+    description: c
+      ? `Nilai dan review jawaban tryout siswa untuk ${c.title}.`
+      : "Nilai dan review jawaban tryout siswa.",
   };
 }
 

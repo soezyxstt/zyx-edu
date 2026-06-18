@@ -1,7 +1,7 @@
 /**
  * E5: seed + verify the concept-graph rollup and cycle-safe root-cause tracer.
  * Graph: Aljabar -> Antiturunan -> Integral, plus a cycle X <-> Y.
- * Run: npx tsx scripts/seed-graph.ts
+ * Run: bunx tsx scripts/seed-graph.ts
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";

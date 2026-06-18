@@ -12,7 +12,7 @@
  * 3.5 Tutor RAG grounding ; run seed-tutor-rag.ts separately
  * WR.1 Reflection math ; run seed-mastery.ts separately
  *
- * Usage: npx tsx scripts/run-evals.ts
+ * Usage: bunx tsx scripts/run-evals.ts
  */
 
 import "dotenv/config";

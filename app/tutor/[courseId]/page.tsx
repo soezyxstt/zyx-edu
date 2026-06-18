@@ -22,6 +22,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = snapshot?.payload.courseTitle;
   return {
     title: pageTitle(title ? `Analytics: ${title}` : "Analytics"),
+    description: title
+      ? `Analitik cohort dan performa siswa untuk ${title}.`
+      : "Analitik cohort dan performa siswa.",
   };
 }
 

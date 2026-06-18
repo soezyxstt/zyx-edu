@@ -1,7 +1,7 @@
 /**
  * Seed 20 demo students into the first available course with deterministic mastery scores.
  * 2 concepts are engineered to be weak (top-2 in analytics), others are decent.
- * Run with: npx tsx scripts/seed-demo-cohort.ts
+ * Run with: bunx tsx scripts/seed-demo-cohort.ts
  *
  * Safe to re-run: mastery rows are upserted, student rows skip on conflict.
  */

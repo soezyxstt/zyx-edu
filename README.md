@@ -15,9 +15,9 @@
 ## Quick Start
 
 ```bash
-npm install
+bun install
 cp .env.example .env.local   # fill in secrets
-npm run dev                   # http://localhost:3000
+bun run dev                   # http://localhost:3000
 ```
 
 ## Reference

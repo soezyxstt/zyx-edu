@@ -1,5 +1,5 @@
 /**
- * P3 grounded-tutor gate harness. Run with: npx tsx scripts/test-tutor-rag.ts
+ * P3 grounded-tutor gate harness. Run with: bunx tsx scripts/test-tutor-rag.ts
  * Requires: FEATURE_TUTOR_RAG=1, Pinecone + KV + Gemini configured, and
  * scripts/seed-tutor-rag.ts already run.
  *

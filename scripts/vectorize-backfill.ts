@@ -6,7 +6,7 @@
  * No re-embedding: raw values are forwarded as-is.
  *
  * Usage:
- * npx tsx scripts/vectorize-backfill.ts
+ * bunx tsx scripts/vectorize-backfill.ts
  *
  * Required env vars (from .env or shell):
  * PINECONE_API_KEY, PINECONE_INDEX_NAME

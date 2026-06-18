@@ -52,32 +52,39 @@ function todayKey(): string {
 }
 
 /**
- * Reads today's write counter. Counter reads are plain text integers,
- * not JSON, and a missing counter means zero writes so far.
+ * Atomically claims N write slots using KV compare-and-swap (ETag / If-Match).
+ * Retries on conflict up to MAX_RETRIES times. Returns true if slots were claimed.
  */
-async function getWriteCount(): Promise<number> {
-  const res = await kvFetch(`/values/${encodeURIComponent(todayKey())}`);
-  if (!res || !res.ok) return 0;
-  const text = await res.text().catch(() => '0');
-  const n = parseInt(text, 10);
-  return Number.isNaN(n) ? 0 : n;
-}
+async function claimWriteSlots(slots = 2, maxRetries = 5): Promise<boolean> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const todayKey_ = todayKey();
+    const res = await kvFetch(`/values/${encodeURIComponent(todayKey_)}`);
 
-/**
- * Atomically increments the write counter by 2 (value write + counter write) using
- * a conditional update. Returns true if the write slot was claimed, false if already at limit.
- * Uses a pre-increment strategy: claim first, write only if claimed.
- */
-async function claimWriteSlots(): Promise<boolean> {
-  const count = await getWriteCount();
-  // Reserve 2 slots: one for the value, one for this counter update.
-  if (count + 2 > WRITE_DAILY_LIMIT) return false;
-  await kvFetch(`/values/${encodeURIComponent(todayKey())}?expiration_ttl=172800`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'text/plain' },
-    body: String(count + 2),
-  });
-  return true;
+    let count = 0;
+    let etag: string | null = null;
+
+    if (res && res.ok) {
+      const text = await res.text().catch(() => '0');
+      const n = parseInt(text, 10);
+      count = Number.isNaN(n) ? 0 : n;
+      etag = res.headers.get('ETag');
+    }
+
+    if (count + slots > WRITE_DAILY_LIMIT) return false;
+
+    const headers: Record<string, string> = { 'Content-Type': 'text/plain' };
+    if (etag) headers['If-Match'] = etag;
+
+    const putRes = await kvFetch(
+      `/values/${encodeURIComponent(todayKey_)}?expiration_ttl=172800`,
+      { method: 'PUT', headers, body: String(count + slots) },
+    );
+
+    if (!putRes) return false;
+    if (putRes.status === 412) continue;
+    return putRes.ok;
+  }
+  return false;
 }
 
 /**
@@ -85,7 +92,7 @@ async function claimWriteSlots(): Promise<boolean> {
  * write counter is at or past the limit, or on any failure.
  */
 export async function kvPut(key: string, value: unknown, ttlSeconds: number): Promise<void> {
-  const claimed = await claimWriteSlots();
+  const claimed = await claimWriteSlots(2);
   if (!claimed) return;
 
   await kvFetch(

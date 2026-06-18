@@ -2,7 +2,7 @@
  * E0: seed + verify the Learning Context Fabric.
  * Builds a course with prerequisite chain A -> B -> C, typed KOs per concept,
  * and mastery A=80, B=25, C=10, then asserts lib/learning-context output.
- * Run with: npx tsx scripts/seed-embed.ts
+ * Run with: bunx tsx scripts/seed-embed.ts
  */
 import "dotenv/config";
 import { db } from "../lib/db/index";
