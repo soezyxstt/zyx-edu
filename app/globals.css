@@ -309,14 +309,21 @@
  html.material-viewer-locked,
  html.material-viewer-locked body,
  html.material-viewer-locked #main-content,
- html.material-viewer-locked #main-content > div,
- html.material-viewer-locked #main-content > div > div {
+ html.material-viewer-locked #main-content > div {
  height: 100vh !important;
  height: 100svh !important;
  overflow: hidden !important;
  display: flex !important;
  flex-direction: column !important;
  }
+}
+
+@utility transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+@utility rotate-y-180 {
+  transform: rotateY(180deg);
 }
 
 @layer components {

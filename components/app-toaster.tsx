@@ -1,8 +1,8 @@
 "use client";
 
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/toast";
 
 /** Lightweight toaster without next-themes coupling ; matches app until ThemeProvider wraps the tree. */
 export function AppToaster() {
- return <Toaster position="top-center" richColors closeButton />;
+  return <Toaster />;
 }

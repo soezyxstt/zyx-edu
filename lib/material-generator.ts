@@ -95,7 +95,7 @@ BLOCK CONTRACTS
 :::
 
 2) concept
-:::concept {koId="[KO_ID]", title="[TITLE]"}
+:::concept {ref="[KO_ID]", title="[TITLE]"}
 Explanation of exactly one concept.
 Include definition, intuition, interpretation, or relation if needed.
 Keep it atomic and self-contained.
@@ -103,7 +103,7 @@ Do not put the main formula here.
 :::
 
 3) formula
-:::formula {koId="[KO_ID]"}
+:::formula {ref="[KO_ID]"}
 $$
 FORMULA
 $$
@@ -127,22 +127,25 @@ Real-world application and engineering meaning.
 :::
 
 6) example
-:::example {koId="[KO_ID]", difficulty="[difficulty]"}
-**Problem**: ...
-**Solution**:
+:::example {ref="[KO_ID]", difficulty="[difficulty]"}
+#### Problem
+...
+#### Solution
 1. ...
 2. ...
 3. ...
 :::
 
 7) misconception
-:::misconception {koId="[KO_ID]"}
-**Misconception**: ...
-**Correction**: ...
+:::misconception {ref="[KO_ID]"}
+#### Misconception
+...
+#### Correction
+...
 :::
 
 8) exercise
-:::exercise {koId="[KO_ID]"}
+:::exercise {ref="[KO_ID]"}
 Questions or tasks for students.
 :::
 
@@ -322,11 +325,11 @@ export async function generateMarkdownForChapter(chapterId: string): Promise<str
     // Map each KO to its corresponding block
     kos.forEach(ko => {
       if (ko.type === "definition" || ko.type === "concept_overview") {
-        markdown += `:::concept {koId="${ko.id}", title="${ko.title}"}\n`;
+        markdown += `:::concept {ref="${ko.id}", title="${ko.title}"}\n`;
         markdown += `${ko.content}\n`;
         markdown += `:::\n\n`;
       } else if (ko.type === "formula") {
-        markdown += `:::formula {koId="${ko.id}"}\n`;
+        markdown += `:::formula {ref="${ko.id}"}\n`;
         markdown += `$$\\tau = r \\cdot F \\cdot \\sin(\\theta)$$\n`;
         markdown += `| Parameter | Unit | Definition |\n`;
         markdown += `|---|---|---|\n`;
@@ -340,19 +343,15 @@ export async function generateMarkdownForChapter(chapterId: string): Promise<str
         markdown += `$$\\tau = r \\cdot F$$\n`;
         markdown += `:::\n\n`;
       } else if (ko.type === "example") {
-        markdown += `:::example {koId="${ko.id}", difficulty="${ko.difficulty}"}\n`;
-        markdown += `**Problem**: Calculate torque with force 10 N and length 0.25 m.\n`;
-        markdown += `**Solution**:\n`;
-        markdown += `1. Identify variables: F = 10 N, r = 0.25 m.\n`;
-        markdown += `2. Compute: $\\tau = r \\cdot F = 2.5 \\text{ N.m}$.\n`;
+        markdown += `:::example {ref="${ko.id}", difficulty="${ko.difficulty}"}\n`;
+        markdown += `#### Problem\nCalculate torque with force 10 N and length 0.25 m.\n\n#### Solution\n1. Identify variables: F = 10 N, r = 0.25 m.\n2. Compute: $\\tau = r \\cdot F = 2.5 \\text{ N.m}$.\n`;
         markdown += `:::\n\n`;
       } else if (ko.type === "misconception") {
-        markdown += `:::misconception {koId="${ko.id}"}\n`;
-        markdown += `**Misconception**: Torque depends only on force magnitude.\n`;
-        markdown += `**Correction**: It depends on lever arm distance and angle too.\n`;
+        markdown += `:::misconception {ref="${ko.id}"}\n`;
+        markdown += `#### Misconception\nTorque depends only on force magnitude.\n\n#### Correction\nIt depends on lever arm distance and angle too.\n`;
         markdown += `:::\n\n`;
       } else {
-        markdown += `:::concept {koId="${ko.id}", title="${ko.title}"}\n`;
+        markdown += `:::concept {ref="${ko.id}", title="${ko.title}"}\n`;
         markdown += `${ko.content}\n`;
         markdown += `:::\n\n`;
       }

@@ -13,6 +13,8 @@ import {
   websiteMaterials,
   concepts,
   conceptLocalizations,
+  assessmentSources,
+  assessmentSourceChapters,
 } from '@/db/schema';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -21,6 +23,7 @@ import { upsertChunkVector } from '@/lib/pinecone';
 import { extractKnowledgeObjectsForChapter } from '@/lib/ko-extractor';
 import { validateCanonicalMarkdown } from '@/lib/canonical-validator';
 import { storage } from '@/lib/storage';
+import { parseFrontmatter } from '@/lib/assessment-extractor';
 
 const BodySchema = z.object({
   courseId: z.string().min(1),
@@ -33,7 +36,13 @@ const BodySchema = z.object({
   chapterIds: z.array(z.string()).default([]),
   type: z.enum(['learning', 'assessment']).default('learning'),
   pdfKey: z.string().optional(), // R2 key of the uploaded source PDF
-});
+}).refine(
+  (data) => data.type !== 'learning' || data.chapterIds.length === 1,
+  {
+    message: 'Learning materials must be linked to exactly one chapter.',
+    path: ['chapterIds'],
+  }
+);
 
 export async function POST(req: NextRequest) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -81,30 +90,45 @@ export async function POST(req: NextRequest) {
   const mtdId = randomUUID();
 
   if (type === 'assessment') {
-    // Save domain: Master Teaching Document (Assessment)
-    await db.insert(masterTeachingDocuments).values({
-      id: mtdId,
+    const { frontmatter } = parseFrontmatter(rawText);
+    const category = frontmatter.category ?? "uts";
+    const year = frontmatter.year ?? new Date().getFullYear();
+    const semester = frontmatter.semester ?? null;
+
+    const { createHash } = await import("crypto");
+    const sourceHash = createHash("sha256").update(rawText).digest("hex");
+
+    const sourceId = randomUUID();
+
+    // Save domain: Assessment Source (Layer 1)
+    await db.insert(assessmentSources).values({
+      id: sourceId,
       courseId,
       title,
-      markdownContent: rawText,
-      originalPdfKey: pdfKey ?? null,
-      canonicalMarkdownKey: canonicalMarkdownKey,
+      origin: "uploaded",
+      category,
+      year,
+      semester,
+      sourceMarkdown: rawText,
+      sourceHash,
       version: 1,
-      status: 'active',
-      type: 'assessment',
-      createdById: session.user.id,
+      parserVersion: "1.0.0",
+      ingestionStatus: "pending",
+      uploadthingKey: pdfKey ?? null,
+      originalFilename: pdfKey ? pdfKey.split("/").pop() : null,
+      uploadedByUserId: session.user.id,
     });
 
     // Send ingestion event to Inngest
     const { inngest } = await import('@/lib/inngest');
     await inngest.send({
       name: "assessment.ingest",
-      data: { courseId, mtdId },
+      data: { sourceId },
     });
 
     return NextResponse.json(
       {
-        mtdId,
+        sourceId,
         type: 'assessment',
         message: "Dokumen Assessment Canonical berhasil diunggah. Klasifikasi Objek Assessment berjalan di latar belakang."
       },
@@ -343,17 +367,18 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: 'Missing ID parameter' }, { status: 400 });
   }
 
-  // First, check if the ID is an assessment MTD
-  const [assessmentMtd] = await db
+  // First, check if the ID is an assessmentSource
+  const [assessmentSource] = await db
     .select()
-    .from(masterTeachingDocuments)
-    .where(eq(masterTeachingDocuments.id, id));
+    .from(assessmentSources)
+    .where(eq(assessmentSources.id, id));
 
-  if (assessmentMtd && assessmentMtd.type === 'assessment') {
-    const courseId = assessmentMtd.courseId;
+  if (assessmentSource) {
+    const courseId = assessmentSource.courseId;
     const { assessmentObjects } = await import('@/db/schema');
-    await db.delete(assessmentObjects).where(eq(assessmentObjects.sourceMtdId, id));
-    await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.id, id));
+    await db.delete(assessmentObjects).where(eq(assessmentObjects.sourceId, id));
+    await db.delete(assessmentSourceChapters).where(eq(assessmentSourceChapters.assessmentSourceId, id));
+    await db.delete(assessmentSources).where(eq(assessmentSources.id, id));
     
     const { updateAssessmentProfile } = await import('@/lib/assessment-extractor');
     await updateAssessmentProfile(courseId);

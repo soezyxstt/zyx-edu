@@ -50,3 +50,5 @@ drizzle/backups/
 *.log
 
 .agents
+
+.temp

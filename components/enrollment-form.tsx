@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { enrollWithToken } from "@/app/(student)/dashboard/actions";
 import { Button } from "@/components/ui/button";
 import { KeyRound } from "lucide-react";

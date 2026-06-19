@@ -4,11 +4,12 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { TutorActionService } from "@/lib/tutor-actions";
 import { db } from "@/db";
-import { aiQuestionBank, knowledgeObjects, tutorChatMessages } from "@/db/schema";
+import { aiQuestionBank, knowledgeObjects, tutorChatMessages, chatSessions } from "@/db/schema";
 import { eq, and, asc, desc, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { exams } from "@/lib/student-course-fixtures";
 import { askTutorRag } from "@/lib/tutor-rag";
+import { getOrCreateChatSession } from "@/lib/zyra/zyra-context-builder";
 
 async function requireUser() {
   const h = await headers();
@@ -161,39 +162,59 @@ export async function findKoForMaterialSectionAction(courseId: string, selectedT
 export async function askTutorRagAction(
   courseId: string,
   chapterId: string | null,
-  question: string
+  question: string,
+  sessionId?: string | null
 ) {
   const user = await requireUser();
-  return askTutorRag({
+
+  const sid = sessionId ?? await getOrCreateChatSession(user.id, courseId, question.slice(0, 100));
+  const startTime = Date.now();
+
+  const result = await askTutorRag({
     studentId: user.id,
     courseId,
     chapterId,
     question,
+    sessionId: sid,
   });
+
+  return {
+    ...result,
+    sessionId: sid,
+    processingTimeMs: Date.now() - startTime,
+  };
 }
 
 const CHAT_HISTORY_LIMIT = 100;
 
 export async function saveTutorMessagesAction(
   courseId: string,
-  messages: Array<{ role: "student" | "ai"; content: string; sources?: unknown }>
+  messages: Array<{ role: "student" | "ai"; content: string; sources?: unknown }>,
+  sessionId?: string | null
 ) {
   const user = await requireUser();
 
   if (!messages.length) return { success: true };
+
+  const sid = sessionId ?? await getOrCreateChatSession(user.id, courseId, "General Chat");
 
   await db.insert(tutorChatMessages).values(
     messages.map((m) => ({
       id: randomUUID(),
       studentId: user.id,
       courseId,
+      sessionId: sid,
       role: m.role,
-      content: m.content,
+      content: m.content ?? "",
       sources: m.sources ?? null,
     }))
   );
 
-  // Keep only the most recent CHAT_HISTORY_LIMIT rows per (student, course)
+  await db
+    .update(chatSessions)
+    .set({ lastMessageAt: new Date() })
+    .where(eq(chatSessions.id, sid));
+
   const rows = await db
     .select({ id: tutorChatMessages.id })
     .from(tutorChatMessages)
@@ -212,41 +233,60 @@ export async function saveTutorMessagesAction(
     }
   }
 
-  return { success: true };
+  return { success: true, sessionId: sid };
 }
 
-export async function loadTutorHistoryAction(courseId: string) {
+export async function loadTutorHistoryAction(
+  courseId: string,
+  sessionId?: string | null
+) {
   const user = await requireUser();
+
+  const sid = sessionId ?? await getOrCreateChatSession(user.id, courseId, "General Chat");
+
+  const conditions = [
+    eq(tutorChatMessages.studentId, user.id),
+    eq(tutorChatMessages.courseId, courseId),
+    eq(tutorChatMessages.sessionId, sid),
+  ];
 
   const rows = await db
     .select()
     .from(tutorChatMessages)
-    .where(
-      and(
-        eq(tutorChatMessages.studentId, user.id),
-        eq(tutorChatMessages.courseId, courseId)
-      )
-    )
+    .where(and(...conditions))
     .orderBy(asc(tutorChatMessages.createdAt))
     .limit(CHAT_HISTORY_LIMIT);
 
-  return rows.map((r) => ({
-    id: r.id,
-    role: r.role as "student" | "ai",
-    content: r.content,
-    sources: r.sources as Array<{ type: string; id: string; label: string; href: string }> | undefined,
-  }));
+  return {
+    sessionId: sid,
+    messages: rows.map((r) => ({
+      id: r.id,
+      role: r.role as "student" | "ai",
+      content: r.content,
+      sources: r.sources as Array<{ type: string; id: string; label: string; href: string }> | undefined,
+    })),
+  };
 }
 
-export async function clearTutorHistoryAction(courseId: string) {
+export async function clearTutorHistoryAction(
+  courseId: string,
+  sessionId?: string | null
+) {
   const user = await requireUser();
-  await db
-    .delete(tutorChatMessages)
-    .where(
-      and(
-        eq(tutorChatMessages.studentId, user.id),
-        eq(tutorChatMessages.courseId, courseId)
-      )
-    );
+
+  const conditions = [
+    eq(tutorChatMessages.studentId, user.id),
+    eq(tutorChatMessages.courseId, courseId),
+  ];
+  if (sessionId) {
+    conditions.push(eq(tutorChatMessages.sessionId, sessionId));
+  }
+
+  await db.delete(tutorChatMessages).where(and(...conditions));
+
+  if (sessionId) {
+    await db.delete(chatSessions).where(eq(chatSessions.id, sessionId));
+  }
+
   return { success: true };
 }

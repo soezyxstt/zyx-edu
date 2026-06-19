@@ -64,7 +64,7 @@ None
 | Tabs | `Tabs` | `components/ui/tabs` |
 | Inputs | `Input`, `Textarea`, `Label`, `Select` | `components/ui/*` |
 | Dividers | `Separator` or `border-b border-border` | `components/ui/separator` |
-| Toasts | `toast` from `sonner` | `sonner` |
+| Toasts | `toast` from `components/ui/toast` | `@/components/ui/toast` |
 | Scroll entrance | `Reveal` (handles reduced motion + admin bypass) | `components/ui/reveal` |
 | Icons | lucide-react, default `size-4`, section icons `size-5` | `lucide-react` |
 | Math | `MathText` | `components/course/math-text` |

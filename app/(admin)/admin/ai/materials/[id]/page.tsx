@@ -4,7 +4,7 @@ import { pageTitle } from "@/lib/site";
 import { Reveal } from "@/components/ui/reveal";
 import { db } from "@/db";
 import { aiMaterialInstances, courses, chapters, knowledgeObjects, websiteMaterials } from "@/db/schema";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, inArray } from "drizzle-orm";
 import { assertAdmin } from "@/lib/uploadthing-admin";
 import { MaterialDetailClient } from "./detail-client";
 
@@ -40,22 +40,31 @@ export default async function MaterialDetailPage({ params }: Props) {
     notFound();
   }
 
-  // Get all chapters for this course
-  const courseChapters = await db.query.chapters.findMany({
-    where: eq(chapters.courseId, instance.courseId),
-    orderBy: [asc(chapters.orderIndex)],
-  });
+  // Get chapters for this material instance
+  const chapterIds = (instance.chapterIds || []) as string[];
+  const hasChapters = chapterIds.length > 0;
 
-  // Get all knowledge objects for this course
-  const kos = await db.query.knowledgeObjects.findMany({
-    where: eq(knowledgeObjects.courseId, instance.courseId),
-    orderBy: [asc(knowledgeObjects.learningOrder)],
-  });
+  const courseChapters = hasChapters
+    ? await db.query.chapters.findMany({
+        where: inArray(chapters.id, chapterIds),
+        orderBy: [asc(chapters.orderIndex)],
+      })
+    : [];
 
-  // Get website materials
-  const webMaterials = await db.query.websiteMaterials.findMany({
-    where: eq(websiteMaterials.courseId, instance.courseId),
-  });
+  // Get knowledge objects for these chapters
+  const kos = hasChapters
+    ? await db.query.knowledgeObjects.findMany({
+        where: inArray(knowledgeObjects.chapterId, chapterIds),
+        orderBy: [asc(knowledgeObjects.learningOrder)],
+      })
+    : [];
+
+  // Get website materials for these chapters
+  const webMaterials = hasChapters
+    ? await db.query.websiteMaterials.findMany({
+        where: inArray(websiteMaterials.chapterId, chapterIds),
+      })
+    : [];
 
   return (
     <Reveal className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">

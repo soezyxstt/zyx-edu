@@ -25,7 +25,7 @@ import {
   FileUp,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { saveChapter } from "@/app/(admin)/admin/courses/actions";
 import {
   Dialog,

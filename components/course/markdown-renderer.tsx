@@ -838,7 +838,12 @@ function ChartRenderer({ data, title, caption }: { data: any; title?: string; ca
 }
 
 function GraphRenderer({ data, title, caption }: { data: any; title?: string; caption?: string }) {
-  const functions = data.functions || [];
+  let functions = data.functions || [];
+  if (typeof functions === "string") {
+    functions = [functions];
+  } else if (!Array.isArray(functions)) {
+    functions = [];
+  }
   const domain = data.domain || { min: -10, max: 10 };
   const samples = data.samples || 200;
 
@@ -1461,6 +1466,7 @@ function ASTBlockRenderer({ block }: { block: ASTBlock }) {
 
 export function ASTRenderer({ blocks, className }: { blocks: ASTBlock[]; className?: string }) {
   const hasTextColor = className && /\btext-\w+/.test(className);
+  if (!blocks || !Array.isArray(blocks)) return null;
   const sortedBlocks = [...blocks].sort((a, b) => a.globalOrderIndex - b.globalOrderIndex);
 
   return (
@@ -1479,7 +1485,9 @@ export function ASTRenderer({ blocks, className }: { blocks: ASTBlock[]; classNa
 }
 
 export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+  if (!content) return null;
   if (typeof content !== "string") {
+    if (!Array.isArray(content)) return null;
     return <ASTRenderer blocks={content} className={className} />;
   }
 
@@ -1496,5 +1504,15 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
     );
   }
 
-  return <ASTRenderer blocks={result.ast.blocks} className={className} />;
+  if (result.ast.blocks.length === 0) {
+    return (
+      <pre className="whitespace-pre-wrap text-body-xs font-mono text-muted-foreground border border-dashed border-border p-4 rounded-xl">
+        {content}
+      </pre>
+    );
+  }
+
+  return (
+    <ASTRenderer blocks={result.ast.blocks} className={className} />
+  );
 }

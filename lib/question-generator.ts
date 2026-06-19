@@ -10,6 +10,7 @@ import {
   assessmentObjects,
   assessmentObjectConcepts,
 } from "@/db/schema";
+import { VECTOR_NAMESPACES } from "@/lib/namespaces";
 import { generateContentWithFallback } from "@/lib/gemini";
 import { USE_CASES } from "@/lib/ai-router";
 import { generateBlueprintForKO } from "@/lib/question-blueprint-engine";
@@ -809,7 +810,7 @@ PROVENANCE:
               courseId: ko.courseId,
               koId: null,
               action: "upsert",
-              namespace: "assessment",
+              namespace: VECTOR_NAMESPACES.practice,
               payload: {
                 id: newQuestionId,
                 text: embeddingText,
@@ -868,7 +869,7 @@ PROVENANCE:
               courseId: ko.courseId,
               koId: null,
               action: "upsert",
-              namespace: "assessment",
+              namespace: VECTOR_NAMESPACES.practice,
               payload: {
                 id: newQuestionId,
                 text: embeddingText,

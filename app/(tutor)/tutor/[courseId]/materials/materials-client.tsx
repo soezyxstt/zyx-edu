@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { saveTutorMaterialAction, deleteTutorMaterialAction } from "@/app/actions/tutor-management";
 import { cleanSummary } from "@/lib/utils";
 

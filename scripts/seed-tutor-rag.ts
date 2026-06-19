@@ -379,8 +379,8 @@ async function main() {
       id: randomUUID(),
       studentId: STUDENTS.weak.id,
       flashcardId: cid,
-      box: 1,
-      nextReviewDue: past,
+      repetitions: 1,
+      dueDate: past,
     });
   }
   console.log(`${cardIds.length} flashcards due now for weak student.`);

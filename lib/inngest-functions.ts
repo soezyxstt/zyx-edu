@@ -2,7 +2,8 @@ import { inngest } from "@/lib/inngest";
 import { db } from "@/db";
 import { vectorSyncQueue, knowledgeObjects, chapters, masterTeachingDocuments, enrollments, studentConceptMasteryHistory, studentConceptMastery, user } from "@/db/schema";
 import { computeSnapshotPayload } from "@/lib/cohort-analytics";
-import { recomputeMastery, recomputeTrends } from "@/lib/mastery-store";
+import { recomputeTrends } from "@/lib/mastery-store";
+import { enqueueRecompute, processQueueBatch } from "@/lib/mastery-recompute";
 import { generateMistakeFeedback } from "@/lib/mistake-feedback";
 import { getNs } from "@/lib/pinecone";
 import { embedTexts } from "@/lib/gemini";
@@ -12,6 +13,7 @@ import { generateFlashcardsForChapter } from "@/lib/flashcard-generator";
 import { generateQuestionsForKO, generateQuestionsForKOBatch } from "@/lib/question-generator";
 import { generateMarkdownForChapter } from "@/lib/material-generator";
 import { saveWebsiteMaterial } from "@/lib/material-storage";
+import { VECTOR_NAMESPACES } from "@/lib/vector-store";
 
 type VectorSyncRow = typeof vectorSyncQueue.$inferSelect;
 
@@ -75,7 +77,7 @@ export async function processBatch(step: any, courseId?: string) {
 
   for (const [key, rows] of Object.entries(courseGroups)) {
     const [cId, namespace] = key.split(":");
-    const safeNamespace = namespace || "learning";
+    const safeNamespace = namespace || VECTOR_NAMESPACES.learning;
     const sanitizeKey = `${cId}-${safeNamespace}`;
     try {
       // Step 4: Batch embed text-embedding-004
@@ -136,7 +138,7 @@ export async function processBatch(step: any, courseId?: string) {
 
           // Set KO pineconeVectorId to the KO ID (synced successfully) for learning namespace
           for (const row of rows) {
-            if (row.koId && row.namespace === "learning") {
+            if (row.koId && row.namespace === VECTOR_NAMESPACES.learning) {
               await tx
                 .update(knowledgeObjects)
                 .set({ pineconeVectorId: row.koId, updatedAt: new Date() })
@@ -234,7 +236,7 @@ export const bulkChapterGenerator = inngest.createFunction(
       // Fetch active KOs first so we can initialize the questionsTotal count
       const activeKOs = await step.run("fetch-active-kos", async () => {
         return await db
-          .select({ id: knowledgeObjects.id, title: knowledgeObjects.title })
+          .select({ id: knowledgeObjects.id, title: knowledgeObjects.title, mtdId: knowledgeObjects.mtdId })
           .from(knowledgeObjects)
           .where(
             and(
@@ -311,10 +313,16 @@ export const bulkChapterGenerator = inngest.createFunction(
       await step.run("generate-website-material", async () => {
         const compiledMarkdown = await generateMarkdownForChapter(chapterId);
 
-        const [mtd] = await db
-          .select()
-          .from(masterTeachingDocuments)
-          .where(eq(masterTeachingDocuments.courseId, info.courseId));
+        const mtdId = activeKOs[0]?.mtdId;
+        const [mtd] = mtdId
+          ? await db
+              .select()
+              .from(masterTeachingDocuments)
+              .where(eq(masterTeachingDocuments.id, mtdId))
+          : await db
+              .select()
+              .from(masterTeachingDocuments)
+              .where(eq(masterTeachingDocuments.courseId, info.courseId));
 
         const authorId = mtd?.createdById || "system";
 
@@ -373,10 +381,14 @@ export const masteryRecomputeWorker = inngest.createFunction(
     triggers: [{ event: "mastery/recompute.requested" }],
   },
   async ({ event, step }) => {
-    const { studentId, courseId } = event.data as { studentId: string; courseId: string };
+    const { studentId, courseId, reason } = event.data as { studentId: string; courseId: string; reason?: string };
 
-    await step.run("recompute-mastery", async () => {
-      await recomputeMastery(studentId, courseId);
+    await step.run("enqueue-request", async () => {
+      await enqueueRecompute(studentId, courseId, reason || "inngest_trigger");
+    });
+
+    await step.run("process-queue-batch", async () => {
+      await processQueueBatch();
     });
 
     return { studentId, courseId };
@@ -588,24 +600,14 @@ export const assessmentIngestWorker = inngest.createFunction(
     triggers: [{ event: "assessment.ingest" }]
   },
   async ({ event, step }) => {
-    const { courseId, mtdId } = event.data as { courseId: string; mtdId: string };
+    const { sourceId } = event.data as { sourceId: string };
 
     await step.run("extract-assessment-objects", async () => {
-      const { extractAssessmentObjectsForMtd } = await import("@/lib/assessment-extractor");
-      
-      const [mtd] = await db
-        .select()
-        .from(masterTeachingDocuments)
-        .where(eq(masterTeachingDocuments.id, mtdId));
-
-      if (!mtd) {
-        throw new Error(`MTD ${mtdId} not found`);
-      }
-
-      await extractAssessmentObjectsForMtd(courseId, mtdId, mtd.markdownContent);
+      const { extractAssessmentObjectsForSource } = await import("@/lib/assessment-extractor");
+      await extractAssessmentObjectsForSource(sourceId);
     });
 
-    return { courseId, mtdId };
+    return { sourceId };
   }
 );
 

@@ -27,7 +27,7 @@ import {
   Plus,
   Check
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import {
   Dialog,
   DialogContent,
@@ -157,14 +157,14 @@ export function serializeASTToMarkdown(blocks: any[]): string {
       }
       case "concept": {
         const attrs: string[] = [];
-        if (block.metadata?.koId) attrs.push(`koId="${block.metadata.koId}"`);
+        if (block.metadata?.koId) attrs.push(`ref="${block.metadata.koId}"`);
         if (block.content?.title) attrs.push(`title="${block.content.title}"`);
         const attrStr = attrs.length > 0 ? ` {${attrs.join(", ")}}` : "";
         return `:::concept${attrStr}\n${block.content?.bodyMarkdown || ""}\n:::`;
       }
       case "formula": {
         const attrs: string[] = [];
-        if (block.metadata?.koId) attrs.push(`koId="${block.metadata.koId}"`);
+        if (block.metadata?.koId) attrs.push(`ref="${block.metadata.koId}"`);
         if (block.content?.title) attrs.push(`title="${block.content.title}"`);
         const attrStr = attrs.length > 0 ? ` {${attrs.join(", ")}}` : "";
         
@@ -206,14 +206,14 @@ export function serializeASTToMarkdown(blocks: any[]): string {
       case "example": {
         const attrs: string[] = [];
         if (block.metadata?.difficulty) attrs.push(`difficulty="${block.metadata.difficulty}"`);
-        if (block.metadata?.koId) attrs.push(`koId="${block.metadata.koId}"`);
+        if (block.metadata?.koId) attrs.push(`ref="${block.metadata.koId}"`);
         const attrStr = attrs.length > 0 ? ` {${attrs.join(", ")}}` : "";
         
         let lines: string[] = [];
         lines.push(`:::example${attrStr}`);
-        lines.push(`**Problem**:`);
+        lines.push(`#### Problem`);
         lines.push(block.content?.problemStatement || "");
-        lines.push(`**Solution**:`);
+        lines.push(`#### Solution`);
         (block.content?.solutionSteps || []).forEach((step: any) => {
           lines.push(`${step.stepIndex}. **${step.label || ""}**: ${step.explanationMarkdown || ""}`);
         });
@@ -222,14 +222,14 @@ export function serializeASTToMarkdown(blocks: any[]): string {
       }
       case "misconception": {
         const attrs: string[] = [];
-        if (block.metadata?.koId) attrs.push(`koId="${block.metadata.koId}"`);
+        if (block.metadata?.koId) attrs.push(`ref="${block.metadata.koId}"`);
         const attrStr = attrs.length > 0 ? ` {${attrs.join(", ")}}` : "";
         
         let lines: string[] = [];
         lines.push(`:::misconception${attrStr}`);
-        lines.push(`**Misconception**:`);
+        lines.push(`#### Misconception`);
         lines.push(block.content?.myth || "");
-        lines.push(`**Correction**:`);
+        lines.push(`#### Correction`);
         lines.push(block.content?.correctionMarkdown || "");
         if (block.content?.physicalRationaleMarkdown && block.content.physicalRationaleMarkdown !== block.content.correctionMarkdown) {
           lines.push(``);

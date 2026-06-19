@@ -64,7 +64,7 @@ export async function sendDailyFlashcardReminders(): Promise<JobSummary> {
  flashcardId: studentFlashcardProgress.flashcardId,
  })
  .from(studentFlashcardProgress)
- .where(lte(studentFlashcardProgress.nextReviewDue, now));
+ .where(lte(studentFlashcardProgress.dueDate, now));
 
  if (dueProgress.length === 0) {
  return {

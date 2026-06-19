@@ -21,7 +21,7 @@ import {
  SelectValue,
 } from "@/components/ui/select";
 import { Bell, Send, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 
 interface Course {
  id: string;

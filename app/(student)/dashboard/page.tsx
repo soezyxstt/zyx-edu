@@ -29,8 +29,9 @@ import { env } from "@/lib/env";
 import { getMastery } from "@/lib/mastery-store";
 import { InterventionBanner } from "@/components/dashboard/intervention-banner";
 import { db } from "@/db";
-import { weeklyReflections } from "@/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { weeklyReflections, studentMaterialProgress, flashcardReviews, flashcards, flashcardSets, courses } from "@/db/schema";
+import { eq, desc, and, sql } from "drizzle-orm";
+import { getCardsDueToday } from "@/lib/learning-analytics";
 import { WeeklyReflection } from "@/components/dashboard/weekly-reflection";
 import { getOrUpdateStreak } from "@/lib/streak-service";
 import { ActivateClassModal } from "@/components/dashboard/activate-class-modal";
@@ -147,9 +148,23 @@ export default async function DashboardPage() {
 
   const courseDataMap = new Map(courseDataList.map((d) => [d.courseId, d]));
 
-  // 1. In-progress documents (materials)
-  const inProgressRecords = progressList.filter((p) => p.status === "in_progress");
-  const inProgressDocuments = inProgressRecords
+  // 1. In-progress documents (materials) from studentMaterialProgress
+  const inProgressMaterialProgress = user?.id ? await db
+    .select({
+      materialId: studentMaterialProgress.materialId,
+      completionPercent: studentMaterialProgress.completionPercent,
+      lastSectionId: studentMaterialProgress.lastSectionId,
+    })
+    .from(studentMaterialProgress)
+    .where(
+      and(
+        eq(studentMaterialProgress.studentId, user.id),
+        sql`${studentMaterialProgress.completionPercent} > 0`,
+        sql`${studentMaterialProgress.completionPercent} < 100`
+      )
+    ) : [];
+
+  const inProgressDocuments = inProgressMaterialProgress
     .map((record) => {
       for (const courseData of courseDataList) {
         const mat = courseData.materials.find((m) => m.id === record.materialId);
@@ -159,12 +174,33 @@ export default async function DashboardPage() {
             ...mat,
             courseTitle: course?.title || "Course",
             courseId: courseData.courseId,
+            completionPercent: record.completionPercent,
+            lastSectionId: record.lastSectionId,
           };
         }
       }
       return null;
     })
     .filter((document) => document !== null);
+
+  const totalDueFlashcards = user?.id ? await getCardsDueToday(user.id) : 0;
+
+  const recentReviews = user?.id ? await db
+    .select({
+      id: flashcardReviews.id,
+      grade: flashcardReviews.grade,
+      reviewedAt: flashcardReviews.reviewedAt,
+      front: flashcards.front,
+      back: flashcards.back,
+      courseTitle: courses.title,
+    })
+    .from(flashcardReviews)
+    .innerJoin(flashcards, eq(flashcardReviews.flashcardId, flashcards.id))
+    .innerJoin(flashcardSets, eq(flashcards.setId, flashcardSets.id))
+    .innerJoin(courses, eq(flashcardSets.courseId, courses.id))
+    .where(eq(flashcardReviews.studentId, user.id))
+    .orderBy(desc(flashcardReviews.reviewedAt))
+    .limit(5) : [];
 
   // 2. Available exams
   const availableExams = courseDataList.flatMap((courseData) => {
@@ -374,7 +410,7 @@ export default async function DashboardPage() {
                       return (
                         <div key={doc.id} className="group py-4.5 first:pt-0 last:pb-0">
                           <Link
-                            href={`/courses/${doc.courseId}/material/${doc.id}`}
+                            href={`/courses/${doc.courseId}/material/${doc.id}${doc.lastSectionId ? `?section=${encodeURIComponent(doc.lastSectionId)}` : ""}`}
                             className="flex items-center justify-between gap-4"
                           >
                             <div className="min-w-0 flex-1">
@@ -389,6 +425,19 @@ export default async function DashboardPage() {
                               <h4 className="font-heading text-body-sm font-bold text-foreground group-hover:text-brand-primary transition-colors mt-2 truncate">
                                 {doc.title}
                               </h4>
+                              {/* Completion Progress Bar */}
+                              <div className="mt-2.5 flex items-center gap-3 max-w-xs">
+                                <div className="h-1.5 w-20 overflow-hidden rounded bg-muted/70">
+                                  <div
+                                    className="h-full bg-brand-primary transition-all duration-300 rounded"
+                                    style={{ width: `${doc.completionPercent}%` }}
+                                  />
+                                </div>
+                                <span className="text-body-xs font-semibold text-foreground">{doc.completionPercent}%</span>
+                                {doc.lastSectionId && (
+                                  <span className="text-body-xs text-muted-foreground truncate max-w-[120px]">· {doc.lastSectionId}</span>
+                                )}
+                              </div>
                             </div>
                             <Button size="sm" variant="outline" className="rounded-md gap-1.5 shrink-0 pointer-events-none group-hover:bg-muted transition-colors">
                               <Play className="size-3 fill-current" />
@@ -411,6 +460,88 @@ export default async function DashboardPage() {
             {/* Right Column (Activities & Task list) - 5 cols */}
             <div className="space-y-6 lg:col-span-5">
               <DashboardWeakConcepts concepts={masteryConcepts} />
+
+              {/* Status Spaced Repetition & Streak */}
+              <div className={studentCardClass()}>
+                <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
+                  <Flame className="size-5 text-brand-secondary fill-brand-secondary/10" />
+                  Status Spaced Repetition
+                </h2>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between rounded-xl bg-muted/40 p-4 border border-border/40">
+                    <div>
+                      <p className="text-body-sm font-semibold text-foreground">
+                        {totalDueFlashcards} kartu perlu diulas
+                      </p>
+                      <p className="text-body-xs text-muted-foreground mt-0.5">
+                        Spaced repetition membantu ingatan jangka panjang
+                      </p>
+                    </div>
+                  </div>
+
+                  {streakInfo && (
+                    <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-4 border border-border/40">
+                      <Flame className="size-8 text-brand-secondary fill-brand-secondary/10 shrink-0" />
+                      <div>
+                        <p className="text-body-sm font-semibold text-foreground">
+                          Streak belajar: {streakInfo.current} hari
+                        </p>
+                        <p className="text-body-xs text-muted-foreground mt-0.5">
+                          Streak terpanjang: {streakInfo.longest} hari
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className={studentCardClass()}>
+                <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
+                  <Trophy className="size-5 text-yellow-500" />
+                  Aktivitas Ulasan Terbaru
+                </h2>
+                {recentReviews.length > 0 ? (
+                  <ul className="divide-y divide-border/50">
+                    {recentReviews.map((review) => {
+                      const gradeLabels: Record<number, string> = {
+                        1: "Ulangi",
+                        2: "Sulit",
+                        3: "Baik",
+                        4: "Mudah",
+                      };
+                      const gradeColors: Record<number, string> = {
+                        1: "text-status-error bg-status-error/10 border-status-error/20",
+                        2: "text-brand-secondary bg-brand-secondary/10 border-brand-secondary/20",
+                        3: "text-brand-primary bg-brand-primary/10 border-brand-primary/20",
+                        4: "text-status-success bg-status-success/10 border-status-success/20",
+                      };
+                      return (
+                        <li key={review.id} className="py-3 first:pt-0 last:pb-0 flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <span className={cn(
+                              "inline-flex rounded-md border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shrink-0",
+                              gradeColors[review.grade] || "text-muted-foreground border-border bg-muted/40"
+                            )}>
+                              {gradeLabels[review.grade] || "Ulasan"}
+                            </span>
+                            <p className="text-body-xs font-medium text-foreground mt-1.5 truncate">
+                              {review.front}
+                            </p>
+                            <p className="text-body-2xs text-muted-foreground mt-0.5">
+                              {review.courseTitle} · {new Date(review.reviewedAt).toLocaleDateString("id-ID")}
+                            </p>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border/60">
+                    <p className="text-body-xs text-muted-foreground">Belum ada ulasan baru-baru ini.</p>
+                  </div>
+                )}
+              </div>
               
               {/* Quizzes and Tryouts */}
               <div className={studentCardClass()}>

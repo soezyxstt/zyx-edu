@@ -11,17 +11,56 @@ import { pageTitle } from "@/lib/site";
 import { getMaterial, type CourseMaterial } from "@/lib/student-course-fixtures";
 import { getCourse } from "@/lib/course-utils";
 import { db } from "@/db";
-import { aiMaterialInstances, diktats, courseMaterials, websiteMaterials } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { aiMaterialInstances, diktats, courseMaterials, websiteMaterials, progress, studentMaterialProgress } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
 import { buildCourseTermIndex } from "@/lib/term-index";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
 
 type Props = { params: Promise<{ id: string; materialId: string }> };
 
-async function fetchMaterial(courseId: string, materialId: string): Promise<CourseMaterial | undefined> {
+async function fetchMaterial(courseId: string, materialId: string, studentId?: string): Promise<CourseMaterial | undefined> {
   const staticMat = getMaterial(courseId, materialId);
   if (staticMat) return staticMat;
+
+  let completed = false;
+  if (studentId) {
+    try {
+      const [existingLegacy] = await db
+        .select({ status: progress.status })
+        .from(progress)
+        .where(
+          and(
+            eq(progress.userId, studentId),
+            eq(progress.materialId, materialId),
+            eq(progress.status, "completed")
+          )
+        )
+        .limit(1);
+
+      if (existingLegacy) {
+        completed = true;
+      } else {
+        const [existingNew] = await db
+          .select({ completionPercent: studentMaterialProgress.completionPercent })
+          .from(studentMaterialProgress)
+          .where(
+            and(
+              eq(studentMaterialProgress.studentId, studentId),
+              eq(studentMaterialProgress.materialId, materialId)
+            )
+          )
+          .limit(1);
+        if (existingNew && existingNew.completionPercent >= 90) {
+          completed = true;
+        }
+      }
+    } catch (err) {
+      console.error("Error checking material completion:", err);
+    }
+  }
 
   // First check if it is a compiled diktat in the diktats table
   try {
@@ -39,7 +78,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         docCategory: "diktat",
         fileSize: "PDF File",
         url: diktatRecord.fileUrl ? storage.getUrl(diktatRecord.fileUrl) : undefined,
-        completed: false,
+        completed,
         isPastYear: false,
         isPreview: true,
       };
@@ -64,7 +103,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         docCategory: "materi" as const,
         fileSize: "Disusun otomatis",
         body: webMatRecord.canonicalMarkdown,
-        completed: false,
+        completed,
         isPastYear: false,
         isPreview: true,
         chapterId: webMatRecord.chapterId,
@@ -90,7 +129,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         docCategory: matRecord.type === "contoh_soal" ? "soal" : "materi",
         fileSize: "PDF File",
         url: matRecord.fileUrl ? storage.getUrl(matRecord.fileUrl) : undefined,
-        completed: false,
+        completed,
         isPastYear: false,
         isPreview: true,
       };
@@ -131,7 +170,7 @@ async function fetchMaterial(courseId: string, materialId: string): Promise<Cour
         docCategory: "materi",
         fileSize: "Disusun otomatis",
         body,
-        completed: false,
+        completed,
         isPastYear: false,
         isPreview: true, // Allow review without enrolling for simplicity
       };
@@ -157,7 +196,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function CourseMaterialDetailPage({ params }: Props) {
   const { id, materialId } = await params;
   const course = await getCourse(id);
-  const material = await fetchMaterial(id, materialId);
+  const session = await auth.api.getSession({ headers: await headers() });
+  const studentId = session?.user?.id;
+  const material = await fetchMaterial(id, materialId, studentId);
   if (!course || !material) notFound();
 
   const isEnrolled = await checkEnrollment(id);

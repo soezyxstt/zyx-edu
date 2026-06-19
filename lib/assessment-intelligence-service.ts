@@ -1,6 +1,6 @@
 import { db } from "@/db";
-import { assessmentObjects, assessmentProfiles } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { assessmentObjects, assessmentProfiles, assessmentSources } from "@/db/schema";
+import { eq, and } from "drizzle-orm";
 
 /**
  * Deterministically checks if a student query is asking about exam patterns, structures, or formats (Type B query).
@@ -56,7 +56,8 @@ export async function executeMetaQuery(courseId: string, query: string): Promise
       estimatedSteps: assessmentObjects.estimatedSteps,
     })
     .from(assessmentObjects)
-    .where(eq(assessmentObjects.courseId, courseId));
+    .innerJoin(assessmentSources, eq(assessmentObjects.sourceId, assessmentSources.id))
+    .where(and(eq(assessmentSources.courseId, courseId), eq(assessmentSources.ingestionStatus, "completed")));
 
   if (objects.length === 0) {
     return `Belum ada soal ujian historis yang diunggah untuk kelas ini.`;

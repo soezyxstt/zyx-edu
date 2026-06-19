@@ -5,6 +5,7 @@ import { db } from "@/db";
 import {
   courses as coursesTable,
   aiMaterialInstances,
+  websiteMaterials,
   diktats,
   courseMaterials,
   exams,
@@ -114,6 +115,11 @@ export async function getStudentSearchDocuments(): Promise<SiteSearchDocument[]>
         .from(courseMaterials)
         .where(eq(courseMaterials.courseId, course.id));
 
+      const dbWebMats = await db
+        .select({ id: websiteMaterials.id, title: websiteMaterials.title })
+        .from(websiteMaterials)
+        .where(eq(websiteMaterials.courseId, course.id));
+
       dbMats.forEach((m) => {
         docs.push({
           id: `material:${course.id}:${m.id}`,
@@ -147,6 +153,18 @@ export async function getStudentSearchDocuments(): Promise<SiteSearchDocument[]>
           href: `/courses/${course.id}/material/${m.id}`,
           group: "Materi",
           keywords: `pdf ${course.title} PDF ${kindLabel}`,
+          content: m.title,
+        });
+      });
+
+      dbWebMats.forEach((m) => {
+        docs.push({
+          id: `material:${course.id}:${m.id}`,
+          title: m.title,
+          subtitle: `${course.title} · artikel`,
+          href: `/courses/${course.id}/material/${m.id}`,
+          group: "Materi",
+          keywords: `article ${course.title} artikel`,
           content: m.title,
         });
       });

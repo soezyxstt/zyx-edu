@@ -8,7 +8,7 @@ import { getCourse } from "@/lib/course-utils";
 import { DocumentListClient } from "./document-list-client";
 import { Reveal } from "@/components/ui/reveal";
 import { db } from "@/db";
-import { aiMaterialInstances, diktats, courseMaterials, chapters } from "@/db/schema";
+import { aiMaterialInstances, websiteMaterials, diktats, courseMaterials, chapters } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { storage } from "@/lib/storage";
@@ -65,6 +65,16 @@ export default async function CourseMaterialListPage({ params }: Props) {
     .from(diktats)
     .where(and(eq(diktats.courseId, id), eq(diktats.status, "ready")));
 
+  // Fetch website materials (AST articles, 1:1 with chapters)
+  const webMaterials = await db
+    .select({
+      id: websiteMaterials.id,
+      title: websiteMaterials.title,
+      chapterId: websiteMaterials.chapterId,
+    })
+    .from(websiteMaterials)
+    .where(eq(websiteMaterials.courseId, id));
+
   // Fetch manual PDF materials
   const manualMaterials = await db
     .select({
@@ -119,7 +129,20 @@ export default async function CourseMaterialListPage({ params }: Props) {
     chapterIds: m.chapterIds as string[],
   }));
 
-  const allMaterials = [...mappedDiktats, ...mappedDb, ...mappedManual];
+  const mappedWeb = webMaterials.map((m) => ({
+    id: m.id,
+    courseId: id,
+    title: m.title,
+    kind: "article" as const,
+    docCategory: "materi" as const,
+    fileSize: "Disusun otomatis",
+    completed: false,
+    isPastYear: false,
+    isPreview: true,
+    chapterIds: [m.chapterId],
+  }));
+
+  const allMaterials = [...mappedDiktats, ...mappedDb, ...mappedWeb, ...mappedManual];
 
 
   return (

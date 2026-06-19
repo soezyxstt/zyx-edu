@@ -5,7 +5,7 @@ import { Brain, HelpCircle, Check, X, RotateCw, AlertTriangle, ArrowRight, BookO
 import { Button } from "@/components/ui/button";
 import { MathText } from "@/components/course/math-text";
 import { submitReviewAction } from "./actions";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 
 interface Flashcard {
   id: string;
@@ -404,9 +404,6 @@ export function FlashcardClient({ courseId, initialQueue, studentId }: Flashcard
       {/* SM-2 Recall Self-Evaluation Grade Buttons (Visible when flipped or checked) */}
       {(isFlipped || isChecked) && (
         <div className="space-y-3">
-          <div className="text-center text-body-xs font-semibold text-muted-foreground">
-            Seberapa baik Anda mengingat konsep ini?
-          </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Button
               type="button"

@@ -33,7 +33,7 @@ import {
   Loader2,
   AlertTriangle
 } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -780,6 +780,120 @@ export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, mat
     );
   }, [material.id]);
 
+  const lastSavedCompletionPercentRef = useRef<number | null>(null);
+  const lastSavedSectionIdxRef = useRef<number | null>(null);
+  const lastSavedPageRef = useRef<number | null>(null);
+
+  // Periodic tracking of material reading progress
+  useEffect(() => {
+    let secondsSinceLastSave = 0;
+    const interval = setInterval(() => {
+      secondsSinceLastSave += 1;
+    }, 1000);
+
+    const saveProgress = async (finalTimeIncrement?: number, force: boolean = false) => {
+      const timeToReport = finalTimeIncrement !== undefined ? finalTimeIncrement : secondsSinceLastSave;
+      if (timeToReport <= 0) return;
+
+      let completionPercent = 0;
+      let lastSectionId = "";
+      let lastPosition: { type: "pdf" | "article"; page?: number; section?: string } | null = null;
+
+      if (material.kind === "article" && articleSections && articleSections.length > 0) {
+        completionPercent = Math.min(100, Math.round(((activeSectionIdx + 1) / articleSections.length) * 100));
+        lastSectionId = articleSections[activeSectionIdx]?.title || `Section ${activeSectionIdx}`;
+        lastPosition = { type: "article", section: activeSectionIdx.toString() };
+      } else {
+        const total = MOCK_PAGES_META.length || 1;
+        completionPercent = Math.min(100, Math.round((visitedPages.size / total) * 100));
+        lastSectionId = `Page ${page}`;
+        lastPosition = { type: "pdf", page: page };
+      }
+
+      // Delta check
+      const hasMeaningfulDelta =
+        lastSavedCompletionPercentRef.current === null ||
+        Math.abs(completionPercent - lastSavedCompletionPercentRef.current) >= 5 ||
+        (material.kind === "article" && activeSectionIdx !== lastSavedSectionIdxRef.current) ||
+        (material.kind === "pdf" && page !== lastSavedPageRef.current);
+
+      if (!force && !hasMeaningfulDelta) {
+        return; // Skip saving to respect write limits
+      }
+
+      if (finalTimeIncrement === undefined) {
+        secondsSinceLastSave = 0;
+      }
+
+      // Update last saved states
+      lastSavedCompletionPercentRef.current = completionPercent;
+      lastSavedSectionIdxRef.current = activeSectionIdx;
+      lastSavedPageRef.current = page;
+
+      try {
+        await fetch("/api/student/material-progress", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            materialId: material.id,
+            completionPercent,
+            lastSectionId,
+            lastPosition,
+            timeSpentSeconds: timeToReport,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to auto-save material progress:", err);
+      }
+    };
+
+    const periodicSaveInterval = setInterval(() => {
+      saveProgress(undefined, false);
+    }, 20000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(periodicSaveInterval);
+      if (secondsSinceLastSave > 0) {
+        const finalTime = secondsSinceLastSave;
+        let completionPercent = 0;
+        let lastSectionId = "";
+        let lastPosition: { type: "pdf" | "article"; page?: number; section?: string } | null = null;
+
+        if (material.kind === "article" && articleSections && articleSections.length > 0) {
+          completionPercent = Math.min(100, Math.round(((activeSectionIdx + 1) / articleSections.length) * 100));
+          lastSectionId = articleSections[activeSectionIdx]?.title || `Section ${activeSectionIdx}`;
+          lastPosition = { type: "article", section: activeSectionIdx.toString() };
+        } else {
+          const total = MOCK_PAGES_META.length || 1;
+          completionPercent = Math.min(100, Math.round((visitedPages.size / total) * 100));
+          lastSectionId = `Page ${page}`;
+          lastPosition = { type: "pdf", page: page };
+        }
+
+        const payload = JSON.stringify({
+          materialId: material.id,
+          completionPercent,
+          lastSectionId,
+          lastPosition,
+          timeSpentSeconds: finalTime,
+        });
+
+        if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+          navigator.sendBeacon("/api/student/material-progress", new Blob([payload], { type: "application/json" }));
+        } else {
+          fetch("/api/student/material-progress", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: payload,
+          }).catch(() => {});
+        }
+      }
+    };
+  }, [material.id, material.kind, articleSections, activeSectionIdx, visitedPages, page]);
+
   // Load personalization states from localStorage
   useEffect(() => {
     try {
@@ -1076,8 +1190,8 @@ export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, mat
     const conceptTags = getConceptTags(material.courseId, material.title);
     return (
       <div className="flex flex-col h-full w-full overflow-hidden bg-background">
-        {/* Sticky Topbar */}
-        <div className="sticky top-0 z-20 h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
+        {/* Topbar */}
+        <div className="h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
           <div className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
           
           <div className="flex items-center gap-2">
@@ -1246,7 +1360,7 @@ export function MaterialViewer({ material, chapterId, ragEnabled, termIndex, mat
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-background font-sans">
       {/* Sticky Topbar */}
-      <div className="sticky top-0 z-20 h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
+      <div className="h-10 w-full border-b border-border bg-background/80 backdrop-blur-sm flex items-center justify-between px-4 shrink-0">
         <div className="absolute bottom-0 left-0 h-1 bg-primary transition-all duration-300 ease-out" style={{ width: `${progressPercent}%` }} />
         
         <div className="flex items-center gap-2">

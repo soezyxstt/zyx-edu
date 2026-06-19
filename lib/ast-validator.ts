@@ -543,15 +543,48 @@ export function validateAST(ast: WebsiteMaterialAST): { success: boolean; errors
     // 1. Formula Parameter Bounds Check
     if (block.type === "formula") {
       const latex = block.content.latex;
+      // Build a full search corpus: the primary extracted latex + all $$...$$ patterns in interpretation/derivation
+      const corpusTexts: string[] = [latex];
+      if (block.content.derivationMarkdown) corpusTexts.push(block.content.derivationMarkdown);
+      if (block.content.interpretation) corpusTexts.push(block.content.interpretation);
+      const fullCorpus = corpusTexts.join(" ");
+
       const paramsList = (block.content.symbols || block.content.parameters || []) as any[];
+      // Known header/label pseudo-symbols that come from Markdown table column headers
+      const HEADER_SYMBOLS = new Set(["variabel", "simbol", "symbol", "parameter", "keterangan", "unit", "satuan"]);
       paramsList.forEach((param, pIdx) => {
-        // Search for symbol in the LaTeX formula text
-        const symbolEscaped = param.symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-        const found = latex.includes(param.symbol) || new RegExp(symbolEscaped).test(latex);
-        if (!found) {
+        const rawSymbol: string = param.symbol || "";
+        // Strip outer $...$ wrappers to get the bare LaTeX token
+        const stripped = rawSymbol.replace(/^\$+(.+?)\$+$/, "$1").trim();
+        // Skip obvious table-header placeholder symbols
+        if (HEADER_SYMBOLS.has(stripped.toLowerCase())) return;
+        // Split on commas/semicolons but NOT inside {} brackets (e.g. x_{1,2} should not be split)
+        const splitParts: string[] = [];
+        let depth = 0;
+        let current = "";
+        for (const ch of stripped) {
+          if (ch === "{") { depth++; current += ch; }
+          else if (ch === "}") { depth--; current += ch; }
+          else if ((ch === "," || ch === ";") && depth === 0) {
+            const t = current.trim();
+            if (t) splitParts.push(t);
+            current = "";
+          } else {
+            current += ch;
+          }
+        }
+        if (current.trim()) splitParts.push(current.trim());
+        const parts = splitParts.filter(Boolean);
+        // Skip if no primary latex (formula block not yet populated)
+        if (!latex) return;
+        const allFound = parts.every(part => {
+          const partEscaped = part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          return fullCorpus.includes(part) || new RegExp(partEscaped).test(fullCorpus);
+        });
+        if (!allFound) {
           errors.push({
             path: `${blockPath}.content.symbols[${pIdx}]`,
-            message: `Symbol '${param.symbol}' declared in symbols list but not found in LaTeX expression: '${latex}'`,
+            message: `Symbol '${rawSymbol}' declared in symbols list but not found in LaTeX expression: '${latex}'`,
           });
         }
       });

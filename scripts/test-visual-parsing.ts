@@ -169,6 +169,110 @@ HanyaSatuNode
     "Correctly reports diagram empty nodes error"
   );
 
+  // 5. Test Example Block parsing (BSD vs Legacy)
+  console.log("\n--- Test 5: Example Block parsing (BSD vs Legacy) ---");
+  const bsdExampleMarkdown = `# Chapter 7: BSD Example
+:::example {ref="ko-ex-bsd", difficulty="easy"}
+#### Problem
+Calculate force with mass 5 kg and acceleration 2 m/s^2.
+
+#### Solution
+1. Identify variables: m = 5 kg, a = 2 m/s^2.
+2. Compute: $F = m \\cdot a = 10 \\text{ N}$.
+:::
+`;
+  const legacyExampleMarkdown = `# Chapter 7: Legacy Example
+:::example {koId="ko-ex-bsd", difficulty="easy"}
+**Problem**: Calculate force with mass 5 kg and acceleration 2 m/s^2.
+**Solution**:
+1. Identify variables: m = 5 kg, a = 2 m/s^2.
+2. Compute: $F = m \\cdot a = 10 \\text{ N}$.
+:::
+`;
+
+  const bsdExRes = compileMarkdown(bsdExampleMarkdown, "ch-7", "course-1");
+  const legacyExRes = compileMarkdown(legacyExampleMarkdown, "ch-7", "course-1");
+
+  assert(bsdExRes.ast.blocks.length === 2, "BSD Example parses into expected blocks count");
+  assert(legacyExRes.ast.blocks.length === 2, "Legacy Example parses into expected blocks count");
+
+  const bsdExBlock = bsdExRes.ast.blocks.find(b => b.type === "example") as any;
+  const legacyExBlock = legacyExRes.ast.blocks.find(b => b.type === "example") as any;
+
+  assert(bsdExBlock !== undefined, "BSD example block created successfully");
+  assert(legacyExBlock !== undefined, "Legacy example block created successfully");
+
+  if (bsdExBlock && legacyExBlock) {
+    assert(bsdExBlock.metadata.koId === "ko-ex-bsd", "BSD example block has resolved koId from ref");
+    assert(legacyExBlock.metadata.koId === "ko-ex-bsd", "Legacy example block has resolved koId from koId");
+    assert(bsdExBlock.content.problemStatement === "Calculate force with mass 5 kg and acceleration 2 m/s^2.", "BSD example problem Statement matches expected");
+    assert(legacyExBlock.content.problemStatement === "Calculate force with mass 5 kg and acceleration 2 m/s^2.", "Legacy example problem Statement matches expected");
+    assert(bsdExBlock.content.solutionSteps.length === 2, "BSD example solutionSteps parsed correctly");
+    assert(legacyExBlock.content.solutionSteps.length === 2, "Legacy example solutionSteps parsed correctly");
+    assert(bsdExBlock.content.solutionSteps[0].explanationMarkdown === "Identify variables: m = 5 kg, a = 2 m/s^2.", "BSD example step 1 correct");
+    assert(legacyExBlock.content.solutionSteps[0].explanationMarkdown === "Identify variables: m = 5 kg, a = 2 m/s^2.", "Legacy example step 1 correct");
+  }
+
+  // 6. Test Misconception Block parsing (BSD vs Legacy)
+  console.log("\n--- Test 6: Misconception Block parsing (BSD vs Legacy) ---");
+  const bsdMiscMarkdown = `# Chapter 8: BSD Misconception
+:::misconception {ref="ko-misc-bsd"}
+#### Misconception
+Mass changes with gravity.
+
+#### Correction
+Mass is constant. Weight changes.
+:::
+`;
+  const legacyMiscMarkdown = `# Chapter 8: Legacy Misconception
+:::misconception {koId="ko-misc-bsd"}
+**Misconception**: Mass changes with gravity.
+**Correction**: Mass is constant. Weight changes.
+:::
+`;
+
+  const bsdMiscRes = compileMarkdown(bsdMiscMarkdown, "ch-8", "course-1");
+  const legacyMiscRes = compileMarkdown(legacyMiscMarkdown, "ch-8", "course-1");
+
+  const bsdMiscBlock = bsdMiscRes.ast.blocks.find(b => b.type === "misconception") as any;
+  const legacyMiscBlock = legacyMiscRes.ast.blocks.find(b => b.type === "misconception") as any;
+
+  assert(bsdMiscBlock !== undefined, "BSD misconception block created successfully");
+  assert(legacyMiscBlock !== undefined, "Legacy misconception block created successfully");
+
+  if (bsdMiscBlock && legacyMiscBlock) {
+    assert(bsdMiscBlock.metadata.koId === "ko-misc-bsd", "BSD misconception block has resolved koId from ref");
+    assert(legacyMiscBlock.metadata.koId === "ko-misc-bsd", "Legacy misconception block has resolved koId from koId");
+    assert(bsdMiscBlock.content.myth === "Mass changes with gravity.", "BSD misconception myth matches expected");
+    assert(legacyMiscBlock.content.myth === "Mass changes with gravity.", "Legacy misconception myth matches expected");
+    assert(bsdMiscBlock.content.correctionMarkdown === "Mass is constant. Weight changes.", "BSD misconception correction matches expected");
+    assert(legacyMiscBlock.content.correctionMarkdown === "Mass is constant. Weight changes.", "Legacy misconception correction matches expected");
+  }
+
+  // 7. Test Example Narrative Solution Fallback (BSD narrative)
+  console.log("\n--- Test 7: Example Narrative Solution Fallback ---");
+  const narrativeExampleMarkdown = `# Chapter 9: Narrative Example
+:::example {ref="ko-ex-narrative"}
+#### Problem
+What is 2 + 2?
+
+#### Solution
+This is a narrative solution without steps.
+We can add detail here.
+:::
+`;
+  const narrativeExRes = compileMarkdown(narrativeExampleMarkdown, "ch-9", "course-1");
+  const narrativeExBlock = narrativeExRes.ast.blocks.find(b => b.type === "example") as any;
+
+  assert(narrativeExBlock !== undefined, "Narrative example block created successfully");
+  if (narrativeExBlock) {
+    assert(narrativeExBlock.content.problemStatement === "What is 2 + 2?", "Narrative example problemStatement is correct");
+    assert(narrativeExBlock.content.solutionSteps.length === 1, "Narrative solution fallback created a single step");
+    assert(narrativeExBlock.content.solutionSteps[0].stepIndex === 1, "Narrative solution step has index 1");
+    assert(narrativeExBlock.content.solutionSteps[0].label === "Solusi", "Narrative solution step has label 'Solusi'");
+    assert(narrativeExBlock.content.solutionSteps[0].explanationMarkdown.includes("This is a narrative solution without steps."), "Narrative solution step content is correct");
+  }
+
   console.log(`\n=== TEST SUITE COMPLETED: ${passed} passed, ${failed} failed ===`);
   if (failed > 0) {
     process.exit(1);

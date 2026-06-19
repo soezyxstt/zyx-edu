@@ -1,119 +1,115 @@
+export interface SM2ProgressInput {
+  easeFactor: number;
+  intervalDays: number;
+  repetitions: number;
+  lapses: number;
+  lastReviewedAt: Date | null;
+}
+
+export interface SM2ProgressOutput {
+  easeFactor: number;
+  intervalDays: number;
+  repetitions: number;
+  lapses: number;
+  dueDate: Date;
+}
+
 export interface SM2Result {
-  nextBox: number; // maps to n (consecutive correct count)
+  nextBox: number;
   nextEF: number;
   nextIntervalDays: number;
   nextReviewDue: Date;
   safetyFloorActive: boolean;
 }
 
-/**
- * EIF E4: maps a recall difficulty 1..5 to the first-interval seed (days).
- * Hard cards (5) review tomorrow, easy cards (1) wait 3 days.
- */
 export function difficultyFirstInterval(recallDifficulty: number): number {
   const d = Math.max(1, Math.min(5, Math.round(recallDifficulty)));
   return Math.max(1, Math.min(3, 4 - d));
 }
 
 /**
- * Calculates next spacing interval, Ease Factor, and due dates using pure SM-2.
- *
- * EIF E4: when `recallDifficulty` (1..5) is provided, the first interval is
- * seeded from difficulty and the box>=3 growth is scaled by difficulty (easy
- * cards grow faster, hard cards slower). When omitted, behaves as pure SM-2.
+ * Calculates next spacing interval, Ease Factor, and due dates using SM-2.
+ */
+export function calculateSM2(
+  previous: SM2ProgressInput,
+  grade: number // 1 = Again, 2 = Hard, 3 = Good, 4 = Easy
+): SM2ProgressOutput {
+  const now = new Date();
+  let easeFactor = previous.easeFactor;
+  let repetitions = previous.repetitions;
+  let intervalDays = previous.intervalDays;
+  let lapses = previous.lapses;
+
+  if (grade === 1) {
+    repetitions = 0;
+    intervalDays = 1;
+    lapses = lapses + 1;
+    easeFactor = Math.max(1.3, easeFactor - 0.2);
+  } else {
+    repetitions = repetitions + 1;
+    
+    if (grade === 2) {
+      easeFactor = Math.max(1.3, easeFactor - 0.15);
+    } else if (grade === 4) {
+      easeFactor = easeFactor + 0.15;
+    }
+
+    if (repetitions === 1) {
+      intervalDays = grade === 4 ? 2 : 1;
+    } else if (repetitions === 2) {
+      intervalDays = grade === 4 ? 8 : grade === 3 ? 6 : 3;
+    } else {
+      let multiplier = easeFactor;
+      if (grade === 2) {
+        multiplier = 1.2; // small interval increase
+      } else if (grade === 4) {
+        multiplier = easeFactor * 1.3; // accelerated progression
+      }
+      intervalDays = Math.max(1, Math.round(previous.intervalDays * multiplier));
+    }
+  }
+
+  easeFactor = Math.max(1.3, parseFloat(easeFactor.toFixed(2)));
+
+  const dueDate = new Date(now.getTime() + intervalDays * 24 * 60 * 60 * 1000);
+
+  return {
+    easeFactor,
+    intervalDays,
+    repetitions,
+    lapses,
+    dueDate,
+  };
+}
+
+/**
+ * Wrapper for backward compatibility.
  */
 export function calculateNextReview(
-  grade: number, // 1: Again, 2: Hard, 3: Good, 4: Easy
-  currentBox: number, // current n
+  grade: number,
+  currentBox: number,
   currentEF: number,
   currentIntervalDays: number,
   lastReviewedAt: Date | null,
   safetyFloorActive: boolean = false,
   recallDifficulty?: number
 ): SM2Result {
-  const now = new Date();
-
-  const hasDiff = typeof recallDifficulty === "number";
-  const firstSeed = hasDiff ? difficultyFirstInterval(recallDifficulty as number) : 1;
-  const diffFactor = hasDiff
-    ? 1 + (3 - Math.max(1, Math.min(5, Math.round(recallDifficulty as number)))) * 0.1
-    : 1;
-
-  // 1. Calculate elapsed days since last review
-  let elapsedDays = currentIntervalDays;
-  if (lastReviewedAt) {
-    const msDiff = now.getTime() - lastReviewedAt.getTime();
-    elapsedDays = Math.max(0, msDiff / (1000 * 60 * 60 * 24));
-  }
-
-  let nextBox = currentBox;
-  let nextEF = currentEF;
-  let nextIntervalDays = currentIntervalDays;
-  let nextSafetyFloorActive = safetyFloorActive;
-
-  // 2. Adjust Ease Factor and Spacing Repetitions based on quality grade
-  if (grade === 1) {
-    // Grade: Again (failed)
-    nextBox = 0;
-    nextEF = Math.max(1.3, currentEF - 0.2);
-    // E4: reschedule from the difficulty seed when known, else the 10-minute relearn.
-    nextIntervalDays = hasDiff ? firstSeed : 0.007;
-
-    // Activate safety floor reset if the failed card was highly stable (interval >= 60 days)
-    if (currentIntervalDays >= 60) {
-      nextSafetyFloorActive = true;
-    }
-  } else {
-    // Grade: Correct recall (Hard, Good, Easy)
-    nextBox = currentBox + 1;
-
-    // Adjust EF
-    if (grade === 2) {
-      // Hard
-      nextEF = Math.max(1.3, currentEF - 0.15);
-    } else if (grade === 4) {
-      // Easy
-      nextEF = Math.min(2.8, currentEF + 0.15);
-    }
-
-    // Determine target interval
-    if (nextBox === 1) {
-      // E4: seed the first interval from difficulty when known.
-      nextIntervalDays = hasDiff ? firstSeed : grade === 4 ? 2 : 1;
-    } else if (nextBox === 2) {
-      nextIntervalDays = grade === 4 ? 8 : grade === 3 ? 6 : 3;
-    } else {
-      // Box >= 3: multiply previous interval
-      let multiplier = nextEF;
-      if (grade === 2) {
-        multiplier = 1.2;
-      } else if (grade === 4) {
-        multiplier = nextEF * 1.3;
-      }
-
-      // E4: scale growth by difficulty (easy faster, hard slower).
-      multiplier *= diffFactor;
-
-      // Overdue handling: scale based on actual elapsed days if student was late
-      const baseDays = elapsedDays > currentIntervalDays && grade > 2 ? elapsedDays : currentIntervalDays;
-      nextIntervalDays = baseDays * multiplier;
-    }
-
-    // Apply safety floor recovery cap: if card is recovered, limit its first interval to 14 days
-    if (nextSafetyFloorActive) {
-      nextIntervalDays = Math.min(14, nextIntervalDays);
-      nextSafetyFloorActive = false; // Reset safety floor flag
-    }
-  }
-
-  // 3. Compute next due date
-  const nextReviewDue = new Date(now.getTime() + nextIntervalDays * 24 * 60 * 60 * 1000);
+  const output = calculateSM2(
+    {
+      easeFactor: currentEF,
+      intervalDays: currentIntervalDays,
+      repetitions: currentBox,
+      lapses: 0,
+      lastReviewedAt,
+    },
+    grade
+  );
 
   return {
-    nextBox,
-    nextEF: parseFloat(nextEF.toFixed(2)),
-    nextIntervalDays: parseFloat(nextIntervalDays.toFixed(3)),
-    nextReviewDue,
-    safetyFloorActive: nextSafetyFloorActive,
+    nextBox: output.repetitions,
+    nextEF: output.easeFactor,
+    nextIntervalDays: output.intervalDays,
+    nextReviewDue: output.dueDate,
+    safetyFloorActive: false,
   };
 }

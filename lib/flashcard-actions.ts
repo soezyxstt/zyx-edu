@@ -5,11 +5,12 @@ import {
   studentFlashcardProgress,
   knowledgeObjects,
   enrollments,
+  flashcardReviews,
+  learningEvents,
 } from "@/db/schema";
 import { eq, and, lte, or, inArray, isNull, gt } from "drizzle-orm";
-import { calculateNextReview } from "./flashcard-scheduler";
+import { calculateSM2 } from "./flashcard-scheduler";
 import { randomUUID } from "crypto";
-import { recordLearningEvent } from "@/lib/learning-events";
 import { inngest } from "@/lib/inngest";
 import { markRecommendationDone } from "@/lib/recommendation-service";
 import { env } from "@/lib/env";
@@ -115,13 +116,13 @@ export async function getReviewQueue(studentId: string, courseId: string) {
       });
     } else {
       // Review Card: check if due date has passed
-      const isDue = progress.nextReviewDue.getTime() <= Date.now();
+      const isDue = progress.dueDate.getTime() <= Date.now();
       if (isDue) {
         queue.push({
           card,
           progress,
           dueStatus: "review",
-          nextReviewDue: progress.nextReviewDue,
+          nextReviewDue: progress.dueDate,
         });
       }
     }
@@ -149,26 +150,80 @@ export async function submitReview(
   manualAnswer?: string,
   isExamMode: boolean = false
 ): Promise<ReviewSubmissionResult> {
-  // 1. Fetch card definition
   const [cardRecord] = await db
     .select()
     .from(flashcards)
-    .where(eq(flashcards.id, flashcardId));
+    .where(eq(flashcards.id, flashcardId))
+    .limit(1);
 
   if (!cardRecord) {
     throw new Error(`Flashcard not found with ID: ${flashcardId}`);
   }
 
-  // 2. Decouple Exam Mode evaluation from SM-2 grade overrides
   let examInputPassed: boolean | undefined = undefined;
   if (isExamMode && manualAnswer) {
     examInputPassed = evaluateExamAnswer(manualAnswer, cardRecord.back);
-    // Grade is NOT overridden. Standard manual self-evaluation is preserved.
   }
 
-  const result = await db.transaction(async tx => {
-    // Check if progress already exists
-    const [existingProgress] = await tx
+  const res = await submitFlashcardReviewTx(studentId, flashcardId, grade, 0);
+
+  return {
+    nextReviewDue: res.progress.dueDate,
+    nextIntervalDays: res.progress.intervalDays,
+    nextBox: res.progress.repetitions,
+    examInputPassed,
+  };
+}
+
+export async function submitFlashcardReviewTx(
+  studentId: string,
+  flashcardId: string,
+  grade: number,
+  responseTimeMs: number
+) {
+  // Fetch flashcard and course
+  const [card] = await db
+    .select({
+      id: flashcards.id,
+      koId: flashcards.koId,
+      setId: flashcards.setId,
+    })
+    .from(flashcards)
+    .where(eq(flashcards.id, flashcardId))
+    .limit(1);
+
+  if (!card) throw new Error("Flashcard not found");
+
+  const [set] = await db
+    .select({
+      courseId: flashcardSets.courseId,
+    })
+    .from(flashcardSets)
+    .where(eq(flashcardSets.id, card.setId))
+    .limit(1);
+
+  if (!set) throw new Error("Flashcard set not found");
+
+  let conceptName: string | null = null;
+  if (card.koId) {
+    const [ko] = await db
+      .select({ conceptName: knowledgeObjects.conceptName })
+      .from(knowledgeObjects)
+      .where(eq(knowledgeObjects.id, card.koId))
+      .limit(1);
+    conceptName = ko?.conceptName || null;
+  }
+
+  const correctnessMap: Record<number, number> = {
+    1: 0.0,
+    2: 0.5,
+    3: 0.8,
+    4: 1.0,
+  };
+  const correctness = correctnessMap[grade] ?? 0.0;
+
+  const result = await db.transaction(async (tx) => {
+    const [existing] = await tx
       .select()
       .from(studentFlashcardProgress)
       .where(
@@ -176,144 +231,100 @@ export async function submitReview(
           eq(studentFlashcardProgress.studentId, studentId),
           eq(studentFlashcardProgress.flashcardId, flashcardId)
         )
-      );
+      )
+      .limit(1);
 
-    let progressId = "";
-    let currentBox = 0;
-    let currentEF = 2.5;
-    let currentInterval = 1;
-    let lastReviewedAt: Date | null = null;
-    let safetyFloorActive = false;
-    let historyList: FlashcardHistoryItem[] = [];
+    const prevProgress = existing || {
+      easeFactor: 2.5,
+      intervalDays: 0,
+      repetitions: 0,
+      lapses: 0,
+      lastReviewedAt: null,
+    };
 
-    if (existingProgress) {
-      progressId = existingProgress.id;
-      currentBox = existingProgress.box;
-      lastReviewedAt = existingProgress.lastReviewedAt;
-      historyList = (existingProgress.history as any) as FlashcardHistoryItem[];
-
-      const meta = (existingProgress.metadata || {}) as any;
-      currentEF = meta.easeFactor ?? 2.5;
-      currentInterval = meta.intervalDays ?? 1;
-      safetyFloorActive = meta.safetyFloorActive ?? false;
-    } else {
-      progressId = `progress-${randomUUID()}`;
-    }
-
-    // E4: recall difficulty from the card metadata, only when the flag is on.
-    const cardMeta = (cardRecord.metadata || {}) as Record<string, unknown>;
-    const recallDifficulty =
-      env.FEATURE_FC_DIFFICULTY === "1" && typeof cardMeta.recallDifficulty === "number"
-        ? (cardMeta.recallDifficulty as number)
-        : undefined;
-
-    // 3. Compute scheduling parameters using SM-2 (difficulty-blended when known)
-    const sm2 = calculateNextReview(
-      grade,
-      currentBox,
-      currentEF,
-      currentInterval,
-      lastReviewedAt,
-      safetyFloorActive,
-      recallDifficulty
+    const schedule = calculateSM2(
+      {
+        easeFactor: Number(prevProgress.easeFactor),
+        intervalDays: prevProgress.intervalDays,
+        repetitions: prevProgress.repetitions,
+        lapses: prevProgress.lapses,
+        lastReviewedAt: prevProgress.lastReviewedAt ? new Date(prevProgress.lastReviewedAt) : null,
+      },
+      grade
     );
 
-    // 4. Update progress and append to history log
-    const historyItem: FlashcardHistoryItem = {
-      reviewedAt: new Date().toISOString(),
-      grade,
-      easeFactorBefore: currentEF,
-      easeFactorAfter: sm2.nextEF,
-      intervalBeforeDays: currentInterval,
-      intervalAfterDays: sm2.nextIntervalDays,
-      boxBefore: currentBox,
-      boxAfter: sm2.nextBox,
-      wasCorrect: grade > 1,
-      isExamMode,
-      examInputAnswer: manualAnswer,
-      examInputPassed,
+    const now = new Date();
+    const dataToSave = {
+      studentId,
+      flashcardId,
+      easeFactor: schedule.easeFactor,
+      intervalDays: schedule.intervalDays,
+      repetitions: schedule.repetitions,
+      lapses: schedule.lapses,
+      dueDate: schedule.dueDate,
+      lastReviewedAt: now,
+      updatedAt: now,
     };
 
-    const updatedHistory = [...historyList, historyItem];
-
-    const metadataPayload = {
-      easeFactor: sm2.nextEF,
-      intervalDays: sm2.nextIntervalDays,
-      safetyFloorActive: sm2.safetyFloorActive,
-    };
-
-    if (existingProgress) {
+    let progressResult;
+    if (existing) {
       await tx
         .update(studentFlashcardProgress)
-        .set({
-          box: sm2.nextBox,
-          nextReviewDue: sm2.nextReviewDue,
-          lastReviewedAt: new Date(),
-          history: updatedHistory,
-          metadata: metadataPayload,
-        })
-        .where(eq(studentFlashcardProgress.id, progressId));
+        .set(dataToSave)
+        .where(eq(studentFlashcardProgress.id, existing.id));
+      progressResult = { ...existing, ...dataToSave };
     } else {
-      await tx.insert(studentFlashcardProgress).values({
-        id: progressId,
-        studentId,
-        flashcardId,
-        box: sm2.nextBox,
-        nextReviewDue: sm2.nextReviewDue,
-        lastReviewedAt: new Date(),
-        history: updatedHistory,
-        metadata: metadataPayload,
-      });
+      const newId = `progress-${randomUUID()}`;
+      progressResult = {
+        id: newId,
+        createdAt: now,
+        ...dataToSave,
+      };
+      await tx.insert(studentFlashcardProgress).values(progressResult);
     }
 
+    const reviewId = `review-${randomUUID()}`;
+    const reviewRow = {
+      id: reviewId,
+      studentId,
+      flashcardId,
+      grade,
+      responseTimeMs,
+      reviewedAt: now,
+    };
+    await tx.insert(flashcardReviews).values(reviewRow);
+
+    const eventId = randomUUID();
+    const eventRow = {
+      id: eventId,
+      studentId,
+      courseId: set.courseId,
+      conceptName,
+      koId: card.koId,
+      eventType: "flashcard_review" as const,
+      correctness,
+      weight: 1.0,
+      createdAt: now,
+    };
+    await tx.insert(learningEvents).values(eventRow);
+
     return {
-      nextReviewDue: sm2.nextReviewDue,
-      nextIntervalDays: sm2.nextIntervalDays,
-      nextBox: sm2.nextBox,
-      examInputPassed,
+      progress: progressResult,
+      review: reviewRow,
+      learningEvent: eventRow,
     };
   });
 
-  // Record learning event (grade 1=Again→0, 2=Hard→0.5, 3/4=Good/Easy→1)
-  const correctness = grade === 1 ? 0 : grade === 2 ? 0.5 : 1;
-  const koId = cardRecord.koId ?? null;
-
-  // Get courseId and conceptName via flashcard set + KO
-  const [setRow] = await db
-    .select({ courseId: flashcardSets.courseId })
-    .from(flashcardSets)
-    .where(eq(flashcardSets.id, cardRecord.setId))
-    .limit(1);
-
-  if (setRow) {
-    let conceptName: string | null = null;
-    if (koId) {
-      const koRows = await db
-        .select({ conceptName: knowledgeObjects.conceptName })
-        .from(knowledgeObjects)
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        .where(eq(knowledgeObjects.id, koId!))
-        .limit(1);
-      conceptName = koRows[0]?.conceptName ?? null;
-    }
-
-    await Promise.all([
-      recordLearningEvent({
-        studentId,
-        courseId: setRow.courseId,
-        eventType: "flashcard_review",
-        koId,
-        conceptName,
-        correctness,
-      }),
-      inngest.send({
-        name: "mastery/recompute.requested",
-        data: { studentId, courseId: setRow.courseId },
-      }),
-    ]);
+  // Post-transaction tasks (Inngest, Recommendations)
+  try {
+    await inngest.send({
+      name: "mastery/recompute.requested",
+      data: { studentId, courseId: set.courseId },
+    });
+  } catch (err) {
+    console.error("Failed to trigger recompute:", err);
   }
 
-  // Auto-complete today's flashcard recommendation if no more due cards
   if (env.FEATURE_TODAY === "1") {
     Promise.resolve().then(async () => {
       const now = new Date();
@@ -342,7 +353,7 @@ export async function submitReview(
             eq(flashcardSets.status, "published"),
             or(
               isNull(studentFlashcardProgress.id),
-              lte(studentFlashcardProgress.nextReviewDue, now)
+              lte(studentFlashcardProgress.dueDate, now)
             )
           )
         )
@@ -351,6 +362,130 @@ export async function submitReview(
         await markRecommendationDone("flashcards", studentId);
       }
     }).catch(() => {});
+  }
+
+  return result;
+}
+
+export async function skipFlashcardTx(
+  studentId: string,
+  flashcardId: string
+) {
+  // Fetch flashcard and course
+  const [card] = await db
+    .select({
+      id: flashcards.id,
+      koId: flashcards.koId,
+      setId: flashcards.setId,
+    })
+    .from(flashcards)
+    .where(eq(flashcards.id, flashcardId))
+    .limit(1);
+
+  if (!card) throw new Error("Flashcard not found");
+
+  const [set] = await db
+    .select({
+      courseId: flashcardSets.courseId,
+    })
+    .from(flashcardSets)
+    .where(eq(flashcardSets.id, card.setId))
+    .limit(1);
+
+  if (!set) throw new Error("Flashcard set not found");
+
+  let conceptName: string | null = null;
+  if (card.koId) {
+    const [ko] = await db
+      .select({ conceptName: knowledgeObjects.conceptName })
+      .from(knowledgeObjects)
+      .where(eq(knowledgeObjects.id, card.koId))
+      .limit(1);
+    conceptName = ko?.conceptName || null;
+  }
+
+  const result = await db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(studentFlashcardProgress)
+      .where(
+        and(
+          eq(studentFlashcardProgress.studentId, studentId),
+          eq(studentFlashcardProgress.flashcardId, flashcardId)
+        )
+      )
+      .limit(1);
+
+    const now = new Date();
+    // For skip: easeFactor, repetitions, lapses remain same, but intervalDays = 0, dueDate = now
+    const dataToSave = {
+      studentId,
+      flashcardId,
+      easeFactor: existing ? Number(existing.easeFactor) : 2.5,
+      intervalDays: 0,
+      repetitions: existing ? existing.repetitions : 0,
+      lapses: existing ? existing.lapses : 0,
+      dueDate: now,
+      lastReviewedAt: now,
+      updatedAt: now,
+    };
+
+    let progressResult;
+    if (existing) {
+      await tx
+        .update(studentFlashcardProgress)
+        .set(dataToSave)
+        .where(eq(studentFlashcardProgress.id, existing.id));
+      progressResult = { ...existing, ...dataToSave };
+    } else {
+      const newId = `progress-${randomUUID()}`;
+      progressResult = {
+        id: newId,
+        createdAt: now,
+        ...dataToSave,
+      };
+      await tx.insert(studentFlashcardProgress).values(progressResult);
+    }
+
+    const reviewId = `review-${randomUUID()}`;
+    const reviewRow = {
+      id: reviewId,
+      studentId,
+      flashcardId,
+      grade: 1, // Again
+      responseTimeMs: 0,
+      reviewedAt: now,
+    };
+    await tx.insert(flashcardReviews).values(reviewRow);
+
+    const eventId = randomUUID();
+    const eventRow = {
+      id: eventId,
+      studentId,
+      courseId: set.courseId,
+      conceptName,
+      koId: card.koId,
+      eventType: "flashcard_review" as const,
+      correctness: 0.0,
+      weight: 1.0,
+      createdAt: now,
+    };
+    await tx.insert(learningEvents).values(eventRow);
+
+    return {
+      progress: progressResult,
+      review: reviewRow,
+      learningEvent: eventRow,
+    };
+  });
+
+  try {
+    await inngest.send({
+      name: "mastery/recompute.requested",
+      data: { studentId, courseId: set.courseId },
+    });
+  } catch (err) {
+    console.error("Failed to trigger recompute:", err);
   }
 
   return result;

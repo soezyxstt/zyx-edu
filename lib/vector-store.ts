@@ -15,6 +15,8 @@
  * - knowledge objects (id = koId, metadata: chapterId, conceptId, type, …)
  */
 
+export { VECTOR_NAMESPACES } from '@/lib/namespaces';
+
 import {
  getNs,
  upsertChunkVector,
@@ -57,11 +59,48 @@ export interface VectorStore {
 // ---------------------------------------------------------------------------
 
 export class PineconeStore implements VectorStore {
- async query(
- courseId: string,
- queryText: string,
- options: VectorStoreQueryOptions = {},
- ): Promise<VectorStoreMatch[]> {
+  async query(
+  courseId: string,
+  queryText: string,
+  options: VectorStoreQueryOptions = {},
+  ): Promise<VectorStoreMatch[]> {
+    if (process.env.MOCK_GEMINI === 'true') {
+      try {
+        const { db } = await import('@/db');
+        const { knowledgeObjects } = await import('@/db/schema');
+        const { eq, and } = await import('drizzle-orm');
+        
+        const parsedCourseId = courseId.split('_')[0];
+        const kos = await db
+          .select()
+          .from(knowledgeObjects)
+          .where(
+            and(
+              eq(knowledgeObjects.courseId, parsedCourseId),
+              eq(knowledgeObjects.status, 'active')
+            )
+          )
+          .limit(options.topK ?? 10);
+          
+        return kos.map((ko, index) => ({
+          id: ko.id,
+          score: 0.95 - index * 0.05,
+          metadata: {
+            courseId: ko.courseId,
+            chapterId: ko.chapterId,
+            conceptId: ko.conceptId,
+            type: ko.type,
+            bloomLevel: ko.bloomLevel,
+            difficulty: ko.difficulty,
+            importance: ko.importance,
+            tags: ko.tags,
+          }
+        }));
+      } catch (err) {
+        console.error('[vector-store] Mock query failed:', err);
+        return [];
+      }
+    }
  try {
  const vector = await withGeminiRetry(() => embedText(queryText));
  const result = await getNs(courseId).query({

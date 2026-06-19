@@ -137,16 +137,17 @@ function parseBlockNode(
       };
     }
 
+    case "definition":
     case "concept": {
       return {
         id: blockId,
         type: "concept",
         globalOrderIndex: 0,
         metadata: {
-          koId: attrs.koId || "",
+          koId: attrs.ref || attrs.koId || "",
         },
         content: {
-          title: attrs.title || "Concept Overview",
+          title: attrs.title || (type === "definition" ? "Definition" : "Concept Overview"),
           bodyMarkdown: lines.join("\n").trim(),
         },
       };
@@ -169,8 +170,11 @@ function parseBlockNode(
       
       const parsedYaml = parseYamlLike(yamlLines);
       const blockText = lines.join("\n");
-      const latexMatch = blockText.match(/\$\$\s*([\s\S]*?)\s*\$\$/);
-      const latex = latexMatch ? latexMatch[1].trim() : "";
+      // Collect ALL $$...$$ equations in the block (formula blocks may contain multiple equations)
+      const allLatexMatches = [...blockText.matchAll(/\$\$\s*([\s\S]*?)\s*\$\$/g)];
+      const latex = allLatexMatches.length > 0
+        ? allLatexMatches.map(m => m[1].trim()).join(" ")
+        : "";
 
       const symbols: any[] = [];
 
@@ -197,12 +201,15 @@ function parseBlockNode(
           const unit = parts.length > 2 ? parts[1] : undefined;
           const definition = parts.length > 2 ? parts[2] : parts[1];
 
-          // Skip header row (contains "Simbol", "Symbol", "Parameter") or separator row (:--- / ---)
+          // Skip header row (contains "Simbol", "Symbol", "Parameter", "Variabel", etc.) or separator row (:--- / ---)
           const symLower = symbolRaw.toLowerCase();
           if (
             symLower === "simbol" ||
             symLower === "symbol" ||
             symLower === "parameter" ||
+            symLower === "variabel" ||
+            symLower === "variable" ||
+            symLower === "keterangan" ||
             /^:?-+$/.test(symbolRaw)
           ) {
             return;
@@ -238,7 +245,7 @@ function parseBlockNode(
         type: "formula",
         globalOrderIndex: 0,
         metadata: {
-          koId: attrs.koId || undefined,
+          koId: attrs.ref || attrs.koId || undefined,
         },
         content: {
           title: attrs.title || parsedYaml.title || undefined,
@@ -292,18 +299,36 @@ function parseBlockNode(
       let problemStatement = "";
       const solutionSteps: any[] = [];
 
-      const probIndex = blockText.indexOf("**Problem**:");
-      const solIndex = blockText.indexOf("**Solution**:");
+      let probIndex = -1;
+      let probLength = 0;
+      const probMatch = blockText.match(/^(?:#{1,6}\s*Problem\s*(?:\r?\n|$)|(?:\*\*Problem\*\*|Problem):?\s*)/im);
+      if (probMatch && probMatch.index !== undefined) {
+        probIndex = probMatch.index;
+        probLength = probMatch[0].length;
+      }
+
+      let solIndex = -1;
+      let solLength = 0;
+      const solMatch = blockText.match(/^(?:#{1,6}\s*Solution\s*(?:\r?\n|$)|(?:\*\*Solution\*\*|Solution):?\s*)/im);
+      if (solMatch && solMatch.index !== undefined) {
+        solIndex = solMatch.index;
+        solLength = solMatch[0].length;
+      }
 
       if (probIndex !== -1) {
         const endProb = solIndex !== -1 ? solIndex : blockText.length;
-        problemStatement = blockText.slice(probIndex + "**Problem**:".length, endProb).trim();
+        problemStatement = blockText.slice(probIndex + probLength, endProb).trim();
       } else {
-        problemStatement = blockText;
+        if (solIndex !== -1) {
+          problemStatement = blockText.slice(0, solIndex).trim();
+        } else {
+          problemStatement = blockText.trim();
+        }
       }
 
+      const solText = solIndex !== -1 ? blockText.slice(solIndex + solLength) : "";
+
       if (solIndex !== -1) {
-        const solText = blockText.slice(solIndex + "**Solution**:".length);
         const solLines = solText.split(/\r?\n/);
         
         let stepIdx = 1;
@@ -332,13 +357,22 @@ function parseBlockNode(
         });
       }
 
+      // Backward compatibility fallback for narrative solution texts (no numbered steps)
+      if (solIndex !== -1 && solutionSteps.length === 0 && solText.trim() !== "") {
+        solutionSteps.push({
+          stepIndex: 1,
+          label: "Solusi",
+          explanationMarkdown: solText.trim(),
+        });
+      }
+
       return {
         id: blockId,
         type: "example",
         globalOrderIndex: 0,
         metadata: {
           difficulty: (attrs.difficulty as any) || "medium",
-          koId: attrs.koId,
+          koId: attrs.ref || attrs.koId,
         },
         content: {
           problemStatement,
@@ -353,16 +387,35 @@ function parseBlockNode(
       let correctionMarkdown = "";
       let physicalRationaleMarkdown = "";
 
-      const miscIdx = blockText.indexOf("**Misconception**:");
-      const corrIdx = blockText.indexOf("**Correction**:");
-
-      if (miscIdx !== -1) {
-        const endMisc = corrIdx !== -1 ? corrIdx : blockText.length;
-        myth = blockText.slice(miscIdx + "**Misconception**:".length, endMisc).trim();
+      let miscIndex = -1;
+      let miscLength = 0;
+      const miscMatch = blockText.match(/^(?:#{1,6}\s*Misconception\s*(?:\r?\n|$)|(?:\*\*Misconception\*\*|Misconception):?\s*)/im);
+      if (miscMatch && miscMatch.index !== undefined) {
+        miscIndex = miscMatch.index;
+        miscLength = miscMatch[0].length;
       }
 
-      if (corrIdx !== -1) {
-        const corrText = blockText.slice(corrIdx + "**Correction**:".length).trim();
+      let corrIndex = -1;
+      let corrLength = 0;
+      const corrMatch = blockText.match(/^(?:#{1,6}\s*Correction\s*(?:\r?\n|$)|(?:\*\*Correction\*\*|Correction):?\s*)/im);
+      if (corrMatch && corrMatch.index !== undefined) {
+        corrIndex = corrMatch.index;
+        corrLength = corrMatch[0].length;
+      }
+
+      if (miscIndex !== -1) {
+        const endMisc = corrIndex !== -1 ? corrIndex : blockText.length;
+        myth = blockText.slice(miscIndex + miscLength, endMisc).trim();
+      } else {
+        if (corrIndex !== -1) {
+          myth = blockText.slice(0, corrIndex).trim();
+        } else {
+          myth = blockText.trim();
+        }
+      }
+
+      if (corrIndex !== -1) {
+        const corrText = blockText.slice(corrIndex + corrLength).trim();
         const paragraphs = corrText.split(/\n\s*\n/);
         correctionMarkdown = paragraphs[0].trim();
         if (paragraphs.length > 1) {
@@ -377,7 +430,7 @@ function parseBlockNode(
         type: "misconception",
         globalOrderIndex: 0,
         metadata: {
-          koId: attrs.koId || "",
+          koId: attrs.ref || attrs.koId || "",
         },
         content: {
           myth,
@@ -732,7 +785,7 @@ export function parseCanonicalMarkdown(markdown: string): ASTBlock[] {
           currentBlockLines = [];
           
           const attrs = parseAttributes(currentBlockAttrStr);
-          currentBlockId = attrs.id || attrs.koId || `block-${i}-${currentBlockType}`;
+          currentBlockId = attrs.id || attrs.ref || attrs.koId || `block-${i}-${currentBlockType}`;
         }
       }
       continue;
@@ -990,7 +1043,7 @@ function runDiagnostics(
 
   blocks.forEach(block => {
     // Math Leakage Check in Concept blocks (Point 4 - Heuristic 3-level)
-    if (block.type === "concept") {
+    if (block.type === "concept" && !block.id.includes("-definition") && block.content.title !== "Definition") {
       const body = block.content.bodyMarkdown;
       
       // Level 1: Strict latex keywords

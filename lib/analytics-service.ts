@@ -5,9 +5,10 @@ import {
   studentFlashcardProgress, 
   flashcards, 
   aiUsageEvents,
-  aiQuestionBank
+  aiQuestionBank,
+  flashcardReviews
 } from "@/db/schema";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 
 export interface MasteryMetrics {
   masteryScore: number;     // M_mu: 0-100
@@ -106,17 +107,28 @@ export class AnalyticsService {
       }
     }
 
-    // 3. Fetch all flashcard progress for the student
+    // 3. Fetch all flashcard progress and reviews count for the student
     const fcProgress = await db
       .select({
-        box: studentFlashcardProgress.box,
+        repetitions: studentFlashcardProgress.repetitions,
         lastReviewedAt: studentFlashcardProgress.lastReviewedAt,
-        history: studentFlashcardProgress.history,
+        flashcardId: studentFlashcardProgress.flashcardId,
         koId: flashcards.koId,
       })
       .from(studentFlashcardProgress)
       .innerJoin(flashcards, eq(studentFlashcardProgress.flashcardId, flashcards.id))
       .where(eq(studentFlashcardProgress.studentId, studentId));
+
+    const reviewsCountList = await db
+      .select({
+        flashcardId: flashcardReviews.flashcardId,
+        count: sql<number>`count(*)`,
+      })
+      .from(flashcardReviews)
+      .where(eq(flashcardReviews.studentId, studentId))
+      .groupBy(flashcardReviews.flashcardId);
+
+    const reviewsCountMap = new Map(reviewsCountList.map(r => [r.flashcardId, r.count]));
 
     // 4. Fetch AI Tutor usage events for the student
     const tutorEvents = await db
@@ -140,16 +152,15 @@ export class AnalyticsService {
       let lastFcTime = 0;
 
       if (linkedFc.length > 0) {
-        let boxSum = 0;
+        let repetitionsSum = 0;
         for (const p of linkedFc) {
-          boxSum += Math.min(5, p.box);
-          const historyArr = (p.history as any[]) || [];
-          N_fc_rev += historyArr.length;
+          repetitionsSum += Math.min(5, p.repetitions);
+          N_fc_rev += reviewsCountMap.get(p.flashcardId) || 0;
           if (p.lastReviewedAt) {
             lastFcTime = Math.max(lastFcTime, new Date(p.lastReviewedAt).getTime());
           }
         }
-        S_fc = (boxSum / (linkedFc.length * 5)) * 100;
+        S_fc = (repetitionsSum / (linkedFc.length * 5)) * 100;
       }
 
       // B. Calculate S_qz (Quiz score) & N_qz_att

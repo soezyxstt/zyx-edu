@@ -29,6 +29,11 @@ import {
 } from "@/lib/course-utils";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
+import { ContinueReadingCard } from "@/components/course/continue-reading-card";
+import { DueFlashcardsCard } from "@/components/course/due-flashcards-card";
+import { StudyStatisticsCard } from "@/components/course/study-statistics-card";
+import { RecentActivityCard } from "@/components/course/recent-activity-card";
+import { getCourseLearningSummary } from "@/lib/learning-analytics";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -82,6 +87,10 @@ export default async function CourseOverviewPage({ params }: Props) {
   const tryouts = await getCourseTryouts(id);
   const submissions = await getCourseSubmissions(id, studentId);
 
+  const learningSummary = studentId && isEnrolled
+    ? await getCourseLearningSummary(id, studentId)
+    : null;
+
   const doneMaterials = materials.filter((m) => m.completed).length;
   const quizSubs = submissions.filter((s) => s.examType === "quiz" && s.score !== null);
   const tryoutSubs = submissions.filter((s) => s.examType === "tryout" && s.score !== null);
@@ -124,104 +133,26 @@ export default async function CourseOverviewPage({ params }: Props) {
  </div>
  )}
 
- {/* ── Progress stats strip (enrolled only) ────────────────────────── */}
- {isEnrolled && (
- <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
- {/* Materials progress */}
- <div className="rounded-xl border border-border/60 bg-card/65 p-4 shadow-xs backdrop-blur-md">
- <div className="flex items-center gap-2 text-muted-foreground">
- <FileText className="size-4 shrink-0 text-brand-primary" aria-hidden />
- <span className="text-body-sm font-medium">Dokumen</span>
- </div>
- <p className="mt-2 font-heading text-h5 font-semibold text-foreground">
- {doneMaterials}
- <span className="text-body-base font-normal text-muted-foreground">
- /{materials.length}
- </span>
- </p>
- {/* Progress bar */}
- <div className="mt-2 h-1 w-full overflow-hidden rounded-md bg-muted">
- <div
- className="h-full rounded-md bg-brand-primary transition-all duration-500"
- style={{ width: `${progressPct}%` }}
- aria-label={`${progressPct}% selesai`}
- />
- </div>
- <p className="mt-1 text-body-sm text-muted-foreground">{progressPct}% selesai</p>
- </div>
+  {/* ── Upgraded Course Experience Layer (enrolled only) ──────────────── */}
+  {isEnrolled && learningSummary && (
+    <>
+      {/* Top Section: Continue Reading & Due Flashcards */}
+      <div className="mb-6 grid gap-4 md:grid-cols-2">
+        <ContinueReadingCard courseId={id} data={learningSummary.continueReading} />
+        <DueFlashcardsCard courseId={id} data={learningSummary.dueFlashcards} />
+      </div>
 
- {/* Best quiz score */}
- <div className="rounded-xl border border-border/60 bg-card/65 p-4 shadow-xs backdrop-blur-md">
- <div className="flex items-center gap-2 text-muted-foreground">
- <ClipboardList className="size-4 shrink-0 text-tertiary-1" aria-hidden />
- <span className="text-body-sm font-medium">Kuis Terbaik</span>
- </div>
- {bestQuizScore !== null ? (
- <>
- <p className="mt-2 font-heading text-h5 font-semibold text-foreground">
- {bestQuizScore}
- <span className="text-body-base font-normal text-muted-foreground">/100</span>
- </p>
- <p className="mt-1 text-body-sm text-muted-foreground">
- {quizSubs.length} pengerjaan
- </p>
- </>
- ) : (
- <>
- <p className="mt-2 font-heading text-h5 font-semibold text-muted-foreground"></p>
- <p className="mt-1 text-body-sm text-muted-foreground">Belum dikerjakan</p>
- </>
- )}
- </div>
+      {/* Middle Section: Study Statistics */}
+      <div className="mb-6">
+        <StudyStatisticsCard data={learningSummary.studyStatistics} />
+      </div>
 
- {/* Tryout score */}
- <div className="rounded-xl border border-border/60 bg-card/65 p-4 shadow-xs backdrop-blur-md">
- <div className="flex items-center gap-2 text-muted-foreground">
- <Target className="size-4 shrink-0 text-brand-secondary" aria-hidden />
- <span className="text-body-sm font-medium">Tryout</span>
- </div>
- {bestTryoutScore !== null ? (
- <>
- <p className="mt-2 font-heading text-h5 font-semibold text-foreground">
- {bestTryoutScore}
- <span className="text-body-base font-normal text-muted-foreground">/100</span>
- </p>
- <p className="mt-1 text-body-sm text-muted-foreground">
- {tryoutSubs.length} pengerjaan
- </p>
- </>
- ) : (
- <>
- <p className="mt-2 font-heading text-h5 font-semibold text-muted-foreground"></p>
- <p className="mt-1 text-body-sm text-muted-foreground">Belum dikerjakan</p>
- </>
- )}
- </div>
-
- {/* Leaderboard rank */}
- <div className="rounded-xl border border-border/60 bg-card/65 p-4 shadow-xs backdrop-blur-md">
- <div className="flex items-center gap-2 text-muted-foreground">
- <Trophy className="size-4 shrink-0 text-yellow-500" aria-hidden />
- <span className="text-body-sm font-medium">Peringkat</span>
- </div>
- {myRank !== null ? (
- <>
- <p className="mt-2 font-heading text-h5 font-semibold text-foreground">
- #{myRank}
- </p>
- <p className="mt-1 text-body-sm text-muted-foreground">
- dari {leaderboard.length} siswa
- </p>
- </>
- ) : (
- <>
- <p className="mt-2 font-heading text-h5 font-semibold text-muted-foreground"></p>
- <p className="mt-1 text-body-sm text-muted-foreground">Belum ada skor</p>
- </>
- )}
- </div>
- </div>
- )}
+      {/* Bottom Section: Recent Activity */}
+      <div className="mb-6">
+        <RecentActivityCard data={learningSummary.recentActivities} />
+      </div>
+    </>
+  )}
 
  {/* ── Compact nav tiles ────────────────────────────────────────────── */}
  <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

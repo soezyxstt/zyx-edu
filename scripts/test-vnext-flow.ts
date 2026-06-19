@@ -1,8 +1,11 @@
+import { loadEnvConfig } from "@next/env";
+loadEnvConfig(process.cwd());
+
 import { validateCanonicalMarkdown } from "../lib/canonical-validator";
-import { parseAssessmentMarkdownIntoBlocks, extractAssessmentObjectsForMtd } from "../lib/assessment-extractor";
+import { parseAssessmentMarkdownIntoBlocks, extractAssessmentObjectsForSource } from "../lib/assessment-extractor";
 import { validateQuestionAgainstPolicy } from "../lib/pedagogical-validator";
 import { db } from "../db";
-import { courses, masterTeachingDocuments, assessmentObjects, assessmentProfiles, coursePolicies, vectorSyncQueue, user } from "../db/schema";
+import { courses, masterTeachingDocuments, assessmentSources, assessmentObjects, assessmentProfiles, coursePolicies, vectorSyncQueue, user } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
@@ -104,15 +107,20 @@ D. Tidak terdefinisi
 Apakah fungsi $f(x) = |x|$ memiliki turunan di $x = 0$? Jelaskan.
 `;
 
-  await db.insert(masterTeachingDocuments).values({
-    id: mtdId,
+  const sourceId = `source-${randomUUID()}`;
+  await db.insert(assessmentSources).values({
+    id: sourceId,
     courseId,
     title: "Test UTS 2026",
-    markdownContent: mtdMarkdown,
+    category: "uts",
+    year: 2026,
+    semester: 1,
+    sourceMarkdown: mtdMarkdown,
+    sourceHash: "test-hash",
     version: 1,
-    status: "active",
-    type: "assessment",
-    createdById: userId,
+    parserVersion: "1.0.0",
+    ingestionStatus: "pending",
+    uploadedByUserId: userId,
   });
 
   const blocks = parseAssessmentMarkdownIntoBlocks(mtdMarkdown);
@@ -120,12 +128,12 @@ Apakah fungsi $f(x) = |x|$ memiliki turunan di $x = 0$? Jelaskan.
 
   // Run assessment objects extraction (MOCK mode)
   process.env.MOCK_GEMINI = "true";
-  await extractAssessmentObjectsForMtd(courseId, mtdId, mtdMarkdown, true);
+  await extractAssessmentObjectsForSource(sourceId, true);
 
   const objects = await db
     .select()
     .from(assessmentObjects)
-    .where(eq(assessmentObjects.sourceMtdId, mtdId));
+    .where(eq(assessmentObjects.sourceId, sourceId));
   assert(objects.length === 3, `Extracted and stored ${objects.length} Assessment Objects in database`);
 
   // Assert Assessment Profile was created
@@ -214,7 +222,8 @@ Apakah fungsi $f(x) = |x|$ memiliki turunan di $x = 0$? Jelaskan.
   assert(longPolicyRes.success === false, "Question exceeding max estimated steps is rejected");
 
   // Cleanup testing records
-  await db.delete(assessmentObjects).where(eq(assessmentObjects.courseId, courseId));
+  await db.delete(assessmentObjects).where(eq(assessmentObjects.sourceId, sourceId));
+  await db.delete(assessmentSources).where(eq(assessmentSources.id, sourceId));
   await db.delete(assessmentProfiles).where(eq(assessmentProfiles.courseId, courseId));
   await db.delete(coursePolicies).where(eq(coursePolicies.courseId, courseId));
   await db.delete(masterTeachingDocuments).where(eq(masterTeachingDocuments.id, mtdId));

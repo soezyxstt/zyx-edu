@@ -1032,14 +1032,74 @@ export const studentFlashcardProgress = sqliteTable(
  flashcardId: text("flashcard_id")
  .notNull()
  .references(() => flashcards.id, { onDelete: "cascade" }),
- box: integer("box").default(1).notNull(),
- nextReviewDue: integer("next_review_due", { mode: "timestamp" }).defaultNow().notNull(),
+ easeFactor: real("ease_factor").default(2.5).notNull(),
+ intervalDays: integer("interval_days").default(0).notNull(),
+ repetitions: integer("repetitions").default(0).notNull(),
+ lapses: integer("lapses").default(0).notNull(),
+ dueDate: integer("due_date", { mode: "timestamp" }).defaultNow().notNull(),
  lastReviewedAt: integer("last_reviewed_at", { mode: "timestamp" }),
- history: text("history", { mode: "json" }).$defaultFn(() => []).notNull(),
- metadata: text("metadata", { mode: "json" }).$defaultFn(() => ({})).notNull(),
+ createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+ updatedAt: integer("updated_at", { mode: "timestamp" })
+ .defaultNow()
+ .$onUpdate(() => new Date())
+ .notNull(),
  },
  (table) => [
- index("idx_student_fc_review").on(table.studentId, table.nextReviewDue),
+ unique("uq_student_flashcard").on(table.studentId, table.flashcardId),
+ index("idx_student_fc_due").on(table.studentId, table.dueDate),
+ ]
+);
+
+// 9.5. flashcard_reviews
+export const flashcardReviews = sqliteTable(
+ "flashcard_reviews",
+ {
+ id: text("id").primaryKey(),
+ studentId: text("student_id")
+ .notNull()
+ .references(() => user.id, { onDelete: "cascade" }),
+ flashcardId: text("flashcard_id")
+ .notNull()
+ .references(() => flashcards.id, { onDelete: "cascade" }),
+ grade: integer("grade").notNull(), // 1 = Again, 2 = Hard, 3 = Good, 4 = Easy
+ responseTimeMs: integer("response_time_ms").notNull(),
+ reviewedAt: integer("reviewed_at", { mode: "timestamp" }).defaultNow().notNull(),
+ },
+ (table) => [
+ index("idx_fc_reviews_student").on(table.studentId),
+ index("idx_fc_reviews_card").on(table.flashcardId),
+ ]
+);
+
+// 9.6. student_material_progress
+export const studentMaterialProgress = sqliteTable(
+ "student_material_progress",
+ {
+ id: text("id").primaryKey(),
+ studentId: text("student_id")
+ .notNull()
+ .references(() => user.id, { onDelete: "cascade" }),
+ materialId: text("material_id")
+ .notNull()
+ .references(() => websiteMaterials.id, { onDelete: "cascade" }),
+ completionPercent: integer("completion_percent").default(0).notNull(), // range 0-100
+ lastSectionId: text("last_section_id"), // Deprecated: use lastPosition instead
+ lastPosition: text("last_position", { mode: "json" }).$type<{
+   type: "pdf" | "article";
+   page?: number;
+   section?: string;
+ }>(),
+ timeSpentSeconds: integer("time_spent_seconds").default(0).notNull(), // accumulative
+ lastOpenedAt: integer("last_opened_at", { mode: "timestamp" }).defaultNow().notNull(),
+ createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+ updatedAt: integer("updated_at", { mode: "timestamp" })
+ .defaultNow()
+ .$onUpdate(() => new Date())
+ .notNull(),
+ },
+ (table) => [
+ unique("uq_student_material").on(table.studentId, table.materialId),
+ index("idx_student_mat_prog").on(table.studentId, table.materialId),
  ]
 );
 
@@ -1093,27 +1153,91 @@ export const knowledgeRelationships = sqliteTable(
  ]
 );
 
+// 11.4. assessment_sources
+export const assessmentSources = sqliteTable("assessment_sources", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  origin: text("origin").$type<"uploaded" | "generated">().default("uploaded").notNull(),
+  category: text("category").$type<"tutorial" | "quiz" | "uts" | "uas" | "tryout">().notNull(),
+  year: integer("year").notNull(),
+  semester: integer("semester"),
+  sourceMarkdown: text("source_markdown").notNull(),
+  sourceHash: text("source_hash").notNull(),
+  version: integer("version").default(1).notNull(),
+  parserVersion: text("parser_version").default("1.0.0").notNull(),
+  ingestionStatus: text("ingestion_status")
+    .$type<"pending" | "processing" | "completed" | "failed">()
+    .default("pending")
+    .notNull(),
+  ingestionError: text("ingestion_error"),
+  ingestionStartedAt: integer("ingestion_started_at", { mode: "timestamp" }),
+  ingestionCompletedAt: integer("ingestion_completed_at", { mode: "timestamp" }),
+  originalFilename: text("original_filename"),
+  uploadthingKey: text("uploadthing_key"),
+  uploadedByUserId: text("uploaded_by_user_id")
+    .notNull()
+    .references(() => user.id),
+  deletedAt: integer("deleted_at", { mode: "timestamp" }),
+  deletedByUserId: text("deleted_by_user_id")
+    .references(() => user.id),
+  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+});
+
+// 11.4.5. assessment_source_chapters
+export const assessmentSourceChapters = sqliteTable(
+  "assessment_source_chapters",
+  {
+    id: text("id").primaryKey(),
+    assessmentSourceId: text("assessment_source_id")
+      .notNull()
+      .references(() => assessmentSources.id, { onDelete: "cascade" }),
+    chapterId: text("chapter_id")
+      .notNull()
+      .references(() => chapters.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("idx_asc_source").on(table.assessmentSourceId),
+    index("idx_asc_chapter").on(table.chapterId),
+  ]
+);
+
+// 11.4.8. chapter_aliases
+export const chapterAliases = sqliteTable("chapter_aliases", {
+  id: text("id").primaryKey(),
+  chapterId: text("chapter_id")
+    .notNull()
+    .references(() => chapters.id, { onDelete: "cascade" }),
+  aliasName: text("alias_name").notNull().unique(),
+  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+});
+
 // 11.5. assessment_objects
 export const assessmentObjects = sqliteTable(
   "assessment_objects",
   {
     id: text("id").primaryKey(),
-    courseId: text("course_id")
+    sourceId: text("source_id")
       .notNull()
-      .references(() => courses.id, { onDelete: "cascade" }),
-    sourceMtdId: text("source_mtd_id")
-      .notNull()
-      .references(() => masterTeachingDocuments.id, { onDelete: "cascade" }),
+      .references(() => assessmentSources.id, { onDelete: "cascade" }),
+    questionOrder: integer("question_order").notNull(),
+    sourceQuestionNumber: text("source_question_number"),
     questionType: text("question_type").notNull(),
     difficulty: integer("difficulty").notNull(),
     applicationLevel: integer("application_level").notNull(),
-    concepts: text("concepts", { mode: "json" }).$type<string[]>().notNull(),
     pattern: text("pattern").notNull(),
     reasoningType: text("reasoning_type").notNull(),
     estimatedSteps: integer("estimated_steps").notNull(),
     questionMarkdown: text("question_markdown").default("").notNull(),
     answerMarkdown: text("answer_markdown"),
     options: text("options", { mode: "json" }).$type<string[]>(),
+    canonicalQuestionHash: text("canonical_question_hash").notNull(),
     createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
     updatedAt: integer("updated_at", { mode: "timestamp" })
       .defaultNow()
@@ -1233,7 +1357,7 @@ export const courseMaterials = sqliteTable(
 
 export const coursesRelations = relations(courses, ({ one, many }) => ({
 	courseMaterials: many(courseMaterials),
-	assessmentObjects: many(assessmentObjects),
+	assessmentSources: many(assessmentSources),
 	assessmentProfile: one(assessmentProfiles, {
 		fields: [courses.id],
 		references: [assessmentProfiles.courseId],
@@ -1244,14 +1368,49 @@ export const coursesRelations = relations(courses, ({ one, many }) => ({
 	}),
 }));
 
-export const assessmentObjectsRelations = relations(assessmentObjects, ({ one }) => ({
+export const assessmentSourcesRelations = relations(assessmentSources, ({ one, many }) => ({
 	course: one(courses, {
-		fields: [assessmentObjects.courseId],
+		fields: [assessmentSources.courseId],
 		references: [courses.id],
 	}),
-	sourceMtd: one(masterTeachingDocuments, {
-		fields: [assessmentObjects.sourceMtdId],
-		references: [masterTeachingDocuments.id],
+	assessmentObjects: many(assessmentObjects),
+	chapters: many(assessmentSourceChapters),
+}));
+
+export const assessmentSourceChaptersRelations = relations(assessmentSourceChapters, ({ one }) => ({
+	assessmentSource: one(assessmentSources, {
+		fields: [assessmentSourceChapters.assessmentSourceId],
+		references: [assessmentSources.id],
+	}),
+	chapter: one(chapters, {
+		fields: [assessmentSourceChapters.chapterId],
+		references: [chapters.id],
+	}),
+}));
+
+export const chapterAliasesRelations = relations(chapterAliases, ({ one }) => ({
+	chapter: one(chapters, {
+		fields: [chapterAliases.chapterId],
+		references: [chapters.id],
+	}),
+}));
+
+export const assessmentObjectsRelations = relations(assessmentObjects, ({ one, many }) => ({
+	source: one(assessmentSources, {
+		fields: [assessmentObjects.sourceId],
+		references: [assessmentSources.id],
+	}),
+	concepts: many(assessmentObjectConcepts),
+}));
+
+export const assessmentObjectConceptsRelations = relations(assessmentObjectConcepts, ({ one }) => ({
+	assessmentObject: one(assessmentObjects, {
+		fields: [assessmentObjectConcepts.assessmentObjectId],
+		references: [assessmentObjects.id],
+	}),
+	concept: one(concepts, {
+		fields: [assessmentObjectConcepts.conceptId],
+		references: [concepts.id],
 	}),
 }));
 
@@ -1495,6 +1654,28 @@ export const studentFlashcardProgressRelations = relations(studentFlashcardProgr
  }),
 }));
 
+export const flashcardReviewsRelations = relations(flashcardReviews, ({ one }) => ({
+ student: one(user, {
+ fields: [flashcardReviews.studentId],
+ references: [user.id],
+ }),
+ flashcard: one(flashcards, {
+ fields: [flashcardReviews.flashcardId],
+ references: [flashcards.id],
+ }),
+}));
+
+export const studentMaterialProgressRelations = relations(studentMaterialProgress, ({ one }) => ({
+ student: one(user, {
+ fields: [studentMaterialProgress.studentId],
+ references: [user.id],
+ }),
+ material: one(websiteMaterials, {
+ fields: [studentMaterialProgress.materialId],
+ references: [websiteMaterials.id],
+ }),
+}));
+
 export const diktatsRelations = relations(diktats, ({ one }) => ({
  course: one(courses, {
  fields: [diktats.courseId],
@@ -1715,47 +1896,137 @@ export const dailyRecommendations = sqliteTable(
 
 // tutor_session_summaries ; one row per (student, course), deterministic update after each tutor exchange
 export const tutorSessionSummaries = sqliteTable(
- "tutor_session_summaries",
- {
- id: text("id").primaryKey(),
- studentId: text("student_id")
- .notNull()
- .references(() => user.id, { onDelete: "cascade" }),
- courseId: text("course_id")
- .notNull()
- .references(() => courses.id, { onDelete: "cascade" }),
- askedConcepts: text("asked_concepts", { mode: "json" })
- .$defaultFn(() => [])
- .notNull(),
- questionCount: integer("question_count").default(0).notNull(),
- lastSessionAt: integer("last_session_at", { mode: "timestamp" }).defaultNow().notNull(),
- },
- (table) => [
- unique("uq_tss_student_course").on(table.studentId, table.courseId),
- ]
+  "tutor_session_summaries",
+  {
+  id: text("id").primaryKey(),
+  studentId: text("student_id")
+  .notNull()
+  .references(() => user.id, { onDelete: "cascade" }),
+  courseId: text("course_id")
+  .notNull()
+  .references(() => courses.id, { onDelete: "cascade" }),
+  askedConcepts: text("asked_concepts", { mode: "json" })
+  .$defaultFn(() => [])
+  .notNull(),
+  questionCount: integer("question_count").default(0).notNull(),
+  lastSessionAt: integer("last_session_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+  unique("uq_tss_student_course").on(table.studentId, table.courseId),
+  ]
 );
 
-// tutor_chat_messages ; per-message history, capped at 100 rows per (student, course)
-export const tutorChatMessages = sqliteTable(
- "tutor_chat_messages",
- {
- id: text("id").primaryKey(),
- studentId: text("student_id")
- .notNull()
- .references(() => user.id, { onDelete: "cascade" }),
- courseId: text("course_id")
- .notNull()
- .references(() => courses.id, { onDelete: "cascade" }),
- role: text("role", { enum: ["student", "ai"] }).notNull(),
- content: text("content").notNull(),
- sources: text("sources", { mode: "json" }),
- createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
- },
- (table) => [
- index("idx_tcm_student_course").on(table.studentId, table.courseId),
- index("idx_tcm_created_at").on(table.createdAt),
- ]
+// ─── P3A: Chat Sessions & Sources ────────────────────────────────────────────
+
+// chat_sessions ; groups conversations into named sessions per (student, course)
+export const chatSessions = sqliteTable(
+  "chat_sessions",
+  {
+  id: text("id").primaryKey(),
+  studentId: text("student_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  courseId: text("course_id")
+    .notNull()
+    .references(() => courses.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  startedAt: integer("started_at", { mode: "timestamp" }).defaultNow().notNull(),
+  lastMessageAt: integer("last_message_at", { mode: "timestamp" }).defaultNow().notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+  },
+  (table) => [
+    index("idx_chat_sessions_student_course").on(table.studentId, table.courseId),
+    index("idx_chat_sessions_last_message").on(table.lastMessageAt),
+  ]
 );
+
+// tutor_chat_messages ; per-message history, linked to a session
+export const tutorChatMessages = sqliteTable(
+  "tutor_chat_messages",
+  {
+  id: text("id").primaryKey(),
+  studentId: text("student_id")
+  .notNull()
+  .references(() => user.id, { onDelete: "cascade" }),
+  courseId: text("course_id")
+  .notNull()
+  .references(() => courses.id, { onDelete: "cascade" }),
+  sessionId: text("session_id")
+    .notNull()
+    .references(() => chatSessions.id, { onDelete: "cascade" }),
+  role: text("role", { enum: ["student", "ai"] }).notNull(),
+  content: text("content").notNull(),
+  sources: text("sources", { mode: "json" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+  index("idx_tcm_student_course").on(table.studentId, table.courseId),
+  index("idx_tcm_session").on(table.sessionId),
+  index("idx_tcm_created_at").on(table.createdAt),
+  ]
+);
+
+// chat_message_sources ; tracks which sources were used to generate an AI answer
+export const chatMessageSources = sqliteTable(
+  "chat_message_sources",
+  {
+  id: text("id").primaryKey(),
+  messageId: text("message_id")
+    .notNull()
+    .references(() => tutorChatMessages.id, { onDelete: "cascade" }),
+  sourceType: text("source_type").$type<
+    "knowledge_object" | "website_material" | "flashcard" | "concept" | "assessment_question"
+  >().notNull(),
+  sourceId: text("source_id").notNull(),
+  relevanceScore: real("relevance_score").default(1.0).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_cms_message").on(table.messageId),
+    index("idx_cms_source").on(table.sourceType, table.sourceId),
+  ]
+);
+
+// ─── P3A: Chat Sessions & Sources Relations ────────────────────────────────────
+
+export const chatSessionsRelations = relations(chatSessions, ({ one, many }) => ({
+  student: one(user, {
+    fields: [chatSessions.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [chatSessions.courseId],
+    references: [courses.id],
+  }),
+  messages: many(tutorChatMessages),
+}));
+
+export const tutorChatMessagesRelations = relations(tutorChatMessages, ({ one, many }) => ({
+  student: one(user, {
+    fields: [tutorChatMessages.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [tutorChatMessages.courseId],
+    references: [courses.id],
+  }),
+  session: one(chatSessions, {
+    fields: [tutorChatMessages.sessionId],
+    references: [chatSessions.id],
+  }),
+  sources: many(chatMessageSources),
+}));
+
+export const chatMessageSourcesRelations = relations(chatMessageSources, ({ one }) => ({
+  message: one(tutorChatMessages, {
+    fields: [chatMessageSources.messageId],
+    references: [tutorChatMessages.id],
+  }),
+}));
 
 // ─── Push Notifications Relations ─────────────────────────────────────────────
 
@@ -2081,4 +2352,90 @@ export const conceptGraphEdgesRelations = relations(conceptGraphEdges, ({ one })
  fields: [conceptGraphEdges.courseId],
  references: [courses.id],
  }),
+}));
+
+// student_chapter_mastery ; storing aggregated chapter-level mastery scores and trends
+export const studentChapterMastery = sqliteTable(
+  "student_chapter_mastery",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    chapterId: text("chapter_id")
+      .notNull()
+      .references(() => chapters.id, { onDelete: "cascade" }),
+    masteryScore: integer("mastery_score").notNull(),
+    confidence: real("confidence").notNull(),
+    evidenceCount: integer("evidence_count").notNull(),
+    trend: text("trend").$type<"improving" | "stable" | "declining">(),
+    lastEvidenceAt: integer("last_evidence_at", { mode: "timestamp" }).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    unique("uq_scm_student_chapter").on(table.studentId, table.chapterId),
+    index("idx_scm_student_chapter_course").on(table.studentId, table.courseId),
+  ]
+);
+
+export const studentChapterMasteryRelations = relations(studentChapterMastery, ({ one }) => ({
+  student: one(user, {
+    fields: [studentChapterMastery.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [studentChapterMastery.courseId],
+    references: [courses.id],
+  }),
+  chapter: one(chapters, {
+    fields: [studentChapterMastery.chapterId],
+    references: [chapters.id],
+  }),
+}));
+
+// mastery_recompute_queue ; tracking pending recomputations to execute asynchronously
+export const masteryRecomputeQueue = sqliteTable(
+  "mastery_recompute_queue",
+  {
+    id: text("id").primaryKey(),
+    studentId: text("student_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    status: text("status")
+      .$type<"pending" | "processing" | "completed" | "failed">()
+      .default("pending")
+      .notNull(),
+    reason: text("reason").notNull(),
+    retries: integer("retries").default(0).notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("idx_mrq_status").on(table.status),
+    index("idx_mrq_student_course").on(table.studentId, table.courseId),
+  ]
+);
+
+export const masteryRecomputeQueueRelations = relations(masteryRecomputeQueue, ({ one }) => ({
+  student: one(user, {
+    fields: [masteryRecomputeQueue.studentId],
+    references: [user.id],
+  }),
+  course: one(courses, {
+    fields: [masteryRecomputeQueue.courseId],
+    references: [courses.id],
+  }),
 }));

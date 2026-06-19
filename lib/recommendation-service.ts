@@ -69,7 +69,7 @@ async function buildPlan(
         eq(flashcardSets.status, "published"),
         or(
           isNull(studentFlashcardProgress.id),
-          lte(studentFlashcardProgress.nextReviewDue, now)
+          lte(studentFlashcardProgress.dueDate, now)
         )
       )
     )
@@ -372,7 +372,7 @@ export async function buildPlanForConcepts(
         inArray(knowledgeObjects.conceptName, conceptNames),
         or(
           isNull(studentFlashcardProgress.id),
-          lte(studentFlashcardProgress.nextReviewDue, now)
+          lte(studentFlashcardProgress.dueDate, now)
         )
       )
     )

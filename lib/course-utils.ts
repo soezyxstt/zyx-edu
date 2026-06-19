@@ -2,6 +2,7 @@ import { db } from "@/db";
 import {
   courses as coursesTable,
   aiMaterialInstances,
+  websiteMaterials,
   diktats,
   progress as progressTable,
   quizTemplates,
@@ -30,7 +31,7 @@ export async function getCourse(id: string) {
 }
 
 export async function getCourseMaterials(courseId: string, studentId?: string) {
-  // DB materials
+  // AI material instances
   const dbMaterials = await db
     .select({
       id: aiMaterialInstances.id,
@@ -38,6 +39,16 @@ export async function getCourseMaterials(courseId: string, studentId?: string) {
     })
     .from(aiMaterialInstances)
     .where(eq(aiMaterialInstances.courseId, courseId));
+
+  // Website materials (published AST articles, linked 1:1 with chapters)
+  const webMaterials = await db
+    .select({
+      id: websiteMaterials.id,
+      title: websiteMaterials.title,
+      chapterId: websiteMaterials.chapterId,
+    })
+    .from(websiteMaterials)
+    .where(eq(websiteMaterials.courseId, courseId));
 
   // Diktats
   const courseDiktats = await db
@@ -89,7 +100,20 @@ export async function getCourseMaterials(courseId: string, studentId?: string) {
     isPreview: true,
   }));
 
-  return [...mappedDiktats, ...mappedDb];
+  const mappedWeb = webMaterials.map((m) => ({
+    id: m.id,
+    courseId,
+    chapterId: m.chapterId,
+    title: m.title,
+    kind: "article" as const,
+    docCategory: "materi" as const,
+    fileSize: "Disusun otomatis",
+    completed: completedSet.has(m.id),
+    isPastYear: false,
+    isPreview: true,
+  }));
+
+  return [...mappedDiktats, ...mappedDb, ...mappedWeb];
 }
 
 export async function getCourseQuizzes(courseId: string) {

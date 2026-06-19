@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { pageTitle } from "@/lib/site";
 import { Reveal } from "@/components/ui/reveal";
 import { db } from "@/db";
-import { aiQuestionBank, courses } from "@/db/schema";
-import { desc } from "drizzle-orm";
+import { aiQuestionBank, courses, assessmentObjects, assessmentSources } from "@/db/schema";
+import { desc, eq } from "drizzle-orm";
 import { assertTutorOrAdmin } from "@/lib/uploadthing-admin";
 import { QuestionBankClient } from "./questions-client";
+import { HistoricalQuestionsClient } from "./historical-questions-client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const metadata: Metadata = {
   title: pageTitle("Bank Soal"),
@@ -14,13 +16,30 @@ export const metadata: Metadata = {
 export default async function AIQuestionsPage() {
   await assertTutorOrAdmin();
 
-  const [questions, allCourses] = await Promise.all([
+  const [questions, allCourses, historicalQuestions] = await Promise.all([
     db
       .select()
       .from(aiQuestionBank)
       .orderBy(desc(aiQuestionBank.createdAt))
       .limit(200),
     db.select({ id: courses.id, title: courses.title }).from(courses),
+    db
+      .select({
+        id: assessmentObjects.id,
+        difficulty: assessmentObjects.difficulty,
+        applicationLevel: assessmentObjects.applicationLevel,
+        pattern: assessmentObjects.pattern,
+        questionMarkdown: assessmentObjects.questionMarkdown,
+        answerMarkdown: assessmentObjects.answerMarkdown,
+        sourceTitle: assessmentSources.title,
+        sourceCategory: assessmentSources.category,
+        sourceYear: assessmentSources.year,
+        courseId: assessmentSources.courseId,
+      })
+      .from(assessmentObjects)
+      .innerJoin(assessmentSources, eq(assessmentObjects.sourceId, assessmentSources.id))
+      .orderBy(desc(assessmentObjects.createdAt))
+      .limit(200),
   ]);
 
   const courseMap = Object.fromEntries(allCourses.map((c) => [c.id, c.title]));
@@ -30,11 +49,38 @@ export default async function AIQuestionsPage() {
       <div className="mb-8">
         <h1 className="font-heading text-h4 font-semibold text-foreground">Bank Soal</h1>
         <p className="mt-2 text-body-sm text-muted-foreground">
-          Tinjau, edit, dan publikasikan soal yang dihasilkan sistem. Soal harus berstatus{" "}
-          <strong>published</strong> sebelum dapat digunakan dalam kuis.
+          Kelola bank soal Zyx baik hasil ekstraksi historis maupun hasil pembuatan otomatis berbasis AI.
         </p>
       </div>
-      <QuestionBankClient questions={questions} courses={allCourses} courseMap={courseMap} />
+
+      <Tabs defaultValue="historical" className="space-y-6">
+        <TabsList className="w-full justify-start border-b border-border bg-transparent p-0 rounded-none h-auto">
+          <TabsTrigger
+            value="historical"
+            className="border-b-2 border-transparent px-4 py-2 text-body-sm font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none bg-transparent"
+          >
+            Bank Asesmen Historis ({historicalQuestions.length})
+          </TabsTrigger>
+          <TabsTrigger
+            value="ai-generated"
+            className="border-b-2 border-transparent px-4 py-2 text-body-sm font-semibold text-muted-foreground data-[state=active]:border-primary data-[state=active]:text-foreground rounded-none bg-transparent"
+          >
+            Dihasilkan AI (Question Bank) ({questions.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="historical" className="space-y-4">
+          <HistoricalQuestionsClient
+            questions={historicalQuestions}
+            courses={allCourses}
+            courseMap={courseMap}
+          />
+        </TabsContent>
+
+        <TabsContent value="ai-generated" className="space-y-4">
+          <QuestionBankClient questions={questions} courses={allCourses} courseMap={courseMap} />
+        </TabsContent>
+      </Tabs>
     </Reveal>
   );
 }

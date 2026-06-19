@@ -24,9 +24,10 @@ import {
 } from "@/db/schema";
 import { inArray, and, eq } from "drizzle-orm";
 import { z } from "zod";
-import { vectorStore } from "@/lib/vector-store";
+import { vectorStore, VECTOR_NAMESPACES } from "@/lib/vector-store";
 import { kvGet, kvPut } from "@/lib/kv-cache";
 import { PromptExecutor, type SystemPrompt } from "@/lib/prompt-executor";
+import { getConversationMemory } from "@/lib/zyra/conversation-memory";
 import { isMetaExamQuery, executeMetaQuery } from "./assessment-intelligence-service";
 import {
  buildLearnerProfile,
@@ -144,19 +145,41 @@ async function logCacheHit(userId: string, feature: string): Promise<void> {
  }
 }
 
-// ─── Prompts (Tier 1 is strictly profile-free) ───────────────────────────────
+interface QueryRewriteVars {
+  question: string;
+  historyText: string;
+}
+
+const queryRewritePrompt: SystemPrompt<QueryRewriteVars> = {
+  version: "tutor_rag/query_rewrite/v1.0.0",
+  systemInstruction:
+    "You are an AI assistant that rewrites conversational questions into standalone search queries for a vector database of university course materials. Analyze the conversation history and the new question. If the new question is a follow-up or contains pronouns/context referring to previous messages (e.g. 'explain it', 'what is the formula for that', 'give an analogy', 'sederhanakan'), rewrite it to be a standalone search query in Indonesian containing all necessary terms from the history. If the new question is already a standalone topic, return it unchanged. Output ONLY a JSON object containing the field 'rewrittenQuery'.",
+  userPrompt: (vars) => `CONVERSATION HISTORY:
+${vars.historyText}
+
+NEW QUESTION: ${vars.question}
+
+Generate a single JSON object:
+{
+  "rewrittenQuery": "[The standalone search query or the original question if no rewrite is needed]"
+}`,
+};
 
 interface GroundedVars {
  question: string;
  contextBlock: string;
  sourceList: string;
+ conversationHistory: string;
 }
 
 const tutorGroundedAnswer: SystemPrompt<GroundedVars> = {
- version: "tutor_rag/grounded_answer/v1.5.0",
+ version: "tutor_rag/grounded_answer/v1.7.0",
  systemInstruction:
- "You are Zyra, a friendly and knowledgeable AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable ; like a smart kakak tingkat (senior student) who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'yuk', 'nih', 'ya') but stay accurate and clear. You have access to course material snippets that may or may not be relevant to the question. First decide if they address the question. If they do, answer ONLY from them and cite sources strictly by the ids in the source list. If they do not, set covered=false, give a brief general answer, and cite nothing. IMPORTANT Socratic Safety rules: If the sources include past exam questions ('past_exam') or practice questions ('practice_question'), you must NEVER provide the direct solution or final answer values. Instead, explain the underlying general concept and formulas, and use Socratic scaffolding to guide the student step-by-step. If they ask you to solve it directly, generate an analogous question with different values and explain that one instead. Never reveal internal pipeline details to the student ; do not use words like 'excerpt', 'retrieved', 'snippet', 'context', 'source list', or any RAG terminology. Refer to materials as 'materi kuliah' or 'bahan ajar'. Never invent citations. Use markdown with LaTeX ($ inline, $$ display) for math. Never use em dashes or en dashes. Answer in the same language as the question.",
- userPrompt: (vars) => `QUESTION: ${vars.question}
+ "You are Zyra, a friendly and knowledgeable AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable ; like a smart kakak tingkat (senior student) who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'yuk', 'nih', 'ya') but stay accurate and clear. You are in a continuous chat session. Use the provided conversation history to maintain context and continuity. When responding to follow-up questions, build upon the previous exchange. You have access to course material snippets that may or may not be relevant to the question. First decide if they address the question. If they do, answer ONLY from them and cite sources strictly by the ids in the source list. If they do not, set covered=false, give a brief general answer, and cite nothing. IMPORTANT Socratic Safety rules: If the sources include past exam questions ('past_exam') or practice questions ('practice_question'), you must NEVER provide the direct solution or final answer values. Instead, explain the underlying general concept and formulas, and use Socratic scaffolding to guide the student step-by-step. If they ask you to solve it directly, generate an analogous question with different values and explain that one instead. Never reveal internal pipeline details to the student ; do not use words like 'excerpt', 'retrieved', 'snippet', 'context', 'source list', or any RAG terminology. Refer to materials as 'materi kuliah' or 'bahan ajar'. Never invent citations. Use markdown with LaTeX ($ inline, $$ display) for math. Never use em dashes or en dashes. Same language as the question. You can generate interactive visual diagrams, flowcharts, graphs, or charts to help students understand structures, processes, workflows, math functions, or statistics. To do this, output one of the following special markdown blocks:\n1. Flowchart or step-by-step diagram (uses ELK layout):\n:::flowchart {title=\"Title of Diagram\"}\nStep A --> Step B\nStep B -- Label --> Step C\n:::\nNote: Avoid spaces in node IDs if they are used as references, but you can write descriptive text for nodes. Use only valid '-->', '-- label -->', or '--> |label|' syntax.\n2. Function graph (plots equations):\n:::graph {title=\"Graph Title\"}\ndomain:\n  min: -10\n  max: 10\nfunctions:\n  - y = x^2 - 4\n  - y = sin(x)\n:::\n3. Data charts (bar, line, scatter, pie):\n:::chart {title=\"Chart Title\"}\nchartType: bar\nxLabel: X Axis Label\nyLabel: Y Axis Label\ndata:\n  - [Category A, 45]\n  - [Category B, 82]\n:::\nDo NOT use other styles of markdown block syntax for diagrams. These visual blocks will be automatically rendered as beautiful interactive visual widgets in the student's interface. Feel free to use them to explain complex concepts, algorithms, pathways, or mathematical behaviors. CRITICAL INSTRUCTION ON VISUAL SELECTION: If the student explicitly asks for a graph or plot (e.g. 'dengan grafik', 'gambarkan grafik', 'buat plot', 'kurva'), or if the explanation involves mathematical functions/equations/curves (such as limit existence, derivatives, or trigonometric behaviors), you MUST use the `:::graph` block to plot the relevant function equations. Do NOT use a flowchart when a graph or plot is requested. If the student asks for a flowchart, process flow, logical workflow, mind map, or step-by-step pipeline, you MUST use the `:::flowchart` block. For example, if asked 'jelaskan eksistensi limit dengan grafik', you must output a `:::graph` block plotting a relevant function (e.g. `y = (x^2 - 1)/(x - 1)` or similar piecewise/rational function) showing the limit behavior, not a flowchart diagram.",
+ userPrompt: (vars) => `CONVERSATION HISTORY:
+${vars.conversationHistory || "No previous history."}
+
+QUESTION: ${vars.question}
 
 COURSE MATERIAL EXCERPTS:
 ${vars.contextBlock}
@@ -167,7 +190,7 @@ ${vars.sourceList}
 Generate a single JSON object:
 {
  "covered": [true only if the excerpts actually address this question, else false],
- "answer": "[Markdown answer. IMPORTANT: Do NOT include any source ids or UUIDs inline in the answer text. Write the answer in Socratic prose only. Source attribution goes exclusively in the sourceIds array below.]",
+ "answer": "[Markdown answer. IMPORTANT: Do NOT include any source ids or UUIDs inline in the answer text. Write the answer in Socratic prose only. Source attribution goes exclusively in the sourceIds array below. You can generate flowcharts, graphs, or charts using the special markdown blocks detailed in the system instruction.]",
  "sourceIds": ["[ids you actually used ; only in this array, never embedded in the answer text; empty array when covered is false]"],
  "matchedConcepts": ["[concept names this question is about]"],
  "confidence": [0.0 to 1.0, how well the excerpts cover the question]
@@ -176,17 +199,21 @@ Generate a single JSON object:
 
 interface UngroundedVars {
  question: string;
+ conversationHistory: string;
 }
 
 const tutorUngroundedAnswer: SystemPrompt<UngroundedVars> = {
- version: "tutor_rag/ungrounded_answer/v1.1.0",
+ version: "tutor_rag/ungrounded_answer/v1.3.0",
  systemInstruction:
- "You are Zyra, a friendly AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable ; like a smart kakak tingkat who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'nih', 'ya') but stay accurate. The student's question is not covered by their course materials. Give a short, correct general explanation and be upfront that this topic is not in their course material. Never fabricate citations. Never use em dashes or en dashes. Answer in the same language as the question.",
- userPrompt: (vars) => `QUESTION: ${vars.question}
+ "You are Zyra, a friendly AI study assistant for Indonesian university students made by Zyx. Your tone is warm, casual, and relatable ; like a smart kakak tingkat who genuinely wants to help. Use informal Indonesian (e.g. 'kamu', 'aku', 'nih', 'ya') but stay accurate. You are in a continuous chat session with conversation history. The student's question is not covered by their course materials. Give a short, correct general explanation and be upfront that this topic is not in their course material. Maintain context from previous messages if the question is a follow-up. Never fabricate citations. Never use em dashes or en dashes. Same language as the question. You can generate interactive visual diagrams, flowcharts, graphs, or charts to help students understand structures, processes, workflows, math functions, or statistics. To do this, output one of the following special markdown blocks:\n1. Flowchart or step-by-step diagram (uses ELK layout):\n:::flowchart {title=\"Title of Diagram\"}\nStep A --> Step B\nStep B -- Label --> Step C\n:::\nNote: Avoid spaces in node IDs if they are used as references, but you can write descriptive text for nodes. Use only valid '-->', '-- label -->', or '--> |label|' syntax.\n2. Function graph (plots equations):\n:::graph {title=\"Graph Title\"}\ndomain:\n  min: -10\n  max: 10\nfunctions:\n  - y = x^2 - 4\n  - y = sin(x)\n:::\n3. Data charts (bar, line, scatter, pie):\n:::chart {title=\"Chart Title\"}\nchartType: bar\nxLabel: X Axis Label\nyLabel: Y Axis Label\ndata:\n  - [Category A, 45]\n  - [Category B, 82]\n:::\nDo NOT use other styles of markdown block syntax for diagrams. These visual blocks will be automatically rendered as beautiful interactive visual widgets in the student's interface. Feel free to use them to explain complex concepts, algorithms, pathways, or mathematical behaviors. CRITICAL INSTRUCTION ON VISUAL SELECTION: If the student explicitly asks for a graph or plot (e.g. 'dengan grafik', 'gambarkan grafik', 'buat plot', 'kurva'), or if the explanation involves mathematical functions/equations/curves (such as limit existence, derivatives, or trigonometric behaviors), you MUST use the `:::graph` block to plot the relevant function equations. Do NOT use a flowchart when a graph or plot is requested. If the student asks for a flowchart, process flow, logical workflow, mind map, or step-by-step pipeline, you MUST use the `:::flowchart` block. For example, if asked 'jelaskan eksistensi limit dengan grafik', you must output a `:::graph` block plotting a relevant function (e.g. `y = (x^2 - 1)/(x - 1)` or similar piecewise/rational function) showing the limit behavior, not a flowchart diagram.",
+ userPrompt: (vars) => `CONVERSATION HISTORY:
+${vars.conversationHistory || "No previous history."}
+
+QUESTION: ${vars.question}
 
 Generate a single JSON object:
 {
- "answer": "[Short general markdown explanation]",
+ "answer": "[Short general markdown explanation. You can generate flowcharts, graphs, or charts using the special markdown blocks detailed in the system instruction if helpful.]",
  "matchedConcepts": ["[general concept names this question is about]"],
  "confidence": [0.0 to 1.0]
 }`,
@@ -250,15 +277,15 @@ async function retrieve(
  question: string
 ): Promise<RetrievedSource[]> {
  const [learningMatches, practiceMatches, pastExamMatches] = await Promise.all([
-  vectorStore.query(`${courseId}_learning`, question, {
+  vectorStore.query(`${courseId}_${VECTOR_NAMESPACES.learning}`, question, {
    topK: TOP_K,
    ...(chapterId ? { filter: { chapterId } } : {}),
   }),
-  vectorStore.query(`${courseId}_practice`, question, {
+  vectorStore.query(`${courseId}_${VECTOR_NAMESPACES.practice}`, question, {
    topK: TOP_K,
    ...(chapterId ? { filter: { chapterId } } : {}),
   }),
-  vectorStore.query(`${courseId}_past_exams`, question, {
+  vectorStore.query(`${courseId}_${VECTOR_NAMESPACES.past_exams}`, question, {
    topK: TOP_K,
    ...(chapterId ? { filter: { chapterId } } : {}),
   }),
@@ -460,31 +487,61 @@ export interface AskTutorParams {
  courseId: string;
  chapterId?: string | null;
  question: string;
+ sessionId?: string | null;
 }
 
 export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResult> {
- const { studentId, courseId, question } = params;
+ const { studentId, courseId, question, sessionId } = params;
  const chapterId = params.chapterId ?? null;
- const cacheKey = tutorCacheKey(courseId, chapterId, question);
 
  const profile = await buildLearnerProfile(studentId, courseId);
 
- // Tier 1: cache
+ // Load conversation history context
+ const history = sessionId
+   ? await getConversationMemory({ studentId, courseId, sessionId, limit: 6 })
+   : { recentMessages: [] };
+
+ let searchQuestion = question;
+ let historyText = "";
+
+ if (history.recentMessages.length > 0) {
+   historyText = history.recentMessages
+     .map((m) => `${m.role === "student" ? "STUDENT" : "ZYRA"}: ${m.content}`)
+     .join("\n\n");
+
+   // Rewrite query using history to preserve search context
+   try {
+     const rewriteResult = await PromptExecutor.run({
+       userId: studentId,
+       prompt: queryRewritePrompt,
+       variables: { question, historyText },
+       schema: z.object({ rewrittenQuery: z.string() }),
+       useCase: USE_CASES.GROUNDED_RAG,
+     });
+     if (rewriteResult.success && rewriteResult.data?.rewrittenQuery) {
+       searchQuestion = rewriteResult.data.rewrittenQuery.trim();
+       console.log(`[Query Rewrite] Original: "${question}" -> Rewritten: "${searchQuestion}"`);
+     }
+   } catch (e) {
+     console.error("Failed to rewrite query:", e);
+   }
+ }
+
+ // Tier 1: cache using the contextualized search query
+ const cacheKey = tutorCacheKey(courseId, chapterId, searchQuestion);
  let base = await kvGet<TutorRagAnswer>(cacheKey);
  let cached = false;
  let budgetExhausted = false;
 
  if (base && typeof base.answer === "string") {
- cached = true;
- // Re-sanitize on read: entries cached before the strip/cleanup logic
- // existed may still carry leaked source ids or literal \n sequences.
- base = { ...base, answer: sanitizeAnswer(base.answer) };
- await logCacheHit(studentId, "tutor_rag");
+  cached = true;
+  base = { ...base, answer: sanitizeAnswer(base.answer) };
+  await logCacheHit(studentId, "tutor_rag");
  } else {
   base = null;
   let retrieved: RetrievedSource[] = [];
-  if (await isMetaExamQuery(question)) {
-   const statsSummary = await executeMetaQuery(courseId, question);
+  if (await isMetaExamQuery(searchQuestion)) {
+   const statsSummary = await executeMetaQuery(courseId, searchQuestion);
    retrieved = [
     {
      type: "past_exam",
@@ -495,7 +552,7 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
     },
    ];
   } else {
-   retrieved = await retrieve(courseId, chapterId, question);
+   retrieved = await retrieve(courseId, chapterId, searchQuestion);
   }
 
   if (retrieved.length === 0) {
@@ -504,7 +561,7 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
    const result = await PromptExecutor.run({
    userId: studentId,
    prompt: tutorUngroundedAnswer,
-   variables: { question },
+   variables: { question, conversationHistory: historyText },
    schema: UngroundedSchema,
    useCase,
    });
@@ -534,50 +591,48 @@ export async function askTutorRag(params: AskTutorParams): Promise<TutorRagResul
   const result = await PromptExecutor.run({
   userId: studentId,
   prompt: tutorGroundedAnswer,
-  variables: { question, contextBlock, sourceList },
+  variables: { question, contextBlock, sourceList, conversationHistory: historyText },
   schema: GroundedSchema,
   useCase: USE_CASES.GROUNDED_RAG,
   });
 
   if (result.success && result.data) {
- const d = result.data;
- if (d.covered) {
- // Never invent citations: keep only ids that were actually retrieved
- const byId = new Map(retrieved.map((s) => [s.id, s]));
- const citedIds = d.sourceIds.filter((id) => byId.has(id));
- const sourceIds = citedIds.length > 0 ? citedIds : retrieved.slice(0, 3).map((s) => s.id);
- const sources = [...new Set(sourceIds)].map((id) => {
- const s = byId.get(id)!;
- return { type: s.type, id: s.id, label: s.label, href: s.href };
- });
- base = {
- answer: sanitizeAnswer(d.answer),
- sources,
- matchedConcepts: d.matchedConcepts,
- confidence: d.confidence,
- grounded: true,
- };
- } else {
- // Retrieved excerpts do not actually cover the question: honest, uncited.
- base = {
- answer: sanitizeAnswer(d.answer),
- sources: [],
- matchedConcepts: d.matchedConcepts,
- confidence: d.confidence,
- grounded: false,
- };
- }
+  const d = result.data;
+  if (d.covered) {
+  const byId = new Map(retrieved.map((s) => [s.id, s]));
+  const citedIds = d.sourceIds.filter((id) => byId.has(id));
+  const sourceIds = citedIds.length > 0 ? citedIds : retrieved.slice(0, 3).map((s) => s.id);
+  const sources = [...new Set(sourceIds)].map((id) => {
+  const s = byId.get(id)!;
+  return { type: s.type, id: s.id, label: s.label, href: s.href };
+  });
+  base = {
+  answer: sanitizeAnswer(d.answer),
+  sources,
+  matchedConcepts: d.matchedConcepts,
+  confidence: d.confidence,
+  grounded: true,
+  };
+  } else {
+  base = {
+  answer: sanitizeAnswer(d.answer),
+  sources: [],
+  matchedConcepts: d.matchedConcepts,
+  confidence: d.confidence,
+  grounded: false,
+  };
+  }
 
- if (base.confidence >= CACHE_CONFIDENCE_FLOOR) {
- await kvPut(cacheKey, base, TUTOR_TTL_SECONDS);
- }
- } else if (result.errors[0]?.includes("DAILY_QUOTA_EXCEEDED")) {
- budgetExhausted = true;
- } else {
- console.error("tutor grounded generation failed:", result.errors[0]);
- budgetExhausted = true;
- }
- }
+  if (base.confidence >= CACHE_CONFIDENCE_FLOOR) {
+  await kvPut(cacheKey, base, TUTOR_TTL_SECONDS);
+  }
+  } else if (result.errors[0]?.includes("DAILY_QUOTA_EXCEEDED")) {
+  budgetExhausted = true;
+  } else {
+  console.error("tutor grounded generation failed:", result.errors[0]);
+  budgetExhausted = true;
+  }
+  }
  }
 
  if (!base) {

@@ -40,7 +40,7 @@ import {
  clearTutorHistoryAction,
 } from "@/app/actions/tutor";
 import { MarkdownRenderer } from "@/components/course/markdown-renderer";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 // Fetch extra actions from custom action file
@@ -96,6 +96,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
  const [inputVal, setInputVal] = React.useState("");
  const [chatLoading, setChatLoading] = React.useState(false);
+ const [sessionId, setSessionId] = React.useState<string | null>(null);
 
  // Ref for auto-scrolling
  const messagesEndRef = React.useRef<HTMLDivElement>(null);
@@ -192,9 +193,10 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  if (courseId) {
  setLoading(true);
  try {
- const history = await loadTutorHistoryAction(courseId);
- if (history.length > 0) {
- setMessages(history);
+ const result = await loadTutorHistoryAction(courseId);
+ setSessionId(result.sessionId);
+ if (result.messages.length > 0) {
+ setMessages(result.messages);
  } else {
  setMessages([{
  id: "chat-welcome",
@@ -226,6 +228,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  setData(null);
  setMessages([]);
  setErrors([]);
+ setSessionId(null);
  }, []);
 
  // Sync execution from backend services on mode triggers
@@ -233,6 +236,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  if (!isOpen || !activeMode) return;
 
  if (activeMode === "chat") return; // chat mode seeds its own welcome message inline
+ if (activeMode === "explain" && explainMode !== "content") return;
 
  async function loadData() {
  setLoading(true);
@@ -325,8 +329,13 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  if (courseId) {
  saveTutorMessagesAction(
  courseId, 
- newMessages.map(m => ({ role: m.role, content: m.content, sources: m.sources }))
- ).catch(() => {});
+ newMessages.map(m => ({ role: m.role, content: m.content, sources: m.sources })),
+ sessionId
+ ).then((res) => {
+    if (res.sessionId && !sessionId) {
+      setSessionId(res.sessionId);
+    }
+  }).catch(() => {});
  }
  }
  }, [data, activeMode, pathname]);
@@ -408,9 +417,14 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  setChatLoading(true);
 
  let aiMsg: { id: string; role: "ai"; content: string; sources?: Array<{ type: string; id: string; label: string; href: string }> };
+ let activeSid = sessionId;
 
  try {
- const res = await askTutorRagAction(courseId ?? "unknown", null, questionText);
+ const res = await askTutorRagAction(courseId ?? "unknown", null, questionText, sessionId);
+ if (res.sessionId && !sessionId) {
+    setSessionId(res.sessionId);
+    activeSid = res.sessionId;
+  }
 
  let aiContent: string;
  if (res.budgetExhausted) {
@@ -445,7 +459,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  saveTutorMessagesAction(courseId, [
  { role: studentMsg.role, content: studentMsg.content },
  { role: aiMsg!.role, content: aiMsg!.content, sources: aiMsg!.sources },
- ]).catch(() => {});
+ ], activeSid).catch(() => {});
  }
  };
 
@@ -510,7 +524,8 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  className="shrink-0 h-7 text-[11px] text-muted-foreground hover:text-status-error hover:bg-status-error/10"
  onClick={async () => {
  const courseId = pathname?.startsWith("/courses/") ? pathname.split("/")[2] : null;
- if (courseId) await clearTutorHistoryAction(courseId).catch(() => {});
+ if (courseId) await clearTutorHistoryAction(courseId, sessionId).catch(() => {});
+ setSessionId(null);
  setMessages([{
  id: "chat-welcome",
  role: "ai",
@@ -623,7 +638,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  saveTutorMessagesAction(courseId, [
  { role: studentMsg.role, content: studentMsg.content },
  { role: aiMsg.role, content: aiMsg.content }
- ]).catch(() => {});
+ ], sessionId).catch(() => {});
  }
  }
  } catch {
@@ -655,7 +670,7 @@ export function TutorProvider({ children }: { children: React.ReactNode }) {
  saveTutorMessagesAction(courseId, [
  { role: studentMsg.role, content: studentMsg.content },
  { role: aiMsg.role, content: aiMsg.content }
- ]).catch(() => {});
+ ], sessionId).catch(() => {});
  }
  }
  } catch {

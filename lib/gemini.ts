@@ -42,7 +42,10 @@ const EMBEDDING_MODELS = ['gemini-embedding-2', 'gemini-embedding-002', 'gemini-
  * Uses the best key selected by the scheduler, trying fallback models if needed.
  */
 export async function embedText(text: string): Promise<number[]> {
- let lastError: any = null;
+  if (process.env.MOCK_GEMINI === 'true') {
+    return new Array(1024).fill(0).map(() => Math.random() - 0.5);
+  }
+  let lastError: any = null;
 
  for (const model of EMBEDDING_MODELS) {
  const maxKeyAttempts = geminiKeyPool.getAllKeys().length;

@@ -100,7 +100,7 @@ export async function countDueFlashcardsForConcept(
         eq(studentFlashcardProgress.studentId, studentId),
         eq(knowledgeObjects.courseId, courseId),
         eq(knowledgeObjects.conceptName, conceptName),
-        lte(studentFlashcardProgress.nextReviewDue, new Date())
+        lte(studentFlashcardProgress.dueDate, new Date())
       )
     );
   return row?.count ?? 0;
