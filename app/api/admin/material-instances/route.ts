@@ -198,7 +198,70 @@ export async function POST(req: NextRequest) {
   }
 
   const vectorUpserts: Promise<void>[] = [];
-  const chapterExtractions: Promise<void>[] = [];
+
+  // 2. Trigger KO extraction via Gemini once for the entire chapter content (non-parallelized to prevent race condition deletes)
+  try {
+    await extractKnowledgeObjectsForChapter(
+      courseId,
+      mtdId,
+      chapterId,
+      title,
+      rawText
+    );
+  } catch (err) {
+    console.error(`Failed to extract KOs for chapter ${title}:`, err);
+    // Fallback: Register the concept and insert a single dummy concept_overview KO
+    try {
+      const fallbackConceptId = randomUUID();
+      const fallbackSlug = title
+        .toLowerCase()
+        .trim()
+        .replace(/[^\w\s-]/g, "")
+        .replace(/[\s_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      await db.transaction(async (tx) => {
+        // Register concept
+        await tx.insert(concepts).values({
+          id: fallbackConceptId,
+          canonicalSlug: `${fallbackSlug}-${fallbackConceptId.slice(0, 8)}`,
+          isVerified: false,
+        });
+
+        // Register localization
+        await tx.insert(conceptLocalizations).values({
+          id: randomUUID(),
+          conceptId: fallbackConceptId,
+          lang: "id",
+          displayName: title,
+          aliases: [],
+          technicalStandardTerm: "id",
+          embedding: null,
+        });
+
+        // Insert fallback KO
+        await tx.insert(knowledgeObjects).values({
+          id: randomUUID(),
+          courseId,
+          mtdId,
+          chapterId,
+          conceptId: fallbackConceptId,
+          learningOrder: 1,
+          title: `Konsep Utama: ${title}`,
+          conceptName: title,
+          content: rawText.slice(0, 1000) || `Ringkasan materi untuk ${title}`,
+          type: 'concept_overview',
+          difficulty: 'medium',
+          bloomLevel: 'understand',
+          tags: keywords && keywords.length > 0 ? keywords : ["fallback"],
+          importance: 'high',
+          status: 'active',
+        });
+      });
+    } catch (fallbackErr) {
+      console.error(`Double fault: Fallback insertion also failed for chapter ${title}:`, fallbackErr);
+    }
+  }
 
   for (const section of sections) {
     const sectionId = randomUUID();
@@ -210,76 +273,6 @@ export async function POST(req: NextRequest) {
       title: section.title,
       orderIndex: section.orderIndex,
     });
-
-    const sectionContent = section.chunks.map((c) => c.chunkText).join('\n\n');
-
-    // 2. Trigger KO extraction via Gemini (all linking to the same single chapterId!)
-    const extractionPromise = (async () => {
-      try {
-        await extractKnowledgeObjectsForChapter(
-          courseId,
-          mtdId,
-          chapterId,
-          section.title || `Bagian ${section.orderIndex + 1}`,
-          sectionContent
-        );
-      } catch (err) {
-        console.error(`Failed to extract KOs for section ${section.title}:`, err);
-        // Fallback: Register the concept and insert a single dummy concept_overview KO
-        try {
-          const fallbackConceptId = randomUUID();
-          const conceptName = section.title || `Bagian ${section.orderIndex + 1}`;
-          const fallbackSlug = conceptName
-            .toLowerCase()
-            .trim()
-            .replace(/[^\w\s-]/g, "")
-            .replace(/[\s_-]+/g, "-")
-            .replace(/^-+|-+$/g, "");
-
-          await db.transaction(async (tx) => {
-            // Register concept
-            await tx.insert(concepts).values({
-              id: fallbackConceptId,
-              canonicalSlug: `${fallbackSlug}-${fallbackConceptId.slice(0, 8)}`,
-              isVerified: false,
-            });
-
-            // Register localization
-            await tx.insert(conceptLocalizations).values({
-              id: randomUUID(),
-              conceptId: fallbackConceptId,
-              lang: "id",
-              displayName: conceptName,
-              aliases: [],
-              technicalStandardTerm: "id",
-              embedding: null,
-            });
-
-            // Insert fallback KO
-            await tx.insert(knowledgeObjects).values({
-              id: randomUUID(),
-              courseId,
-              mtdId,
-              chapterId,
-              conceptId: fallbackConceptId,
-              learningOrder: 1,
-              title: `Konsep Utama: ${conceptName}`,
-              conceptName: conceptName,
-              content: sectionContent.slice(0, 800) || `Ringkasan materi untuk ${conceptName}`,
-              type: 'concept_overview',
-              difficulty: 'medium',
-              bloomLevel: 'understand',
-              tags: keywords && keywords.length > 0 ? keywords : ["fallback"],
-              importance: 'high',
-              status: 'active',
-            });
-          });
-        } catch (fallbackErr) {
-          console.error(`Double fault: Fallback insertion also failed for section ${section.title}:`, fallbackErr);
-        }
-      }
-    })();
-    chapterExtractions.push(extractionPromise);
 
     for (const chunk of section.chunks) {
       const chunkId = randomUUID();
@@ -319,9 +312,6 @@ export async function POST(req: NextRequest) {
       vectorUpserts.push(upsertPromise);
     }
   }
-
-  // Await the KO extractions to finish so the database is populated before returning
-  await Promise.all(chapterExtractions);
 
   // Fire vector upserts in background
   Promise.allSettled(vectorUpserts).then(async (results) => {
@@ -383,6 +373,17 @@ export async function DELETE(req: NextRequest) {
     const { updateAssessmentProfile } = await import('@/lib/assessment-extractor');
     await updateAssessmentProfile(courseId);
 
+    return NextResponse.json({ success: true });
+  }
+
+  // Second, check if the ID is a websiteMaterial
+  const [webMaterial] = await db
+    .select()
+    .from(websiteMaterials)
+    .where(eq(websiteMaterials.id, id));
+
+  if (webMaterial) {
+    await db.delete(websiteMaterials).where(eq(websiteMaterials.id, id));
     return NextResponse.json({ success: true });
   }
 

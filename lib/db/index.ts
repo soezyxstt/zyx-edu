@@ -14,9 +14,13 @@ if (isProduction) {
   client = createClient({ url, authToken });
 } else {
   // Local development SQLite
-  const url = process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith("postgres")
-    ? process.env.DATABASE_URL
-    : "file:dev.db";
+  // Detect if we are in a web/browser environment where the 'file:' protocol is unsupported.
+  const isWeb = typeof window !== "undefined" || !globalThis.process || !globalThis.process.versions || !globalThis.process.versions.node;
+  const url = isWeb
+    ? "https://local-sqlite-placeholder.internal"
+    : (process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith("postgres")
+        ? process.env.DATABASE_URL
+        : "file:dev.db");
   client = createClient({ url });
 }
 

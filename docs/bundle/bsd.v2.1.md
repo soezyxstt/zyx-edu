@@ -220,6 +220,38 @@ Supported block tags:
 * `:::glossary_term {term="..."}`
 * `:::chart` (visual plot details parsed as YAML)
 * `:::graph` (mathematical desmos plot details parsed as YAML)
+* `:::diagram` / `:::flowchart` (visual node structure parsing)
+
+### Visual Block Specifications
+
+When using visual blocks within `canonicalMarkdown`, the compiler parses and validates the structures according to the following schemas:
+
+#### 1. Diagrams & Flowcharts (`:::diagram` or `:::flowchart`)
+*   **Edge Parsing**: Define connections using standard `-->` arrows. Valid formats:
+    *   `Source --> Target`
+    *   `Source -- Label --> Target`
+    *   `Source --> |Label| Target`
+*   **Automatic Node Extraction**: Node IDs are automatically generated from edge names by converting them to lowercase and replacing non-alphanumeric characters with hyphens.
+*   **Step Normalization**: Prefix node names with `"Step {Number}: "` or `"Langkah {Number}: "` to let the parser extract step/phase numbers.
+*   **Constraints**:
+    *   `diagram`: Must contain at least **1 node** and **1 edge**.
+    *   `flowchart`: Must contain at least **2 nodes**.
+
+#### 2. Graphs (`:::graph`)
+*   **Syntax**: Written in YAML.
+*   **Keys**:
+    *   `functions`: Array of mathematical equations (e.g. `functions: ["y = sin(x)"]` or `equation: "y = 2*x + 1"`).
+    *   `domain`: Axis limits (e.g. `domain: { min: -10, max: 10 }` or `domain: [-10, 10]`).
+    *   `samples`: Density of sample calculation points (defaults to `200`).
+*   **Constraints**: Must contain at least **1 plottable mathematical function**.
+
+#### 3. Charts (`:::chart`)
+*   **Syntax**: Written in YAML.
+*   **Keys**:
+    *   `chartType`: Must be one of `"line"`, `"bar"`, `"scatter"`, or `"pie"`.
+    *   `xLabel` / `yLabel`: Optional axis titles.
+    *   `data`: Array of data point objects.
+*   **Constraints**: Must contain at least **1 data point**.
 
 ---
 

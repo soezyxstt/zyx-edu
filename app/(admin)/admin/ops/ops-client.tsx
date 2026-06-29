@@ -89,7 +89,7 @@ export function OpsClient() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 space-y-8">
+      <div className="max-w-4xl space-y-8">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="space-y-3">
             <div className="h-6 rounded-md bg-muted animate-pulse w-48" />
@@ -102,7 +102,7 @@ export function OpsClient() {
 
   if (error || !data) {
     return (
-      <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
+      <div className="max-w-4xl">
         <div className="flex items-center gap-2">
           <TriangleAlert className="size-4 text-status-error" />
           <span className="text-body-sm text-status-error">
@@ -121,17 +121,11 @@ export function OpsClient() {
   const queueStatus: StatusLevel = data.syncQueueDepth > 100 ? "degraded" : "healthy";
 
   return (
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6">
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <h1 className="font-heading text-h4 font-semibold text-foreground">Ops</h1>
-          <p className="mt-1 text-body-sm text-muted-foreground">
-            Model usage, cache, and infrastructure health. Auto-refresh every 60 s.
-          </p>
-        </div>
+    <div className="max-w-4xl space-y-6">
+      <div className="flex justify-end border-b border-border/40 pb-4">
         <button
           onClick={() => refetch()}
-          className="flex items-center gap-2 text-body-sm text-muted-foreground hover:text-foreground transition-colors duration-150"
+          className="flex items-center gap-2 text-body-sm text-muted-foreground hover:text-foreground transition-colors duration-150 cursor-pointer"
         >
           <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
           Refresh

@@ -272,7 +272,7 @@ export default async function AdminHomePage() {
             "Lihat status, kuota RPD, dan kesehatan tiap API key secara real-time.",
           icon: KeyRound,
           iconColor: "text-tertiary-1",
-          href: "/admin/ai/keys",
+          href: "/admin/ops/keys",
           label: "Lihat key diagnostics",
           stat: null,
         },

@@ -44,8 +44,30 @@ export function AdminSidebar() {
     window.location.href = "/";
   };
 
-  const isLinkActive = (href: string) => {
-    return pathname === href || (href !== "/admin" && pathname.startsWith(href));
+  const isActiveTab = (tab: "dashboard" | "academic" | "files" | "rag" | "eval" | "ops") => {
+    if (tab === "dashboard") {
+      return pathname === "/admin";
+    }
+    if (tab === "academic") {
+      const paths = ["/admin/courses", "/admin/tokens", "/admin/notifications"];
+      return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    }
+    if (tab === "files") {
+      return pathname === "/admin/files" || pathname.startsWith("/admin/files/");
+    }
+    if (tab === "rag") {
+      const paths = ["/admin/ai/materials", "/admin/ai/assessments", "/admin/ai/diktats", "/admin/ai/ast-inspector"];
+      return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    }
+    if (tab === "eval") {
+      const paths = ["/admin/ai/questions", "/admin/ai/jobs", "/admin/ai/quizzes", "/admin/ai/distractors"];
+      return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    }
+    if (tab === "ops") {
+      const paths = ["/admin/ops", "/admin/ops/analytics", "/admin/ops/keys"];
+      return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
+    }
+    return false;
   };
 
   const topSection = (c: boolean) => {
@@ -157,15 +179,15 @@ export function AdminSidebar() {
           href="/admin"
           icon={LayoutDashboard}
           label="Panel Admin"
-          active={isLinkActive("/admin")}
+          active={isActiveTab("dashboard")}
           collapsed={c}
         />
 
         <NavItem
           href="/admin/courses"
           icon={GraduationCap}
-          label="Mata Kuliah"
-          active={isLinkActive("/admin/courses")}
+          label="Manajemen Akademik"
+          active={isActiveTab("academic")}
           collapsed={c}
         />
 
@@ -173,87 +195,31 @@ export function AdminSidebar() {
           href="/admin/files"
           icon={FolderOpen}
           label="File Storage"
-          active={isLinkActive("/admin/files")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/tokens"
-          icon={KeyRound}
-          label="Token Aktivasi"
-          active={isLinkActive("/admin/tokens")}
+          active={isActiveTab("files")}
           collapsed={c}
         />
 
         <NavItem
           href="/admin/ai/materials"
           icon={BookText}
-          label="Materi"
-          active={isLinkActive("/admin/ai/materials")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/ai/diktats"
-          icon={Archive}
-          label="Kompilasi Diktat"
-          active={isLinkActive("/admin/ai/diktats")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/ai/jobs"
-          icon={Zap}
-          label="Generasi Soal"
-          active={isLinkActive("/admin/ai/jobs")}
+          label="RAG & Konten AI"
+          active={isActiveTab("rag")}
           collapsed={c}
         />
 
         <NavItem
           href="/admin/ai/questions"
-          icon={ListChecks}
-          label="Bank Soal"
-          active={isLinkActive("/admin/ai/questions")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/ai/quizzes"
           icon={ClipboardList}
-          label="Template Kuis"
-          active={isLinkActive("/admin/ai/quizzes")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/ai/distractors"
-          icon={BarChart3}
-          label="Analitik Distraktor"
-          active={isLinkActive("/admin/ai/distractors")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/ai/keys"
-          icon={KeyRound}
-          label="API Keys"
-          active={isLinkActive("/admin/ai/keys")}
-          collapsed={c}
-        />
-
-        <NavItem
-          href="/admin/notifications"
-          icon={Bell}
-          label="Push Notification"
-          active={isLinkActive("/admin/notifications")}
+          label="Evaluasi & Kuis"
+          active={isActiveTab("eval")}
           collapsed={c}
         />
 
         <NavItem
           href="/admin/ops"
           icon={Activity}
-          label="Ops Monitor"
-          active={isLinkActive("/admin/ops")}
+          label="Sistem & Ops"
+          active={isActiveTab("ops")}
           collapsed={c}
         />
 

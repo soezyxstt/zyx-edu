@@ -18,11 +18,14 @@ import {
   assessmentObjects,
   knowledgeRelationships,
   vectorSyncQueue,
+  assessmentObjectConcepts,
+  assessmentObjectKos,
 } from "../db/schema";
 import { slugify } from "../lib/ko-utils";
 import { randomUUID, createHash } from "crypto";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import * as fs from "fs";
+import { updateAssessmentProfile } from "../lib/assessment-extractor";
 
 // Import post-processing functions
 import { compileMarkdown } from "../lib/markdown-compiler";
@@ -265,7 +268,7 @@ async function main() {
 
   for (const [chIdx, chapter] of bundle.course.chapters.entries()) {
     let chapterUuid: string = randomUUID();
-    const chapterRefKey = chapter.$id || `$chapter-${chIdx}`;
+    const chapterRefKey = chapter.$id || chapter.id || `$chapter-${chIdx}`;
     
     if (mode === "upsert") {
       const [existingChapter] = await db
@@ -319,7 +322,7 @@ async function main() {
     // Populate concepts maps and rows
     for (const [conIdx, concept] of (chapter.concepts || []).entries()) {
       let conceptUuid: string = randomUUID();
-      const conceptRefKey = concept.$id || `$concept-${chIdx}-${conIdx}`;
+      const conceptRefKey = concept.$id || concept.id || `$concept-${chIdx}-${conIdx}`;
 
       if (mode === "upsert" || mode === "append") {
         const [existingConcept] = await db
@@ -335,8 +338,9 @@ async function main() {
       idMap.set(conceptRefKey, conceptUuid);
 
       const firstDisplayName = concept.localizations?.[0]?.displayName || "Concept";
-      if (concept.$id) {
-        conceptDisplayNameMap.set(concept.$id, firstDisplayName);
+      const conceptRefId = concept.$id || concept.id;
+      if (conceptRefId) {
+        conceptDisplayNameMap.set(conceptRefId, firstDisplayName);
       }
 
       conceptRows.push({
@@ -360,7 +364,7 @@ async function main() {
     // Process Knowledge Objects
     for (const [koIdx, ko] of (chapter.knowledgeObjects || []).entries()) {
       let koUuid: string = `ko-${randomUUID()}`;
-      const koRefKey = ko.$id || `$ko-${chIdx}-${koIdx}`;
+      const koRefKey = ko.$id || ko.id || `$ko-${chIdx}-${koIdx}`;
 
       if (mode === "upsert") {
         const [existingKo] = await db
@@ -472,11 +476,11 @@ async function main() {
 
   // Generate KOs Rows (Pass 2)
   for (const [chIdx, chapter] of bundle.course.chapters.entries()) {
-    const chapterUuid = idMap.get(chapter.$id || `$chapter-${chIdx}`)!;
+    const chapterUuid = idMap.get(chapter.$id || chapter.id || `$chapter-${chIdx}`)!;
     const mtdUuid = chapterMtdMap.get(chapterUuid)!;
 
     for (const [koIdx, ko] of (chapter.knowledgeObjects || []).entries()) {
-      const koUuid = idMap.get(ko.$id || `$ko-${chIdx}-${koIdx}`)!;
+      const koUuid = idMap.get(ko.$id || ko.id || `$ko-${chIdx}-${koIdx}`)!;
       
       // Resolve concept ID
       let resolvedConceptUuid = "";
@@ -495,7 +499,7 @@ async function main() {
           (c.localizations || []).some((loc: any) => loc.displayName === ko.conceptName)
         );
         if (matched) {
-          resolvedConceptUuid = idMap.get(matched.$id || `$concept-${chIdx}-${chapterConcepts.indexOf(matched)}`)!;
+          resolvedConceptUuid = idMap.get(matched.$id || matched.id || `$concept-${chIdx}-${chapterConcepts.indexOf(matched)}`)!;
         }
         resolvedConceptName = ko.conceptName;
       }
@@ -530,7 +534,8 @@ async function main() {
   const aoRows: any[] = [];
   const krRows: any[] = [];
 
-  for (const as of (bundle.course.assessmentSources || [])) {
+  const bundleAssessmentSources = bundle.course["course.assessmentSources"] || bundle.course.assessmentSources || [];
+  for (const as of bundleAssessmentSources) {
     let asrcUuid: string = `asrc-${randomUUID()}`;
     if (mode === "upsert") {
       const [existingAsrc] = await db
@@ -555,6 +560,8 @@ async function main() {
       sourceHash: sha256(as.sourceMarkdown),
       originalFilename: as.source?.file || null,
       uploadedByUserId: authorUuid,
+      ingestionStatus: "completed" as const,
+      ingestionCompletedAt: new Date(),
     });
 
     // Resolve chapters
@@ -883,6 +890,8 @@ async function main() {
                 sourceMarkdown: row.sourceMarkdown,
                 sourceHash: row.sourceHash,
                 originalFilename: row.originalFilename,
+                ingestionStatus: row.ingestionStatus,
+                ingestionCompletedAt: row.ingestionCompletedAt,
                 updatedAt: new Date(),
               }
             });
@@ -1068,6 +1077,147 @@ async function main() {
         queueCount++;
       }
       console.log(`[SUCCESS] Enqueued ${queueCount} KOs to Vector Sync Queue.`);
+
+      // Heuristic Concept/KO mapping and Vector Sync enqueuing for Assessment Objects
+      console.log("Processing past exam questions (assessmentObjects) for RAG and concept mapping...");
+      try {
+        const aos = await db
+          .select({
+            id: assessmentObjects.id,
+            sourceId: assessmentObjects.sourceId,
+            questionMarkdown: assessmentObjects.questionMarkdown,
+            answerMarkdown: assessmentObjects.answerMarkdown,
+            difficulty: assessmentObjects.difficulty,
+            applicationLevel: assessmentObjects.applicationLevel,
+          })
+          .from(assessmentObjects)
+          .innerJoin(assessmentSources, eq(assessmentObjects.sourceId, assessmentSources.id))
+          .where(eq(assessmentSources.courseId, courseId));
+
+        console.log(`Found ${aos.length} assessment objects to map and enqueue.`);
+
+        const localizations = await db
+          .select({
+            conceptId: conceptLocalizations.conceptId,
+            displayName: conceptLocalizations.displayName,
+            aliases: conceptLocalizations.aliases,
+          })
+          .from(conceptLocalizations)
+          .innerJoin(concepts, eq(conceptLocalizations.conceptId, concepts.id));
+
+        let aoQueueCount = 0;
+
+        for (const ao of aos) {
+          const sourceChaps = await db
+            .select({ chapterId: assessmentSourceChapters.chapterId })
+            .from(assessmentSourceChapters)
+            .where(eq(assessmentSourceChapters.assessmentSourceId, ao.sourceId));
+
+          const chapterIds = sourceChaps.map(sc => sc.chapterId);
+          const resolvedChapterId = chapterIds[0] || "";
+
+          const matchedConceptIds = new Set<string>();
+          const matchedConceptNames: string[] = [];
+
+          const questionTextLower = (ao.questionMarkdown + " " + (ao.answerMarkdown || "")).toLowerCase();
+
+          for (const loc of localizations) {
+            const nameLower = loc.displayName.toLowerCase();
+            const aliases = Array.isArray(loc.aliases) ? loc.aliases : [];
+
+            const isMatched = questionTextLower.includes(nameLower) || 
+                              aliases.some(alias => questionTextLower.includes(alias.toString().toLowerCase()));
+
+            if (isMatched) {
+              matchedConceptIds.add(loc.conceptId);
+              matchedConceptNames.push(loc.displayName);
+            }
+          }
+
+          if (matchedConceptIds.size === 0 && chapterIds.length > 0) {
+            const chapterKOs = await db
+              .select({ conceptId: knowledgeObjects.conceptId, conceptName: knowledgeObjects.conceptName })
+              .from(knowledgeObjects)
+              .where(and(inArray(knowledgeObjects.chapterId, chapterIds), eq(knowledgeObjects.status, "active")));
+
+            for (const ko of chapterKOs) {
+              matchedConceptIds.add(ko.conceptId);
+              if (!matchedConceptNames.includes(ko.conceptName)) {
+                matchedConceptNames.push(ko.conceptName);
+              }
+            }
+          }
+
+          for (const cId of matchedConceptIds) {
+            await db.insert(assessmentObjectConcepts).values({
+              id: `aoc-import-${randomUUID()}`,
+              assessmentObjectId: ao.id,
+              conceptId: cId,
+            }).onConflictDoNothing();
+
+            let whereClause = and(
+              eq(knowledgeObjects.conceptId, cId),
+              eq(knowledgeObjects.status, "active")
+            );
+            if (chapterIds.length > 0) {
+              whereClause = and(whereClause, inArray(knowledgeObjects.chapterId, chapterIds));
+            }
+            const activeKOs = await db
+              .select({ id: knowledgeObjects.id })
+              .from(knowledgeObjects)
+              .where(whereClause);
+
+            for (const ko of activeKOs) {
+              await db.insert(assessmentObjectKos).values({
+                id: `aok-import-${randomUUID()}`,
+                assessmentObjectId: ao.id,
+                koId: ko.id,
+              }).onConflictDoNothing();
+            }
+          }
+
+          const textToEmbed = `Question: ${ao.questionMarkdown}\nSolution: ${ao.answerMarkdown || ""}`;
+          const syncId = `sync-import-ae-${randomUUID()}`;
+
+          const bloomLevel = ao.applicationLevel === 1 ? "remember" : ao.applicationLevel === 2 ? "understand" : "apply";
+          const difficultyText = ao.difficulty <= 3 ? "easy" : ao.difficulty >= 7 ? "hard" : "medium";
+
+          await db.insert(vectorSyncQueue).values({
+            id: syncId,
+            courseId: courseId,
+            koId: null,
+            action: "upsert" as const,
+            namespace: "past_exams" as const,
+            payload: {
+              id: ao.id,
+              text: textToEmbed,
+              metadata: {
+                chapterId: resolvedChapterId,
+                type: "past_exam",
+                bloomLevel,
+                difficulty: difficultyText,
+                tags: matchedConceptNames,
+              }
+            },
+            status: "pending" as const,
+            attempts: 0,
+          }).onConflictDoNothing();
+
+          aoQueueCount++;
+        }
+
+        console.log(`[SUCCESS] Mapped and enqueued ${aoQueueCount} assessment objects to Vector Sync Queue.`);
+      } catch (err: any) {
+        console.error(`[FAIL] Error processing assessment objects:`, err.message || err);
+      }
+
+      console.log("Recalculating course assessment profile...");
+      try {
+        await updateAssessmentProfile(courseId);
+        console.log("[SUCCESS] Recalculated course assessment profile.");
+      } catch (err: any) {
+        console.error("[FAIL] Error recalculating course assessment profile:", err.message || err);
+      }
     }
 
     console.log("Import process completed successfully!");

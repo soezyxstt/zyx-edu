@@ -669,27 +669,60 @@
  }
 
  @media (prefers-reduced-motion: reduce) {
- .landing-float,
- .landing-drift,
- .landing-stagger > *,
- .landing-rise,
- .landing-pop,
- .landing-stagger-on-visible > *,
- .landing-bar,
- .landing-draw-line,
- .landing-typing-dot,
- .landing-parallax-drift {
- animation: none !important;
- /* Keyframe used both ; without animation some engines leave opacity/transform from the animation start state. */
- opacity: 1 !important;
- transform: none !important;
- stroke-dashoffset: 0 !important;
- }
+  .landing-float,
+  .landing-drift,
+  .landing-stagger > *,
+  .landing-rise,
+  .landing-pop,
+  .landing-stagger-on-visible > *,
+  .landing-bar,
+  .landing-draw-line,
+  .landing-typing-dot,
+  .landing-parallax-drift {
+  animation: none !important;
+  /* Keyframe used both ; without animation some engines leave opacity/transform from the animation start state. */
+  opacity: 1 !important;
+  transform: none !important;
+  stroke-dashoffset: 0 !important;
+  }
 
- .landing-flip-inner {
- transition: none !important;
- }
- }
+  .landing-flip-inner {
+  transition: none !important;
+  }
+
+  /* Global reduced motion adjustments */
+  *,
+  ::before,
+  ::after {
+  animation-delay: 0s !important;
+  transition-delay: 0s !important;
+  }
+
+  /* Disable transitions and animations globally except for loading spinners/icons */
+  *:not(.animate-spin):not(.lucide-spin):not([class*="spinner"]) {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+  }
+
+  /* Make sure skeleton loaders remain visible without pulsing */
+  .animate-pulse {
+  animation: none !important;
+  opacity: 0.65 !important;
+  }
+
+  /* Force immediate transitions for common transition classes */
+  .transition,
+  .transition-all,
+  .transition-colors,
+  .transition-opacity,
+  .transition-shadow,
+  .transition-transform,
+  .interactive {
+  transition: none !important;
+  }
+  }
 
  /* ── Design-system scrollbar ───────────────────────────────
  Thin, theme-aware scrollbar that replaces the default

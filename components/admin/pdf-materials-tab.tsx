@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { uploadCourseMaterial, deleteCourseMaterial } from "@/app/(admin)/admin/courses/actions";
+import { uploadCourseMaterial, deleteCourseMaterial } from "@/app/(admin)/admin/(academic)/courses/actions";
 import { Trash2, Plus, Loader2, FileText } from "lucide-react";
 
 type Course = {

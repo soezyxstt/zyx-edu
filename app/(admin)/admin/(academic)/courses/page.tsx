@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { GraduationCap, FileText, Layers } from "lucide-react";
+import { pageTitle } from "@/lib/site";
+import { assertAdmin } from "@/lib/uploadthing-admin";
+import { getCourses, getAllChapters, getUploadedMaterials } from "./actions";
+import { CoursesDashboard } from "@/components/admin/courses-dashboard";
+import { PDFMaterialsTab } from "@/components/admin/pdf-materials-tab";
+import { BundleImporterTab } from "@/components/admin/bundle-importer-tab";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+export const metadata: Metadata = {
+  title: pageTitle("Kelola Mata Kuliah"),
+  description: "Daftar dan kelola mata kuliah kurikulum Zyx Academy.",
+};
+
+export default async function AdminCoursesPage() {
+  try {
+    await assertAdmin();
+  } catch {
+    redirect("/");
+  }
+
+  const [coursesList, chaptersList, materialsList] = await Promise.all([
+    getCourses(),
+    getAllChapters(),
+    getUploadedMaterials(),
+  ]);
+
+  return (
+    <div className="space-y-6">
+      <Tabs defaultValue="courses" className="space-y-6">
+        <TabsList className="bg-muted p-1 rounded-xl w-fit flex gap-1">
+          <TabsTrigger value="courses" className="rounded-lg font-semibold flex items-center gap-1.5 px-4 py-2">
+            <GraduationCap className="size-4" />
+            Kelola Mata Kuliah
+          </TabsTrigger>
+          <TabsTrigger value="pdf-materials" className="rounded-lg font-semibold flex items-center gap-1.5 px-4 py-2">
+            <FileText className="size-4" />
+            Unggah PDF (Materi & Soal)
+          </TabsTrigger>
+          <TabsTrigger value="bundle-importer" className="rounded-lg font-semibold flex items-center gap-1.5 px-4 py-2">
+            <Layers className="size-4" />
+            Import Course Bundle
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="courses" className="outline-hidden">
+          <CoursesDashboard initialCourses={coursesList} />
+        </TabsContent>
+
+        <TabsContent value="pdf-materials" className="outline-hidden">
+          <PDFMaterialsTab
+            courses={coursesList}
+            chapters={chaptersList}
+            initialMaterials={materialsList}
+          />
+        </TabsContent>
+
+        <TabsContent value="bundle-importer" className="outline-hidden">
+          <BundleImporterTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

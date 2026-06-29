@@ -1,263 +1,251 @@
 {
   "metadata": {
     "schemaVersion": "1.1.1",
-    "generatedAt": "2026-06-18T16:40:00Z",
-    "generatedBy": "Google AI Studio",
+    "generatedAt": "2026-06-19T00:00:00Z",
+    "generatedBy": "zyx-compiler-v2.6",
     "language": "id",
     "courseCode": "MA1101"
   },
   "author": {
-    "email": "soezyxst@gmail.com",
-    "name": "Adi Haditya Nursyam"
+    "email": "admin@zyx.id",
+    "name": "Zyx System Admin"
   },
   "course": {
     "title": "Matematika I",
-    "category": "Sains",
-    "description": "Mata kuliah kalkulus dasar semester 1.",
+    "category": "Matematika",
+    "description": "Mata kuliah kalkulus dasar yang mencakup konsep limit, kekontinuan, turunan, dan aplikasinya.",
     "chapters": [
       {
-        "$id": "ch00",
-        "title": "Pendahuluan",
-        "description": "Sistem bilangan real, pertaksamaan, koordinat geometri, dan teori dasar fungsi.",
+        "$id": "ch00-ma1101",
+        "title": "Pertaksamaan dan Fungsi",
+        "description": "Bab ini membahas konsep dasar pertaksamaan, fungsi, dan grafiknya sebagai fondasi untuk memahami limit dan kalkulus.",
         "concepts": [
           {
-            "$id": "con-ma1101-ch00-real-numbers",
+            "$id": "con-ma1101-ch00-bilangan-real",
             "canonicalSlug": "bilangan-real",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Himpunan Bilangan Real",
+                "displayName": "Sistem Bilangan Real",
                 "aliases": [
-                  "bilangan riil",
-                  "sistem bilangan real",
-                  "bilangan rasional",
-                  "bilangan irasional",
+                  "himpunan bilangan real",
                   "garis bilangan real",
-                  "himpunan \\mathbb{R}"
+                  "tipe bilangan real"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-inequality-properties",
-            "canonicalSlug": "sifat-pertaksamaan",
+            "$id": "con-ma1101-ch00-pertaksamaan",
+            "canonicalSlug": "pertaksamaan",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Sifat Pertaksamaan dan Operator Relasional",
+                "displayName": "Pertidaksamaan dan Aturannya",
                 "aliases": [
-                  "operator relasional",
-                  "aturan pertaksamaan",
-                  "sifat pertidaksamaan",
-                  "relasi urutan",
-                  "tanda ketaksamaan"
+                  "sifat pertaksamaan",
+                  "operator relasional"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-intervals",
-            "canonicalSlug": "interval-dan-selang",
+            "$id": "con-ma1101-ch00-selang",
+            "canonicalSlug": "selang-interval",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Interval dan Selang",
+                "displayName": "Selang dan Interval Bilangan",
                 "aliases": [
-                  "selang bilangan",
                   "interval terbuka",
                   "interval tertutup",
-                  "selang setengah terbuka",
-                  "representasi interval"
+                  "selang tak hingga"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-polynomials",
-            "canonicalSlug": "polinom-dan-faktorisasi",
+            "$id": "con-ma1101-ch00-polinom",
+            "canonicalSlug": "polinom-kuadrat",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Polinom dan Teorema Faktorisasi",
+                "displayName": "Polinom dan Parabola Kuadrat",
                 "aliases": [
                   "suku banyak",
-                  "derajat polinom",
+                  "diskriminan",
                   "akar polinom",
-                  "faktorisasi polinom",
-                  "persamaan polinom P(x)"
+                  "teorema faktorisasi"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-rational-inequalities",
+            "$id": "con-ma1101-ch00-pertaksamaan-rasional",
             "canonicalSlug": "pertaksamaan-rasional",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Pertaksamaan Rasional",
+                "displayName": "Pertidaksamaan Rasional",
                 "aliases": [
-                  "pertidaksamaan rasional",
-                  "solusi pertaksamaan",
-                  "daerah definisi",
-                  "pembuat nol pembilang dan penyebut"
+                  "fungsi rasional",
+                  "titik kritis pecahan",
+                  "pembilang dan penyebut"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-absolute-value",
-            "canonicalSlug": "nilai-mutlak",
+            "$id": "con-ma1101-ch00-harga-mutlak",
+            "canonicalSlug": "harga-mutlak",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Nilai Mutlak dan Pertaksamaannya",
+                "displayName": "Harga Mutlak dan Sifatnya",
                 "aliases": [
-                  "harga mutlak",
-                  "jarak geometri",
-                  "pertidaksamaan nilai mutlak",
-                  "sifat nilai mutlak",
-                  "persamaan |x|"
+                  "nilai mutlak",
+                  "pertaksamaan segitiga",
+                  "jarak geometris"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-irrational-inequalities",
-            "canonicalSlug": "pertaksamaan-bentuk-akar",
+            "$id": "con-ma1101-ch00-bentuk-akar",
+            "canonicalSlug": "bentuk-akar",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Pertaksamaan Bentuk Akar",
+                "displayName": "Pertidaksamaan Bentuk Akar",
                 "aliases": [
-                  "pertidaksamaan irasional",
                   "akar kuadrat",
                   "syarat numerus",
-                  "solusi pertaksamaan akar",
-                  "bentuk \\sqrt{x}"
+                  "akar bilangan"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-cartesian-coordinates",
-            "canonicalSlug": "sistem-koordinat-kartesius",
+            "$id": "con-ma1101-ch00-koordinat-kartesius",
+            "canonicalSlug": "koordinat-kartesius",
             "localizations": [
               {
                 "lang": "id",
                 "displayName": "Sistem Koordinat Kartesius",
                 "aliases": [
-                  "koordinat persegi panjang",
-                  "rumus jarak dua titik",
-                  "absis dan ordinat",
-                  "kuadran koordinat",
-                  "titik asal"
+                  "absis",
+                  "ordinat",
+                  "kuadran bidang",
+                  "jarak dua titik"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-straight-lines",
-            "canonicalSlug": "persamaan-garis-lurus",
+            "$id": "con-ma1101-ch00-garis-lurus",
+            "canonicalSlug": "garis-lurus",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Garis Lurus dan Gradien",
+                "displayName": "Persamaan Garis Lurus",
                 "aliases": [
-                  "gradien garis lurus",
+                  "gradien garis",
                   "kemiringan garis",
-                  "garis sejajar",
-                  "garis tegak lurus",
-                  "titik tengah segmen garis"
+                  "titik tengah segmen"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-conic-sections",
-            "canonicalSlug": "irisan-kerucut-sederhana",
+            "$id": "con-ma1101-ch00-kurva-kedua",
+            "canonicalSlug": "kurva-geometri",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Lingkaran, Elips, dan Hiperbola",
+                "displayName": "Persamaan Lingkaran, Elips, dan Hiperbola",
                 "aliases": [
                   "persamaan lingkaran",
-                  "persamaan elips",
-                  "persamaan hiperbola",
-                  "asimptot miring hiperbola",
-                  "pusat dan jari-jari"
+                  "irisan kerucut",
+                  "elips",
+                  "hiperbola"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-function-basics",
-            "canonicalSlug": "fungsi-dan-sifatnya",
+            "$id": "con-ma1101-ch00-fungsi",
+            "canonicalSlug": "konsep-fungsi",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Definisi Fungsi dan Sifatnya",
+                "displayName": "Konsep Fungsi Real",
                 "aliases": [
+                  "domain fungsi",
+                  "range fungsi",
                   "daerah asal",
-                  "daerah hasil",
-                  "fungsi ganjil",
-                  "fungsi genap",
-                  "fungsi periodik",
-                  "peubah bebas",
-                  "aturan fungsi y = f(x)"
+                  "daerah nilai"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-function-operations",
-            "canonicalSlug": "operasi-dan-komposisi-fungsi",
+            "$id": "con-ma1101-ch00-karakteristik-fungsi",
+            "canonicalSlug": "karakteristik-fungsi",
+            "localizations": [
+              {
+                "lang": "id",
+                "displayName": "Karakteristik dan Simetri Fungsi",
+                "aliases": [
+                  "fungsi genap",
+                  "fungsi ganjil",
+                  "fungsi periodik",
+                  "simetri sumbu"
+                ]
+              }
+            ]
+          },
+          {
+            "$id": "con-ma1101-ch00-operasi-komposisi",
+            "canonicalSlug": "operasi-komposisi",
             "localizations": [
               {
                 "lang": "id",
                 "displayName": "Operasi Aljabar dan Komposisi Fungsi",
                 "aliases": [
                   "aljabar fungsi",
-                  "penjumlahan fungsi",
-                  "perkalian fungsi",
                   "fungsi komposisi",
-                  "domain fungsi komposisi",
-                  "operasi f \\circ g"
+                  "domain komposisi"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-graphic-transformations",
-            "canonicalSlug": "transformasi-grafik-fungsi",
+            "$id": "con-ma1101-ch00-transformasi-grafik",
+            "canonicalSlug": "transformasi-grafik",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Transformasi Grafik Fungsi",
+                "displayName": "Transformasi dan Pergeseran Grafik",
                 "aliases": [
                   "pergeseran grafik",
                   "pencerminan grafik",
-                  "peregangan grafik",
-                  "pemampatan grafik",
-                  "pergeseran horizontal dan vertikal"
+                  "peregangan fungsi"
                 ]
               }
             ]
           },
           {
-            "$id": "con-ma1101-ch00-trigonometric-functions",
+            "$id": "con-ma1101-ch00-trigonometri",
             "canonicalSlug": "fungsi-trigonometri",
             "localizations": [
               {
                 "lang": "id",
-                "displayName": "Fungsi Trigonometri dan Identitasnya",
+                "displayName": "Fungsi Trigonometri",
                 "aliases": [
-                  "sinus dan cosinus",
+                  "satuan radian",
+                  "lingkaran satuan",
                   "identitas trigonometri",
-                  "sudut istimewa",
-                  "radian",
-                  "tangen dan secan",
-                  "cotangen dan cosecan"
+                  "sinus kosinus"
                 ]
               }
             ]
@@ -265,427 +253,365 @@
         ],
         "knowledgeObjects": [
           {
-            "$id": "ko-ma1101-ch00-real-numbers-def",
-            "title": "Definisi Bilangan Real",
-            "concept$ref": "con-ma1101-ch00-real-numbers",
-            "content": "Bilangan real adalah bilangan yang dapat dituliskan dalam bentuk desimal, baik desimal berulang maupun desimal tidak berulang. Himpunan semua bilangan real biasa dinotasikan dengan simbol $\\mathbb{R}$. Secara geometris, setiap bilangan real berkorespondensi satu-satu dengan titik pada suatu garis lurus yang disebut garis bilangan real. Himpunan bilangan real terdiri atas himpunan bilangan rasional $\\mathbb{Q}$ (bilangan yang dapat dinyatakan dalam bentuk $m/n$ dengan $m, n$ adalah bilangan bulat dan $n \\neq 0$) dan himpunan bilangan irasional (bilangan real yang bukan rasional, seperti $\\sqrt{2}$ dan $\\pi$).",
-            "type": "definition",
+            "$id": "ko-ma1101-ch00-bilangan-real-overview",
+            "title": "Pengantar Sistem Bilangan Real",
+            "concept$ref": "con-ma1101-ch00-bilangan-real",
+            "type": "concept_overview",
             "bloomLevel": "remember",
             "difficulty": "easy",
-            "importance": "high"
+            "importance": "high",
+            "content": "Bilangan real didefinisikan sebagai himpunan bilangan yang dapat dituliskan dalam representasi bentuk desimal. Secara geometris, seluruh anggota himpunan bilangan real dapat digambarkan menempati titik-titik pada suatu garis lurus kontinu yang dinamakan garis bilangan real. Himpunan dari seluruh bilangan real biasa disimbolkan secara matematis menggunakan huruf kapital khusus $\\mathbb{R}$."
           },
           {
-            "$id": "ko-ma1101-ch00-inequality-properties-form",
-            "title": "Sifat dan Aturan Pertaksamaan Bilangan Real",
-            "concept$ref": "con-ma1101-ch00-inequality-properties",
-            "content": "Sifat-sifat dasar pertaksamaan untuk bilangan real $a$, $b$, dan $c$ adalah sebagai berikut:\n1. Jika $a < b$, maka $a + c < b + c$ dan $a - c < b - c$.\n2. Jika $a < b$ dan $c > 0$, maka $ac < bc$.\n3. Jika $a < b$ dan $c < 0$, maka $ac > bc$ (perhatikan bahwa arah tanda pertaksamaan berbalik).\n4. Jika $a > 0$, maka $1/a > 0$.\n5. Jika $a$ dan $b$ keduanya positif atau keduanya negatif, maka $a < b \\implies 1/b < 1/a$.",
-            "type": "formula",
-            "bloomLevel": "understand",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-inequality-properties-mis",
-            "title": "Kesalahan Umum dalam Mengalikan Pertaksamaan",
-            "concept$ref": "con-ma1101-ch00-inequality-properties",
-            "content": "Seringkali siswa mengalikan kedua ruas pertaksamaan dengan suatu peubah (variabel) tanpa mengetahui tandanya secara pasti. Contoh salah kaprah:\n$$ \\frac{1}{x} < 2 \\implies 1 < 2x $$\nPenyelesaian di atas salah karena nilai $x$ bisa saja negatif. Jika $x < 0$, maka ketika kedua ruas dikalikan dengan $x$, tanda pertaksamaan harus berbalik menjadi $1 > 2x$.\nUntuk menghindari kesalahan ini, cara yang aman adalah memindahkan semua suku ke salah satu ruas sehingga ruas lainnya menjadi nol, kemudian menyelesaikan pertaksamaan menggunakan titik pembuat nol dan analisis tanda pada garis bilangan.",
-            "type": "misconception",
+            "$id": "ko-ma1101-ch00-bilangan-real-def",
+            "title": "Klasifikasi Anggota Sistem Bilangan Real",
+            "concept$ref": "con-ma1101-ch00-bilangan-real",
+            "type": "definition",
             "bloomLevel": "understand",
             "difficulty": "medium",
-            "importance": "high"
+            "importance": "high",
+            "content": "Himpunan bilangan real $\\mathbb{R}$ terdiri atas beberapa sub-himpunan penting. Pertama, himpunan bilangan asli $\\mathbb{N} = \\{1, 2, 3, \\dots\\}$. Kedua, himpunan bilangan bulat $\\mathbb{Z} = \\{\\dots, -2, -1, 0, 1, 2, \\dots\\}$. Ketiga, himpunan bilangan rasional $\\mathbb{Q} = \\{\\frac{m}{n} \\mid m,n \\in \\mathbb{Z}, n \\neq 0\\}$ yang desimalnya memiliki representasi berulang atau berhenti. Keempat, himpunan bilangan irasional yang merupakan bilangan real yang tidak bisa diubah menjadi pecahan biasa, contohnya $\\sqrt{2}$ dan $\\pi$. Simbol tak hingga ($\\infty$) dan minus tak hingga ($-\\infty$) bukan merupakan bilangan real, melainkan penunjuk perilaku nilai tanpa batas."
           },
           {
-            "$id": "ko-ma1101-ch00-intervals-def",
-            "title": "Definisi dan Notasi Interval",
-            "concept$ref": "con-ma1101-ch00-intervals",
-            "content": "Interval (selang) adalah himpunan bagian dari bilangan real yang memuat semua bilangan real di antara dua titik ujung tertentu. Misalkan $a$ dan $b$ adalah bilangan real dengan $a < b$:\n1. Interval Terbuka: Notasi $(a, b)$ menyatakan himpunan $\\{x \\in \\mathbb{R} \\mid a < x < b\\}$.\n2. Interval Tertutup: Notasi $[a, b]$ menyatakan himpunan $\\{x \\in \\mathbb{R} \\mid a \\le x \\le b\\}$.\n3. Interval Setengah Terbuka: Notasi $[a, b)$ menyatakan $\\{x \\in \\mathbb{R} \\mid a \\le x < b\\}$, sedangkan $(a, b]$ menyatakan $\\{x \\in \\mathbb{R} \\mid a < x \\le b\\}$.",
-            "type": "definition",
-            "bloomLevel": "remember",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-polynomials-def",
-            "title": "Definisi Polinom dan Suku Banyak",
-            "concept$ref": "con-ma1101-ch00-polynomials",
-            "content": "Polinom (suku banyak) dalam peubah $x$ adalah ekspresi matematika yang dapat dituliskan dalam bentuk umum:\n$$ P(x) = a_0 + a_1x + a_2x^2 + \\dots + a_nx^n $$\nDi mana $n$ adalah bilangan bulat tak negatif yang menunjukkan derajat polinom (dengan ketentuan koefisien utama $a_n \\neq 0$), $x$ adalah variabel real, dan koefisien-koefisien $a_0, a_1, \\dots, a_n$ adalah konstanta real.",
-            "type": "definition",
-            "bloomLevel": "understand",
-            "difficulty": "easy",
-            "importance": "medium"
-          },
-          {
-            "$id": "ko-ma1101-ch00-polynomials-form",
-            "title": "Diskriminan dan Akar Polinom Kuadrat",
-            "concept$ref": "con-ma1101-ch00-polynomials",
-            "content": "Untuk polinom derajat dua (kuadrat) yang memiliki bentuk umum $P(x) = ax^2 + bx + c$ dengan $a \\neq 0$, banyaknya akar real ditentukan oleh nilai diskriminan $D$:\n$$ D = b^2 - 4ac $$\n1. Jika $D > 0$, terdapat dua akar real yang berbeda.\n2. Jika $D = 0$, terdapat dua akar real kembar.\n3. Jika $D < 0$, tidak ada akar real. Polinom ini disebut definit (definit positif jika $a > 0$, definit negatif jika $a < 0$).\nAkar-akar polinom kuadrat dapat dihitung menggunakan rumus ABC:\n$$ x_{1,2} = \\frac{-b \\pm \\sqrt{D}}{2a} $$",
+            "$id": "ko-ma1101-ch00-pertaksamaan-form",
+            "title": "Hukum Sifat Operasi Pertidaksamaan",
+            "concept$ref": "con-ma1101-ch00-pertaksamaan",
             "type": "formula",
-            "bloomLevel": "understand",
+            "bloomLevel": "apply",
             "difficulty": "easy",
-            "importance": "high"
+            "importance": "high",
+            "content": "Jika $a$, $b$, dan $c$ merupakan bilangan real, berlaku aturan-aturan operasional aljabar pertidaksamaan sebagai berikut:\n1. Sifat penjumlahan: $a < b \\implies a + c < b + c$.\n2. Sifat pengurangan: $a < b \\implies a - c < b - c$.\n3. Sifat perkalian positif: jika $c > 0$, maka $a < b \\implies ac < bc$.\n4. Sifat perkalian negatif: jika $c < 0$, maka $a < b \\implies bc < ac$ (arah tanda berbalik). Kasus khusus: $a < b \\implies -b < -a$.\n5. Sifat kebalikan nilai: jika $a$ dan $b$ keduanya bernilai positif atau keduanya negatif, maka $a < b \\implies \\frac{1}{b} < \\frac{1}{a}$."
           },
           {
-            "$id": "ko-ma1101-ch00-rational-inequalities-overview",
-            "title": "Pengantar Pertaksamaan Rasional",
-            "concept$ref": "con-ma1101-ch00-rational-inequalities",
-            "content": "Pertaksamaan rasional adalah pertaksamaan yang melibatkan pecahan bentuk aljabar, yang secara umum dituliskan sebagai:\n$$ \\frac{A(x)}{B(x)} < \\frac{C(x)}{D(x)} $$\nDi mana $A(x), B(x), C(x),$ dan $D(x)$ adalah fungsi polinom, dengan syarat $B(x) \\neq 0$ dan $D(x) \\neq 0$. Untuk menyelesaikan pertaksamaan ini, kita dilarang melakukan kali silang variabel. Kita harus memindahkan seluruh suku ke ruas kiri agar ruas kanan menjadi nol, menyamakan penyebut, menyederhanakan pembilang, lalu mencari titik pembuat nol untuk diuji pada garis bilangan.",
+            "$id": "ko-ma1101-ch00-selang-def",
+            "title": "Definisi Jenis Selang dan Interval Bilangan",
+            "concept$ref": "con-ma1101-ch00-selang",
+            "type": "definition",
+            "bloomLevel": "understand",
+            "difficulty": "easy",
+            "importance": "medium",
+            "content": "Interval atau selang didefinisikan sebagai suatu himpunan bagian dari bilangan real $\\mathbb{R}$ yang memuat minimal dua buah anggota dan mencakup semua bilangan real yang terletak di antara komponen batas-batasnya. Interval dibagi menjadi dua kategori utama, yaitu:\n1. Interval terbatas (*finite*), seperti selang terbuka $(a,b) = \\{x \\mid a < x < b\\}$ dan selang tertutup $[a,b] = \\{x \\mid a \\le x \\le b\\}$.\n2. Interval tak terbatas (*infinite*), seperti selang terbuka tak hingga $(a, \\infty) = \\{x \\mid x > a\\}$ dan seluruh garis real $(-\\infty, \\infty) = \\mathbb{R}$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-polinom-def",
+            "title": "Bentuk Umum Suku Banyak dan Akar Polinom",
+            "concept$ref": "con-ma1101-ch00-polinom",
+            "type": "definition",
+            "bloomLevel": "understand",
+            "difficulty": "medium",
+            "importance": "medium",
+            "content": "Bentuk umum dari suatu fungsi polinom atau suku banyak didefinisikan secara matematis sebagai $P(x) = a_0 + a_1x + a_2x^2 + \\dots + a_nx^n$. Nilai-nilai konstanta real $a_0, a_1, \\dots, a_n$ disebut sebagai koefisien polinom, sedangkan kuadrat pangkat bilangan bulat positif tertinggi $n$ menyatakan derajat utama dari polinom tersebut dengan ketentuan syarat $a_n \\neq 0$. Nilai bilangan real $r$ didefinisikan sebagai akar dari fungsi polinom $P(x)$ apabila memenuhi kondisi nilai substitusi $P(r) = 0$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-parabola-form",
+            "title": "Analisis Karakteristik Polinom Kuadrat Parabola",
+            "concept$ref": "con-ma1101-ch00-polinom",
+            "type": "formula",
+            "bloomLevel": "apply",
+            "difficulty": "medium",
+            "importance": "high",
+            "content": "Polinom derajat dua memiliki bentuk kuadratik umum $P(x) = ax^2 + bx + c$ dengan konstanta $a \\neq 0$. Karakteristik geometris kurva ditentukan oleh:\n1. Koefisien nilai $a$: jika $a > 0$ grafik parabola cekung ke atas, sedangkan jika $a < 0$ grafik parabola cekung ke bawah.\n2. Nilai Diskriminan $D = b^2 - 4ac$: menentukan jumlah pemotongan akar real di mana $D > 0$ menghasilkan dua akar berbeda, $D = 0$ menghasilkan dua akar kembar, dan $D < 0$ berarti tidak ada akar real (polinom bersifat definit). Akar dihitung dengan rumus kuadrat $x = \\frac{-b \\pm \\sqrt{D}}{2a}$ dan koordinat titik puncak parabola berada pada posisi $(\\frac{-b}{2a}, \\frac{-D}{4a})$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-faktorisasi-def",
+            "title": "Teorema Klasik Faktorisasi Polinom",
+            "concept$ref": "con-ma1101-ch00-polinom",
+            "type": "definition",
+            "bloomLevel": "analyze",
+            "difficulty": "hard",
+            "importance": "medium",
+            "content": "Berdasarkan Teorema Faktorisasi Polinom, setiap fungsi suku banyak atau polinom yang memiliki nilai derajat pangkat $n \\ge 3$ akan selalu dapat direduksi atau difaktorkan secara matematis atas perkalian dari komponen faktor-faktor linear atau komponen faktor bentuk kuadrat yang bersifat definit. Teorema ini menjamin keberadaan hasil dari proses faktorisasi tersebut untuk mempermudah pengerjaan pertaksamaan tak linear, namun teorema ini tidak memuat instruksi prosedur teknis pengerjaannya."
+          },
+          {
+            "$id": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
+            "title": "Konsep Dasar Pertidaksamaan Rasional",
+            "concept$ref": "con-ma1101-ch00-pertaksamaan-rasional",
             "type": "concept_overview",
             "bloomLevel": "understand",
             "difficulty": "medium",
-            "importance": "high"
+            "importance": "high",
+            "content": "Pertidaksamaan rasional didefinisikan sebagai suatu pertidaksamaan bentuk pecahan yang memuat fungsi-fungsi polinom pada bagian pembilang dan bagian penyebutnya, dengan struktur bentuk baku $\\frac{A(x)}{B(x)} < \\frac{C(x)}{D(x)}$ di mana tanda $<$ dapat berupa $\\le, >, \\ge$. Tujuan penyelesaiannya adalah menentukan seluruh nilai variabel $x$ real yang memenuhi kondisi pertidaksamaan tersebut. Operasi yang diperbolehkan meliputi penambahan kedua ruas dan perkalian dengan nilai positif, sedangkan perkalian bilangan negatif akan membalik arah tanda relasional."
           },
           {
-            "$id": "ko-ma1101-ch00-rational-inequalities-ex-01",
-            "title": "Contoh Penyelesaian Pertaksamaan Rasional",
-            "concept$ref": "con-ma1101-ch00-rational-inequalities",
-            "content": "Tentukan himpunan penyelesaian dari pertaksamaan berikut:\n$$ \\frac{x+1}{2-x} \\ge \\frac{x}{x+3} $$\nSyarat daerah definisi adalah penyebut tidak boleh nol, sehingga $x \\neq 2$ dan $x \\neq -3$.\nPindahkan semua suku ke ruas kiri:\n$$ \\frac{x+1}{2-x} - \\frac{x}{x+3} \\ge 0 \\implies \\frac{(x+1)(x+3) - x(2-x)}{(2-x)(x+3)} \\ge 0 $$\n$$ \\frac{x^2+4x+3 - 2x+x^2}{(2-x)(x+3)} \\ge 0 \\implies \\frac{2x^2+2x+3}{(2-x)(x+3)} \\ge 0 $$\nAnalisis pembilang: $2x^2+2x+3$ memiliki $D = 2^2 - 4(2)(3) = -20 < 0$ dengan $a = 2 > 0$ (definit positif, selalu bernilai positif untuk setiap $x$).\nOleh karena itu, tanda pecahan hanya ditentukan oleh penyebut $(2-x)(x+3)$.\nTitik kritis penyebut adalah $x = -3$ dan $x = 2$. Lakukan uji tanda pada garis bilangan:\n- Untuk $x < -3$, nilai penyebut negatif.\n- Untuk $-3 < x < 2$, nilai penyebut positif.\n- Untuk $x > 2$, nilai penyebut negatif.\nKarena kita mencari nilai $\\ge 0$ (positif) dan pembilang selalu positif, maka kita memilih daerah di mana penyebut bernilai positif.\nHimpunan penyelesaiannya adalah $\\text{HP} = (-3, 2)$.",
+            "$id": "ko-ma1101-ch00-pertaksamaan-rasional-ex-01",
+            "title": "Aplikasi Langkah Penyelesaian Pertidaksamaan Rasional",
+            "concept$ref": "con-ma1101-ch00-pertaksamaan-rasional",
             "type": "example",
             "bloomLevel": "apply",
             "difficulty": "hard",
-            "importance": "high"
+            "importance": "high",
+            "content": "Selesaikan pertidaksamaan pecahan rasional berikut: $\\frac{x+1}{2-x} \\ge \\frac{x}{x+3}$.\n\n**Langkah 1**: Tentukan syarat pembatasan nilai penyebut tidak boleh nol: $x \\neq 2$ dan $x \\neq -3$.\n**Langkah 2**: Pindahkan seluruh suku ke satu ruas untuk menyisakan nilai nol: $\\frac{x+1}{2-x} - \\frac{x}{x+3} \\ge 0$.\n**Langkah 3**: Samakan penyebut pecahan menjadi $\\frac{(x+1)(x+3) - x(2-x)}{(2-x)(x+3)} \\ge 0$.\n**Langkah 4**: Sederhanakan fungsi pembilang pecahan menjadi $\\frac{2x^2 + 2x + 3}{(2-x)(x+3)} \\ge 0$. Karena fungsi pembilang $2x^2 + 2x + 3$ memiliki nilai diskriminan $D = 2^2 - 4(2)(3) = -20 < 0$ dan nilai $a = 2 > 0$, maka pembilang bersifat definit positif (selalu bernilai positif).\n**Langkah 5**: Buat analisis uji tanda wilayah pada garis bilangan berdasarkan nilai batas titik pembuat nol penyebut yaitu $x = -3$ dan $x = 2$. Interval di antara $(-3, 2)$ memberikan hasil akhir evaluasi bertanda positif. Maka, Himpunan Penyelesaian (HP) pertidaksamaan tersebut adalah interval terbuka $(-3, 2)$."
           },
           {
-            "$id": "ko-ma1101-ch00-absolute-value-def",
-            "title": "Definisi Nilai Mutlak",
-            "concept$ref": "con-ma1101-ch00-absolute-value",
-            "content": "Misalkan $x$ adalah bilangan real. Nilai mutlak (harga mutlak) dari $x$, dituliskan sebagai $|x|$, didefinisikan secara piecewise sebagai:\n$$ |x| = \\begin{cases} -x, & \\text{jika } x \\le 0 \\\\ x, & \\text{jika } x > 0 \\end{cases} $$\nSecara geometris, $|x|$ merepresentasikan jarak antara titik $x$ dengan titik asal $0$ pada garis bilangan real. Secara lebih umum, $|x-y|$ menyatakan jarak antara titik $x$ dan titik $y$.",
-            "type": "definition",
-            "bloomLevel": "remember",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-absolute-value-form",
-            "title": "Sifat-sifat Pertaksamaan Nilai Mutlak",
-            "concept$ref": "con-ma1101-ch00-absolute-value",
-            "content": "Untuk setiap bilangan real $x$, $a$, dan $b$, berlaku sifat-sifat pertaksamaan nilai mutlak berikut:\n1. Jika $a \\ge 0$, maka $|x| \\le a \\iff -a \\le x \\le a$.\n2. Jika $a \\ge 0$, maka $|x| \\ge a \\iff x \\le -a \\text{ atau } x \\ge a$.\n3. Pertaksamaan Segitiga: $|a + b| \\le |a| + |b|.$\n4. Hubungan kuadrat: $|x| \\le |y| \\iff x^2 \\le y^2$.",
-            "type": "formula",
-            "bloomLevel": "understand",
-            "difficulty": "medium",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-irrational-inequalities-def",
-            "title": "Definisi dan Syarat Pertaksamaan Bentuk Akar",
-            "concept$ref": "con-ma1101-ch00-irrational-inequalities",
-            "content": "Pertaksamaan bentuk akar adalah pertaksamaan yang memuat variabel di bawah tanda akar kuadrat $\\sqrt{x}$. Definisi akar kuadrat menyatakan bahwa jika $x \\ge 0$, maka $\\sqrt{x}$ adalah bilangan real tak negatif $a$ yang memenuhi $a^2 = x$. Sifat penting yang wajib dipenuhi dalam menyelesaikan pertaksamaan bentuk akar adalah syarat numerus, yaitu ekspresi di dalam akar harus bernilai tak negatif (lebih besar dari atau sama dengan nol).",
-            "type": "definition",
-            "bloomLevel": "understand",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-irrational-inequalities-ex-01",
-            "title": "Contoh Penyelesaian Pertaksamaan Bentuk Akar",
-            "concept$ref": "con-ma1101-ch00-irrational-inequalities",
-            "content": "Tentukan solusi dari pertaksamaan $\\sqrt{x-1} < 1$.\nLangkah-langkah penyelesaian:\n1. Syarat numerus (ekspresi di dalam akar harus tak negatif):\n$$ x - 1 \\ge 0 \\implies x \\ge 1 $$\n2. Kuadratkan kedua ruas (karena kedua ruas dijamin bernilai tak negatif):\n$$ (\\sqrt{x-1})^2 < 1^2 \\implies x - 1 < 1 \\implies x < 2 $$\n3. Cari irisan dari syarat numerus dan hasil kuadrat:\n$$ x \\ge 1 \\quad \\text{dan} \\quad x < 2 \\implies 1 \\le x < 2 $$\nHimpunan penyelesaiannya adalah $\\text{HP} = [1, 2)$.",
+            "$id": "ko-ma1101-ch00-pertaksamaan-ganda-ex-02",
+            "title": "Penyelesaian Sistem Pertidaksamaan Kuadrat Ganda",
+            "concept$ref": "con-ma1101-ch00-pertaksamaan-rasional",
             "type": "example",
             "bloomLevel": "apply",
-            "difficulty": "medium",
-            "importance": "high"
+            "difficulty": "hard",
+            "importance": "high",
+            "content": "Tentukan himpunan solusi real yang memenuhi nilai pertidaksamaan ganda berikut: $2 \\le x^2 - x < 6$.\n\nUntuk menyelesaikannya, sistem harus dipecah menjadi dua buah kondisi pertidaksamaan terpisah yang dihubungkan oleh operasi irisan matematika:\n1. Kondisi pertama: $2 \\le x^2 - x \\implies x^2 - x - 2 \\ge 0 \\implies (x-2)(x+1) \\ge 0$. Titik batas kritis berada di $x = 2$ dan $x = -1$. Berdasarkan uji tanda diperoleh $\\text{HP}_1 = (-\\infty, -1] \\cup [2, \\infty)$.\n2. Kondisi kedua: $x^2 - x < 6 \\implies x^2 - x - 6 < 0 \\implies (x-3)(x+2) < 0$. Titik pembuat nol berada di $x = 3$ dan $x = -2$. Analisis uji garis bilangan memberikan hasil $\\text{HP}_2 = (-2, 3)$.\n\nLangkah akhir adalah mencari daerah irisan dari kedua himpunan penyelesaian tersebut: $\\text{HP} = \\text{HP}_1 \\cap \\text{HP}_2 = (-2, -1] \\cup [2, 3)$."
           },
           {
-            "$id": "ko-ma1101-ch00-cartesian-coordinates-def",
-            "title": "Sistem Koordinat Kartesius Dua Dimensi",
-            "concept$ref": "con-ma1101-ch00-cartesian-coordinates",
-            "content": "Sistem koordinat Kartesius dua dimensi dibentuk oleh dua garis lurus saling tegak lurus yang berpotongan di titik asal $O(0,0)$. Garis horizontal disebut sumbu-$x$ dan garis vertikal disebut sumbu-$y$. Kedua sumbu ini membagi bidang menjadi empat daerah yang disebut kuadran 1 hingga kuadran 4. Setiap titik $P$ pada bidang dapat dinyatakan secara unik sebagai pasangan terurut $P(a, b)$, di mana komponen $a$ disebut sebagai absis dan komponen $b$ disebut sebagai ordinat.",
+            "$id": "ko-ma1101-ch00-harga-mutlak-def",
+            "title": "Definisi Aljabar dan Geometri Harga Mutlak",
+            "concept$ref": "con-ma1101-ch00-harga-mutlak",
             "type": "definition",
-            "bloomLevel": "remember",
-            "difficulty": "easy",
-            "importance": "medium"
+            "bloomLevel": "understand",
+            "difficulty": "medium",
+            "importance": "high",
+            "content": "Misalkan $x$ adalah sebuah bilangan real, maka nilai harga mutlak dari variabel $x$ dituliskan dengan simbol $|x|$ dan didefinisikan secara matematis menggunakan fungsi sepotong-sepotong (*piecewise function*) sebagai berikut: $|x| = x$ apabila $x > 0$, dan $|x| = -x$ apabila $x \\le 0$. Secara representasi geometris, nilai $|x|$ mengukur besarnya nilai jarak non-negatif yang membentang antara titik koordinat $x$ terhadap titik koordinat asal $0$ pada garis real. Secara umum, bentuk $|x - y|$ merepresentasikan jarak antara titik $x$ dan titik $y$."
           },
           {
-            "$id": "ko-ma1101-ch00-cartesian-coordinates-form",
-            "title": "Rumus Jarak Antara Dua Titik",
-            "concept$ref": "con-ma1101-ch00-cartesian-coordinates",
-            "content": "Jika $P(a, b)$ dan $Q(c, d)$ adalah dua titik pada bidang koordinat Kartesius, maka jarak antara kedua titik tersebut, disimbolkan dengan $d(P, Q)$, dihitung menggunakan rumus Pythagoras:\n$$ d(P, Q) = \\sqrt{(c - a)^2 + (d - b)^2} $$",
+            "$id": "ko-ma1101-ch00-harga-mutlak-form",
+            "title": "Teorema dan Sifat Pertidaksamaan Harga Mutlak",
+            "concept$ref": "con-ma1101-ch00-harga-mutlak",
+            "type": "formula",
+            "bloomLevel": "apply",
+            "difficulty": "medium",
+            "importance": "high",
+            "content": "Untuk setiap nilai komponen bilangan real $a, b,$ dan $x$, berlaku hukum teorema harga mutlak sebagai berikut:\n1. Sifat invers tanda: $|-a| = |a|$.\n2. Sifat perkalian: $|ab| = |a||b|$.\n3. Sifat pembagian: $\\left|\\frac{a}{b}\\right| = \\frac{|a|}{|b|}$ dengan penyebut $b \\neq 0$.\n4. Pertaksamaan Segitiga (*Triangle Inequality*): $|a + b| \\le |a| + |b|$.\n5. Hukum batas interval pertidaksamaan mutlak:\n   Jika $a > 0$, maka $|x| \\le a \\iff -a \\le x \\le a$.\n   Jika $a > 0$, maka $|x| \\ge a \\iff x \\le -a \\text{ atau } x \\ge a$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-bentuk-akar-def",
+            "title": "Definisi Operasi Nilai Akar Kuadrat",
+            "concept$ref": "con-ma1101-ch00-bentuk-akar",
+            "type": "definition",
+            "bloomLevel": "understand",
+            "difficulty": "easy",
+            "importance": "medium",
+            "content": "Misalkan terdapat variabel bilangan real $x \\ge 0$, operasi akar kuadrat dari bilangan $x$ dinotasikan dengan penulisan simbol $\\sqrt{x}$ dan didefinisikan sebagai suatu bilangan real tak negatif $a$ yang memiliki karakteristik sifat kuadrat $a^2 = x$. Berdasarkan definisi operasional ini, untuk setiap komponen fungsi bilangan real berharga sebarang nilai variabel $x$ (baik positif maupun negatif), akan selalu berlaku identitas hubungan kesamaan absolut berupa $\\sqrt{x^2} = |x|$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-jarak-dua-titik-form",
+            "title": "Formula Jarak Geometris dan Titik Tengah",
+            "concept$ref": "con-ma1101-ch00-koordinat-kartesius",
             "type": "formula",
             "bloomLevel": "apply",
             "difficulty": "easy",
-            "importance": "high"
+            "importance": "medium",
+            "content": "Sistem koordinat Kartesius dibentuk oleh perpotongan garis horizontal sumbu $x$ dan garis vertikal sumbu $y$. Setiap titik dinyatakan sebagai pasangan terurut $P(a,b)$ dengan absis $a$ dan ordinat $b$. Jika terdapat dua buah titik koordinat $P(x_1, y_1)$ dan $Q(x_2, y_2)$ pada bidang dua dimensi, berlaku rumus geometris baku berikut:\n1. Jarak lurus murni antara titik $P$ dan titik $Q$ dihitung dengan rumus: $d = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$.\n2. Titik tengah (*midpoint*) dari segmen garis yang menghubungkan titik $P$ dan titik $Q$ berada pada koordinat posisi: $M = (\\frac{x_1 + x_2}{2}, \\frac{y_1 + y_2}{2})$."
           },
           {
-            "$id": "ko-ma1101-ch00-straight-lines-def",
-            "title": "Gradien dan Persamaan Garis Lurus",
-            "concept$ref": "con-ma1101-ch00-straight-lines",
-            "content": "Sebuah garis lurus pada bidang ditentukan oleh gradien (kemiringan) $m$ dan sebuah titik yang dilaluinya. Jika sebuah garis melalui dua buah titik $P(x_1, y_1)$ dan $Q(x_2, y_2)$ dengan $x_1 \\neq x_2$, gradien $m$ didefinisikan sebagai rasio perubahan komponen vertikal terhadap horizontal:\n$$ m = \\frac{\\Delta y}{\\Delta x} = \\frac{y_2 - y_1}{x_2 - x_1} $$\nPersamaan garis lurus dengan gradien $m$ yang melalui titik $(x_1, y_1)$ adalah:\n$$ y - y_1 = m(x - x_1) $$",
+            "$id": "ko-ma1101-ch00-garis-lurus-form",
+            "title": "Formula Gradien dan Persamaan Garis Lurus",
+            "concept$ref": "con-ma1101-ch00-garis-lurus",
+            "type": "formula",
+            "bloomLevel": "apply",
+            "difficulty": "medium",
+            "importance": "high",
+            "content": "Kemiringan atau gradien $m$ dari suatu garis lurus yang menghubungkan titik $P(x_1, y_1)$ dan $Q(x_2, y_2)$ didefinisikan sebagai nilai rasio perubahan vertikal terhadap perubahan horizontal dengan rumus: $m = \\frac{\\Delta y}{\\Delta x} = \\frac{y_2 - y_1}{x_2 - x_1}$. Persamaan garis lurus dapat dinyatakan berdasarkan dua kondisi teknis:\n1. Melalui satu titik $(x_1, y_1)$ dengan nilai gradien kemiringan $m$: $y - y_1 = m(x - x_1)$.\n2. Melalui dua buah titik koordinat $(x_1, y_1)$ dan $(x_2, y_2)$: $\\frac{y - y_1}{y_2 - y_1} = \\frac{x - x_1}{x_2 - x_1}$.\nHubungan dua garis: Dua garis sejajar jika gradiennya sama ($m_1 = m_2$), dan saling tegak lurus jika hasil kalinya bernilai negatif satu ($m_1 \\cdot m_2 = -1$)."
+          },
+          {
+            "$id": "ko-ma1101-ch00-kurva-kedua-form",
+            "title": "Bentuk Baku Persamaan Lingkaran, Elips, dan Hiperbola",
+            "concept$ref": "con-ma1101-ch00-kurva-kedua",
+            "type": "formula",
+            "bloomLevel": "apply",
+            "difficulty": "hard",
+            "importance": "medium",
+            "content": "Bentuk formula baku dari kurva geometri dua dimensi pada koordinat Kartesius didefinisikan sebagai berikut:\n1. Persamaan kurva Lingkaran yang berpusat di koordinat $(p,q)$ dengan panjang jari-jari berupa konstanta $r$: $(x - p)^2 + (y - q)^2 = r^2$.\n2. Persamaan kurva Elips yang berpusat di koordinat $(p,q)$ dengan panjang sumbu horizontal $a$ dan sumbu vertikal $b$: $\\frac{(x - p)^2}{a^2} + \\frac{(y - q)^2}{b^2} = 1$.\n3. Persamaan kurva Hiperbola horizontal berpusat di titik asal $(0,0)$ dengan komponen asimtot garis miring $y = \\pm \\frac{b}{a}x$: $\\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1$. Jika kurva diputar $45^{\\circ}$, bentuk persamaannya menjadi hiperbola siku-siku $xy = k$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-fungsi-def",
+            "title": "Definisi Formal Aturan Fungsi Real",
+            "concept$ref": "con-ma1101-ch00-fungsi",
             "type": "definition",
             "bloomLevel": "understand",
             "difficulty": "easy",
-            "importance": "high"
+            "importance": "high",
+            "content": "Misalkan terdapat dua buah himpunan tak kosong yang dinotasikan sebagai himpunan $D$ dan himpunan $Y$. Fungsi dari $D$ ke $Y$ didefinisikan sebagai sebuah aturan matematis baku yang memasangkan setiap elemen $x \\in D$ dengan tepat satu elemen tunggal nilai $y \\in Y$, ditulis dengan notasi rumus $y = f(x)$. Variabel $x$ disebut sebagai peubah bebas dan variabel $y$ disebut peubah tak bebas. Daerah Asal atau Domain dari fungsi $f$ didefinisikan sebagai himpunan $D_f = \\{x \\in D \\mid f(x) \\text{ terdefinisi secara real}\\}$, sedangkan Daerah Nilai atau Range fungsi didefinisikan sebagai himpunan hasil $R_f = \\{y \\in Y \\mid y = f(x), x \\in D\\}$."
           },
           {
-            "$id": "ko-ma1101-ch00-straight-lines-form",
-            "title": "Hubungan Gradien Dua Garis Lurus",
-            "concept$ref": "con-ma1101-ch00-straight-lines",
-            "content": "Misalkan dua buah garis lurus memiliki gradien masing-masing $m_1$ dan $m_2$. Hubungan geometris kedua garis tersebut ditentukan oleh nilai gradiennya:\n1. Garis Sejajar: Kedua garis sejajar jika dan hanya jika kemiringannya sama:\n$$ m_1 = m_2 $$\n2. Garis Saling Tegak Lurus: Kedua garis saling tegak lurus jika dan hanya jika hasil kali kedua gradiennya adalah $-1$:\n$$ m_1 \\cdot m_2 = -1 $$",
-            "type": "formula",
-            "bloomLevel": "understand",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-conic-sections-form",
-            "title": "Persamaan Lingkaran dan Elips",
-            "concept$ref": "con-ma1101-ch00-conic-sections",
-            "content": "Irisan kerucut sederhana meliputi lingkaran, elips, dan hiperbola.\n1. Lingkaran yang berpusat di titik $(p, q)$ dengan jari-jari $r > 0$ memiliki persamaan standar:\n$$ (x - p)^2 + (y - q)^2 = r^2 $$\n2. Elips yang berpusat di titik $(p, q)$ dengan setengah sumbu horizontal $a > 0$ dan setengah sumbu vertikal $b > 0$ memiliki persamaan standar:\n$$ \\frac{(x - p)^2}{a^2} + \\frac{(y - q)^2}{b^2} = 1 $$",
-            "type": "formula",
-            "bloomLevel": "understand",
-            "difficulty": "medium",
-            "importance": "medium"
-          },
-          {
-            "$id": "ko-ma1101-ch00-function-basics-def",
-            "title": "Definisi Fungsi, Domain, dan Range",
-            "concept$ref": "con-ma1101-ch00-function-basics",
-            "content": "Misalkan $D$ dan $Y$ adalah dua buah himpunan bagian dari bilangan real yang tidak kosong. Fungsi $f$ dari $D$ ke $Y$ adalah suatu aturan yang memasangkan setiap elemen $x \\in D$ dengan tepat satu elemen $y \\in Y$, dituliskan sebagai $y = f(x)$.\nHimpunan $D$ disebut sebagai daerah asal (domain) fungsi, dinotasikan dengan $D_f$.\nHimpunan semua nilai $f(x)$ untuk $x \\in D$ disebut sebagai daerah nilai (range) fungsi, dinotasikan dengan $R_f$.",
-            "type": "definition",
-            "bloomLevel": "remember",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-function-basics-form",
-            "title": "Fungsi Genap dan Fungsi Ganjil",
-            "concept$ref": "con-ma1101-ch00-function-basics",
-            "content": "Fungsi real $f(x)$ dapat diklasifikasikan berdasarkan simetri grafiknya:\n1. Fungsi Genap: Fungsi $f(x)$ disebut fungsi genap jika untuk setiap $x$ di domainnya berlaku:\n$$ f(-x) = f(x) $$\nGrafik fungsi genap simetris terhadap sumbu-$y$.\n2. Fungsi Ganjil: Fungsi $f(x)$ disebut fungsi ganjil jika untuk setiap $x$ di domainnya berlaku:\n$$ f(-x) = -f(x) $$\nGrafik fungsi ganjil simetris terhadap titik asal $O(0,0)$.",
-            "type": "formula",
-            "bloomLevel": "understand",
-            "difficulty": "easy",
-            "importance": "medium"
-          },
-          {
-            "$id": "ko-ma1101-ch00-function-operations-def",
-            "title": "Operasi Aljabar Fungsi dan Komposisi",
-            "concept$ref": "con-ma1101-ch00-function-operations",
-            "content": "Misalkan terdapat dua buah fungsi $f(x)$ dan $g(x)$ dengan domain masing-masing $D_f$ dan $D_g$. Operasi aljabar penjumlahan, pengurangan, perkalian, dan pembagian didefinisikan dengan domain berupa irisan $D_f \\cap D_g$.\nSelain itu, fungsi komposisi $f \\circ g$ didefinisikan sebagai:\n$$ (f \\circ g)(x) = f(g(x)) $$\nDomain dari fungsi komposisi $f \\circ g$, dinotasikan $D_{f \\circ g}$, adalah himpunan semua titik $x \\in D_g$ sedemikian rupa sehingga nilai $g(x) \\in D_f$.",
+            "$id": "ko-ma1101-ch00-fungsi-genap-ganjil-def",
+            "title": "Definisi Klasifikasi Fungsi Genap dan Fungsi Ganjil",
+            "concept$ref": "con-ma1101-ch00-karakteristik-fungsi",
             "type": "definition",
             "bloomLevel": "understand",
             "difficulty": "medium",
-            "importance": "high"
+            "importance": "medium",
+            "content": "Simetri dari kurva grafik fungsi real dapat diidentifikasi melalui sifat fungsi genap dan ganjil berikut:\n1. Sebuah fungsi $f$ diklasifikasikan sebagai fungsi genap apabila memenuhi kondisi rumus aljabar $f(-x) = f(x)$ untuk setiap nilai $x$ di dalam domainnya. Karakteristik kurva grafik fungsi genap adalah memiliki sifat simetri cermin terhadap sumbu $y$.\n2. Sebuah fungsi $f$ diklasifikasikan sebagai fungsi gasal atau fungsi ganjil apabila memenuhi kondisi rumus aljabar $f(-x) = -f(x)$. Karakteristik kurva grafik fungsi ganjil adalah memiliki sifat simetri titik terhadap pusat koordinat asal $(0,0)$."
           },
           {
-            "$id": "ko-ma1101-ch00-graphic-transformations-form",
-            "title": "Pergeseran dan Pencerminan Grafik Fungsi",
-            "concept$ref": "con-ma1101-ch00-graphic-transformations",
-            "content": "Diberikan grafik fungsi asal $y = f(x)$ dan konstanta pergeseran $k > 0$. Aturan transformasi grafik adalah sebagai berikut:\n1. Pergeseran Vertikal: Grafik $y = f(x) + k$ menggeser grafik asal sejauh $k$ ke atas, sedangkan $y = f(x) - k$ menggeser sejauh $k$ ke bawah.\n2. Pergeseran Horizontal: Grafik $y = f(x - k)$ menggeser grafik asal sejauh $k$ ke kanan, sedangkan $y = f(x + k)$ menggeser sejauh $k$ ke kiri.\n3. Pencerminan: Grafik $y = -f(x)$ adalah pencerminan terhadap sumbu-$x$, sedangkan $y = f(-x)$ adalah pencerminan terhadap sumbu-$y$.",
-            "type": "formula",
-            "bloomLevel": "understand",
-            "difficulty": "medium",
-            "importance": "medium"
-          },
-          {
-            "$id": "ko-ma1101-ch00-trigonometric-functions-def",
-            "title": "Definisi Fungsi Trigonometri Dasar",
-            "concept$ref": "con-ma1101-ch00-trigonometric-functions",
-            "content": "Misalkan sebuah titik $P(x, y)$ terletak pada lingkaran satuan (lingkaran berjari-jari satu yang berpusat di titik asal $O(0,0)$). Jika $\\theta$ adalah sudut yang dibentuk oleh sumbu-$x$ positif dengan garis hubung $OP$ (dihitung berlawanan arah putaran jarum jam), maka fungsi sinus dan cosinus didefinisikan secara geometris sebagai koordinat titik $P$:\n$$ \\sin \\theta = y \\quad \\text{dan} \\quad \\cos \\theta = x $$\nSatuan sudut $\\theta$ dinyatakan dalam radian, di mana keliling lingkaran satuan penuh setara dengan $2\\pi$ radian.",
+            "$id": "ko-ma1101-ch00-fungsi-komposisi-def",
+            "title": "Definisi Operasi Komposisi Dua Fungsi",
+            "concept$ref": "con-ma1101-ch00-operasi-komposisi",
             "type": "definition",
-            "bloomLevel": "remember",
-            "difficulty": "easy",
-            "importance": "high"
-          },
-          {
-            "$id": "ko-ma1101-ch00-trigonometric-functions-form",
-            "title": "Identitas Trigonometri Utama",
-            "concept$ref": "con-ma1101-ch00-trigonometric-functions",
-            "content": "Beberapa rumus identitas fungsi trigonometri utama untuk setiap sudut real $\\theta$ dan $\\gamma$ adalah:\n1. Identitas Pythagoras: $\\sin^2 \\theta + \\cos^2 \\theta = 1$\n2. Identitas Tangen dan Secan: $1 + \\tan^2 \\theta = \\sec^2 \\theta$\n3. Rumus Jumlah Sudut Cosinus: $\\cos(\\theta + \\gamma) = \\cos \\theta \\cos \\gamma - \\sin \\theta \\sin \\gamma$\n4. Rumus Jumlah Sudut Sinus: $\\sin(\\theta + \\gamma) = \\sin \\theta \\cos \\gamma + \\cos \\theta \\sin \\gamma$",
-            "type": "formula",
             "bloomLevel": "understand",
             "difficulty": "medium",
-            "importance": "high"
+            "importance": "high",
+            "content": "Misalkan terdapat dua buah fungsi real yang masing-masing dinamakan fungsi $f$ dan fungsi $g$. Fungsi komposisi dari fungsi $f$ dengan fungsi $g$ dinotasikan dengan penulisan simbol $f \\circ g$ dan didefinisikan secara operasional melalui aturan rumus: $(f \\circ g)(x) = f(g(x))$. Daerah asal atau domain dari fungsi komposisi $f \\circ g$ didefinisikan sebagai himpunan seluruh titik nilai variabel $x$ yang berada di dalam daerah domain fungsi $g$ ($x \\in D_g$) dengan syarat nilai output pemetaannya harus berada di dalam daerah domain fungsi $f$ ($g(x) \\in D_f$)."
+          },
+          {
+            "$id": "ko-ma1101-ch00-transformasi-grafik-form",
+            "title": "Aturan Pergeseran Pencerminan Grafik Fungsi",
+            "concept$ref": "con-ma1101-ch00-transformasi-grafik",
+            "type": "formula",
+            "bloomLevel": "apply",
+            "difficulty": "medium",
+            "importance": "medium",
+            "content": "Diberikan grafik fungsi real mula-mula $y = f(x)$ dan nilai konstanta pergeseran $k > 0$ serta konstanta peregangan $c > 1$. Berlaku rumus transformasi koordinat grafik fungsi sebagai berikut:\n1. Pergeseran vertikal: $y = f(x) + k$ menggeser grafik sejauh $k$ ke atas, dan $y = f(x) - k$ menggeser sejauh $k$ ke bawah.\n2. Pergeseran horizontal: $y = f(x - k)$ menggeser grafik sejauh $k$ ke kanan, dan $y = f(x + k)$ menggeser sejauh $k$ ke kiri.\n3. Pencerminan grafik: fungsi $y = -f(x)$ merepresentasikan hasil pencerminan terhadap garis sumbu $x$, sedangkan fungsi $y = f(-x)$ merepresentasikan hasil pencerminan terhadap sumbu $y$."
+          },
+          {
+            "$id": "ko-ma1101-ch00-trigonometri-form",
+            "title": "Definisi Fungsi dan Identitas Dasar Trigonometri",
+            "concept$ref": "con-ma1101-ch00-trigonometri",
+            "type": "formula",
+            "bloomLevel": "apply",
+            "difficulty": "medium",
+            "importance": "high",
+            "content": "Misalkan terdapat sudut inklinasi $\\theta$ dalam satuan radian yang dibentuk lingkaran satuan berpusat di $(0,0)$ dengan jari-jari $r=1$. Fungsi trigonometri sinus dan kosinus didefinisikan melalui koordinat titik $P(x,y)$ pada lingkaran tersebut dengan aturan rumus: $\\sin(\\theta) = y$ dan $\\cos(\\theta) = x$. Nilai fungsi ini bersifat periodik dengan periode sebesar $2\\pi$. Berlaku rumus identitas dasar trigonometri yang sangat penting berikut:\n1. Identitas Pythagoras: $\\sin^2(\\theta) + \\cos^2(\\theta) = 1$, dan $1 + \\tan^2(\\theta) = \\sec^2(\\theta)$.\n2. Sifat simetri tanda sudut: $\\sin(-\\theta) = -\\sin(\\theta)$ (fungsi ganjil) dan $\\cos(-\\theta) = \\cos(\\theta)$ (fungsi genap).\n3. Rumus sudut ganda kuadrat: $\\cos^2(\\theta) = \\frac{1}{2} + \\frac{1}{2}\\cos(2\\theta)$ serta $\\sin^2(\\theta) = \\frac{1}{2} - \\frac{1}{2}\\cos(2\\theta)$."
           }
         ],
         "websiteMaterials": [
           {
-            "title": "Pertaksamaan dan Fungsi",
-            "slug": "pertaksamaan-dan-fungsi",
-            "canonicalMarkdown": "# Bab 0: Pertaksamaan dan Fungsi\n\nSelamat datang di materi dasar kalkulus Zyx Academy. Bab ini akan membahas fondasi dasar matematika yang sangat penting untuk memahami konsep limit, turunan, dan integral pada perkuliahan kalkulus selanjutnya.\n\n:::learning_objective {bloomLevel=\"understand\"}\nMateri ini bertujuan agar mahasiswa memahami sifat-sifat bilangan real, menyelesaikan berbagai bentuk pertaksamaan, memahami koordinat geometri, serta menganalisis fungsi beserta grafiknya.\n:::\n\n## 1. Bilangan Real dan Sistem Pertaksamaan\n\nBilangan real merupakan fondasi dari semua perhitungan dalam kalkulus. Sebelum melangkah ke perhitungan yang lebih kompleks, kita perlu mendefinisikan dengan tepat apa yang dimaksud dengan bilangan real.\n\n:::definition {ref=\"ko-ma1101-ch00-real-numbers-def\"}\nBilangan real adalah bilangan yang dapat dituliskan dalam bentuk desimal, baik desimal berulang maupun desimal tidak berulang. Himpunan semua bilangan real biasa dinotasikan dengan simbol $\\mathbb{R}$. Secara geometris, setiap bilangan real berkorespondensi satu-satu dengan titik pada suatu garis lurus yang disebut garis bilangan real. Himpunan bilangan real terdiri atas himpunan bilangan rasional $\\mathbb{Q}$ (bilangan yang dapat dinyatakan dalam bentuk $m/n$ dengan $m, n$ adalah bilangan bulat dan $n \\neq 0$) dan himpunan bilangan irasional (bilangan real yang bukan rasional, seperti $\\sqrt{2}$ dan $\\pi$).\n:::\n\nDalam mengoperasikan bilangan real, kita sering berhadapan dengan relasi urutan (pertaksamaan). Aturan-aturan pertaksamaan ini sangat penting untuk menyederhanakan hubungan matematika.\n\n:::formula {ref=\"ko-ma1101-ch00-inequality-properties-form\"}\nSifat-sifat dasar pertaksamaan untuk bilangan real $a$, $b$, dan $c$ adalah sebagai berikut:\n1. Jika $a < b$, maka $a + c < b + c$ dan $a - c < b - c$.\n2. Jika $a < b$ dan $c > 0$, maka $ac < bc$.\n3. Jika $a < b$ dan $c < 0$, maka $ac > bc$ (perhatikan bahwa arah tanda pertaksamaan berbalik).\n4. Jika $a > 0$, maka $1/a > 0$.\n5. Jika $a$ dan $b$ keduanya positif atau keduanya negatif, maka $a < b \\implies 1/b < 1/a$.\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $a, b, c$ | Bilangan real sembarang |\n:::\n\nNamun, terdapat perangkap umum yang sering kali dialami oleh mahasiswa saat memanipulasi pertaksamaan, terutama jika melibatkan variabel yang nilainya belum pasti.\n\n:::misconception {ref=\"ko-ma1101-ch00-inequality-properties-mis\"}\n#### Misconception\nSeringkali siswa mengalikan kedua ruas pertaksamaan dengan suatu peubah (variabel) tanpa mengetahui tandanya secara pasti. Contoh salah kaprah:\n$$ \\frac{1}{x} < 2 \\implies 1 < 2x $$\nPenyelesaian di atas salah karena nilai $x$ bisa saja negatif. Jika $x < 0$, maka ketika kedua ruas dikalikan dengan $x$, tanda pertaksamaan harus berbalik menjadi $1 > 2x$.\n\n#### Correction\nUntuk menghindari kesalahan ini, cara yang aman adalah memindahkan semua suku ke salah satu ruas sehingga ruas lainnya menjadi nol, kemudian menyelesaikan pertaksamaan menggunakan titik pembuat nol dan analisis tanda pada garis bilangan.\n:::\n\nUntuk merepresentasikan himpunan solusi dari pertaksamaan tersebut, kita sering kali mengandalkan notasi interval untuk menentukan selang bilangan real yang valid.\n\n:::definition {ref=\"ko-ma1101-ch00-intervals-def\"}\nInterval (selang) adalah himpunan bagian dari bilangan real yang memuat semua bilangan real di antara dua titik ujung tertentu. Misalkan $a$ dan $b$ adalah bilangan real dengan $a < b$:\n1. Interval Terbuka: Notasi $(a, b)$ menyatakan himpunan $\\{x \\in \\mathbb{R} \\mid a < x < b\\}$.\n2. Interval Tertutup: Notasi $[a, b]$ menyatakan himpunan $\\{x \\in \\mathbb{R} \\mid a \\le x \\le b\\}$.\n3. Interval Setengah Terbuka: Notasi $[a, b)$ menyatakan $\\{x \\in \\mathbb{R} \\mid a \\le x < b\\}$, sedangkan $(a, b]$ menyatakan $\\{x \\in \\mathbb{R} \\mid a < x \\le b\\}$.\n:::\n\n---\n\n## 2. Polinom dan Pertaksamaan Rasional\n\nSuku banyak atau polinom adalah salah satu ekspresi matematika yang paling sering kita jumpai dalam kalkulus.\n\n:::definition {ref=\"ko-ma1101-ch00-polynomials-def\"}\nPolinom (suku banyak) dalam peubah $x$ adalah ekspresi matematika yang dapat dituliskan dalam bentuk umum:\n$$ P(x) = a_0 + a_1x + a_2x^2 + \\dots + a_nx^n $$\nDi mana $n$ adalah bilangan bulat tak negatif yang menunjukkan derajat polinom (dengan ketentuan koefisien utama $a_n \\neq 0$), $x$ adalah variabel real, dan koefisien-koefisien $a_0, a_1, \\dots, a_n$ adalah konstanta real.\n:::\n\nPolinom berderajat dua secara khusus disebut polinom kuadrat. Karakteristik akarnya sangat dipengaruhi oleh nilai diskriminasinya.\n\n:::formula {ref=\"ko-ma1101-ch00-polynomials-form\"}\nUntuk polinom derajat dua (kuadrat) yang memiliki bentuk umum $P(x) = ax^2 + bx + c$ dengan $a \\neq 0$, banyaknya akar real ditentukan oleh nilai diskriminan $D$:\n$$ D = b^2 - 4ac $$\n1. Jika $D > 0$, terdapat dua akar real yang berbeda.\n2. Jika $D = 0$, terdapat dua akar real kembar.\n3. Jika $D < 0$, tidak ada akar real. Polinom ini disebut definit (definit positif jika $a > 0$, definit negatif jika $a < 0$).\nAkar-akar polinom kuadrat dapat dihitung menggunakan rumus ABC:\n$$ x_{1,2} = \\frac{-b \\pm \\sqrt{D}}{2a} $$\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $a$ | Koefisien utama suku kuadrat ($a \\neq 0$) |\n| $b$ | Koefisien suku linear |\n| $c$ | Konstanta bebas |\n| $D$ | Diskriminan kuadrat |\n| $x_{1,2}$ | Akar-akar polinom kuadrat |\n:::\n\nSetelah memahami konsep polinom, kita dapat melangkah ke tingkat pertaksamaan yang lebih tinggi, yaitu pertaksamaan rasional.\n\n:::concept {ref=\"ko-ma1101-ch00-rational-inequalities-overview\"}\nPertaksamaan rasional adalah pertaksamaan yang melibatkan bentuk pecahan aljabar, di mana pembilang dan penyebutnya berbentuk polinom, serta penyebutnya tidak bernilai nol. Untuk menyelesaikan pertaksamaan ini, kita dilarang melakukan kali silang variabel. Kita harus memindahkan seluruh suku ke ruas kiri agar ruas kanan menjadi nol, menyamakan penyebut, menyederhanakan pembilang, lalu mencari titik pembuat nol untuk diuji pada garis bilangan.\n:::\n\nBerikut adalah contoh pengerjaan pertaksamaan rasional secara runtut dan sistematis.\n\n:::example {ref=\"ko-ma1101-ch00-rational-inequalities-ex-01\"}\n#### Problem\nTentukan himpunan penyelesaian dari pertaksamaan berikut:\n$$ \\frac{x+1}{2-x} \\ge \\frac{x}{x+3} $$\n\n#### Solution\nSyarat daerah definisi adalah penyebut tidak boleh nol, sehingga $x \\neq 2$ dan $x \\neq -3$.\nPindahkan semua suku ke ruas kiri:\n$$ \\frac{x+1}{2-x} - \\frac{x}{x+3} \\ge 0 \\implies \\frac{(x+1)(x+3) - x(2-x)}{(2-x)(x+3)} \\ge 0 $$\n$$ \\frac{x^2+4x+3 - 2x+x^2}{(2-x)(x+3)} \\ge 0 \\implies \\frac{2x^2+2x+3}{(2-x)(x+3)} \\ge 0 $$\nAnalisis pembilang: $2x^2+2x+3$ memiliki $D = 2^2 - 4(2)(3) = -20 < 0$ dengan $a = 2 > 0$ (definit positif, selalu bernilai positif untuk setiap $x$).\nOleh karena itu, tanda pecahan hanya ditentukan oleh penyebut $(2-x)(x+3)$.\nTitik kritis penyebut adalah $x = -3$ and $x = 2$. Lakukan uji tanda pada garis bilangan:\n- Untuk $x < -3$, nilai penyebut negatif.\n- Untuk $-3 < x < 2$, nilai penyebut positif.\n- Untuk $x > 2$, nilai penyebut negatif.\nKarena kita mencari nilai $\\ge 0$ (positif) dan pembilang selalu positif, maka kita memilih daerah di mana penyebut bernilai positif.\nHimpunan penyelesaiannya adalah $\\text{HP} = (-3, 2)$.\n:::\n\n---\n\n## 3. Pertaksamaan Nilai Mutlak dan Bentuk Akar\n\nNilai mutlak mengukur besaran atau jarak suatu nilai dari titik asal, mengabaikan arahnya (positif atau negatif).\n\n:::definition {ref=\"ko-ma1101-ch00-absolute-value-def\"}\nMisalkan $x$ adalah bilangan real. Nilai mutlak (harga mutlak) dari $x$, dituliskan sebagai $|x|$, didefinisikan secara piecewise sebagai:\n$$ |x| = \\begin{cases} -x, & \\text{jika } x \\le 0 \\\\ x, & \\text{jika } x > 0 \\end{cases} $$\nSecara geometris, $|x|$ merepresentasikan jarak antara titik $x$ dengan titik asal $0$ pada garis bilangan real. Secara lebih umum, $|x-y|$ menyatakan jarak antara titik $x$ dan titik $y$.\n:::\n\nSifat-sifat nilai mutlak membantu kita membuka tanda mutlak saat berhadapan dengan pertaksamaan aljabar.\n\n:::formula {ref=\"ko-ma1101-ch00-absolute-value-form\"}\nUntuk setiap bilangan real $x$, $a$, dan $b$, berlaku sifat-sifat pertaksamaan nilai mutlak berikut:\n1. Jika $a \\ge 0$, maka $|x| \\le a \\iff -a \\le x \\le a$.\n2. Jika $a \\ge 0$, maka $|x| \\ge a \\iff x \\le -a \\text{ atau } x \\ge a$.\n3. Pertaksamaan Segitiga: $|a + b| \\le |a| + |b|$.\n4. Hubungan kuadrat: $|x| \\le |y| \\iff x^2 \\le y^2$.\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $x, y$ | Peubah bilangan real |\n| $a, b$ | Konstanta atau peubah bilangan real |\n:::\n\nKonsep pertaksamaan lainnya yang sering kita jumpai adalah pertaksamaan bentuk akar (irasional).\n\n:::definition {ref=\"ko-ma1101-ch00-irrational-inequalities-def\"}\nPertaksamaan bentuk akar adalah pertaksamaan yang memuat variabel di bawah tanda akar kuadrat $\\sqrt{x}$. Definisi akar kuadrat menyatakan bahwa jika $x \\ge 0$, maka $\\sqrt{x}$ adalah bilangan real tak negatif $a$ yang memenuhi $a^2 = x$. Sifat penting yang wajib dipenuhi dalam menyelesaikan pertaksamaan bentuk akar adalah syarat numerus, yaitu ekspresi di dalam akar harus bernilai tak negatif (lebih besar dari atau sama dengan nol).\n:::\n\nBerikut adalah contoh penyelesaian praktis pertaksamaan bentuk akar dengan memperhatikan syarat numerus.\n\n:::example {ref=\"ko-ma1101-ch00-irrational-inequalities-ex-01\"}\n#### Problem\nTentukan solusi dari pertaksamaan $\\sqrt{x-1} < 1$.\n\n#### Solution\nLangkah-langkah penyelesaian:\n1. Syarat numerus (ekspresi di dalam akar harus tak negatif):\n$$ x - 1 \\ge 0 \\implies x \\ge 1 $$\n2. Kuadratkan kedua ruas (karena kedua ruas dijamin bernilai tak negatif):\n$$ (\\sqrt{x-1})^2 < 1^2 \\implies x - 1 < 1 \\implies x < 2 $$\n3. Cari irisan dari syarat numerus dan hasil kuadrat:\n$$ x \\ge 1 \\quad \\text{dan} \\quad x < 2 \\implies 1 \\le x < 2 $$\nHimpunan penyelesaiannya adalah $\\text{HP} = [1, 2)$.\n:::\n\n---\n\n## 4. Geometri Analitik: Sistem Koordinat Kartesius dan Garis Lurus\n\nUntuk memvisualisasikan hubungan aljabar, kita memerlukan jembatan geometri berupa sistem koordinat.\n\n:::definition {ref=\"ko-ma1101-ch00-cartesian-coordinates-def\"}\nSistem koordinat Kartesius dua dimensi dibentuk oleh dua garis lurus saling tegak lurus yang berpotongan di titik asal $O(0,0)$. Garis horizontal disebut sumbu-$x$ dan garis vertikal disebut sumbu-$y$. Kedua sumbu ini membagi bidang menjadi empat daerah yang disebut kuadran 1 hingga kuadran 4. Setiap titik $P$ pada bidang dapat dinyatakan secara unik sebagai pasangan terurut $P(a, b)$, di mana komponen $a$ disebut sebagai absis dan komponen $b$ disebut sebagai ordinat.\n:::\n\n:::formula {ref=\"ko-ma1101-ch00-cartesian-coordinates-form\"}\nJika $P(a, b)$ dan $Q(c, d)$ adalah dua titik pada bidang koordinat Kartesius, maka jarak antara kedua titik tersebut, disimbolkan dengan $d(P, Q)$, dihitung menggunakan rumus Pythagoras:\n$$ d(P, Q) = \\sqrt{(c - a)^2 + (d - b)^2} $$\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $d(P, Q)$ | Jarak antara titik $P$ dan $Q$ |\n| $a, b$ | Koordinat absis dan ordinat titik $P(a, b)$ |\n| $c, d$ | Koordinat absis dan ordinat titik $Q(c, d)$ |\n:::\n\nGaris lurus merupakan bangun geometri paling sederhana pada bidang koordinat.\n\n:::definition {ref=\"ko-ma1101-ch00-straight-lines-def\"}\nSebuah garis lurus pada bidang ditentukan oleh gradien (kemiringan) $m$ dan sebuah titik yang dilaluinya. Jika sebuah garis melalui dua buah titik $P(x_1, y_1)$ dan $Q(x_2, y_2)$ dengan $x_1 \\neq x_2$, gradien $m$ didefinisikan sebagai rasio perubahan komponen vertikal terhadap horizontal:\n$$ m = \\frac{\\Delta y}{\\Delta x} = \\frac{y_2 - y_1}{x_2 - x_1} $$\nPersamaan garis lurus dengan gradien $m$ yang melalui titik $(x_1, y_1)$ adalah:\n$$ y - y_1 = m(x - x_1) $$\n:::\n\n:::formula {ref=\"ko-ma1101-ch00-straight-lines-form\"}\nMisalkan dua buah garis lurus memiliki gradien masing-masing $m_1$ dan $m_2$. Hubungan geometris kedua garis tersebut ditentukan oleh nilai gradiennya:\n1. Garis Sejajar: Kedua garis sejajar jika dan hanya jika kemiringannya sama:\n$$ m_1 = m_2 $$\n2. Garis Saling Tegak Lurus: Kedua garis saling tegak lurus jika dan hanya jika hasil kali kedua gradiennya adalah $-1$:\n$$ m_1 \\cdot m_2 = -1 $$\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $m_1$ | Gradien garis pertama |\n| $m_2$ | Gradien garis kedua |\n:::\n\nSelain garis lurus, kita juga mempelajari bentuk-bentuk lengkung simetris yang dikenal sebagai irisan kerucut dasar.\n\n:::formula {ref=\"ko-ma1101-ch00-conic-sections-form\"}\nIrisan kerucut sederhana meliputi lingkaran, elips, dan hiperbola.\n1. Lingkaran yang berpusat di titik $(p, q)$ dengan jari-jari $r > 0$ memiliki persamaan standar:\n$$ (x - p)^2 + (y - q)^2 = r^2 $$\n2. Elips yang berpusat di titik $(p, q)$ dengan setengah sumbu horizontal $a > 0$ dan setengah sumbu vertikal $b > 0$ memiliki persamaan standar:\n$$ \\frac{(x - p)^2}{a^2} + \\frac{(y - q)^2}{b^2} = 1 $$\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $p, q$ | Koordinat titik pusat $(p, q)$ |\n| $r$ | Jari-jari lingkaran ($r > 0$) |\n| $a$ | Setengah panjang sumbu horizontal elips |\n| $b$ | Setengah panjang sumbu vertikal elips |\n:::\n\n---\n\n## 5. Teori Dasar Fungsi dan Grafiknya\n\nFungsi adalah konsep sentral kalkulus yang memetakan hubungan ketergantungan antar-peubah.\n\n:::definition {ref=\"ko-ma1101-ch00-function-basics-def\"}\nMisalkan $D$ dan $Y$ adalah dua buah himpunan bagian dari bilangan real yang tidak kosong. Fungsi $f$ dari $D$ ke $Y$ adalah suatu aturan yang memasangkan setiap elemen $x \\in D$ dengan tepat satu elemen $y \\in Y$, dituliskan sebagai $y = f(x)$.\nHimpunan $D$ disebut sebagai daerah asal (domain) fungsi, dinotasikan dengan $D_f$.\nHimpunan semua nilai $f(x)$ untuk $x \\in D$ disebut sebagai daerah nilai (range) fungsi, dinotasikan dengan $R_f$.\n:::\n\n:::formula {ref=\"ko-ma1101-ch00-function-basics-form\"}\nFungsi real $f(x)$ dapat diklasifikasikan berdasarkan simetri grafiknya:\n1. Fungsi Genap: Fungsi $f(x)$ disebut fungsi genap jika untuk setiap $x$ di domainnya berlaku:\n$$ f(-x) = f(x) $$\nGrafik fungsi genap simetris terhadap sumbu-$y$.\n2. Fungsi Ganjil: Fungsi $f(x)$ disebut fungsi ganjil jika untuk setiap $x$ di domainnya berlaku:\n$$ f(-x) = -f(x) $$\nGrafik fungsi ganjil simetris terhadap titik asal $O(0,0)$.\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $f(x)$ | Nilai fungsi pada peubah $x$ |\n| $x$ | Variabel bebas dalam domain |\n:::\n\nKita juga dapat mengoperasikan beberapa fungsi menggunakan aturan aljabar biasa atau menyusun fungsi berantai (komposisi).\n\n:::definition {ref=\"ko-ma1101-ch00-function-operations-def\"}\nMisalkan terdapat dua buah fungsi $f(x)$ dan $g(x)$ dengan domain masing-masing $D_f$ dan $D_g$. Operasi aljabar penjumlahan, pengurangan, perkalian, dan pembagian didefinisikan dengan domain berupa irisan $D_f \\cap D_g$.\nSelain itu, fungsi komposisi $f \\circ g$ didefinisikan sebagai:\n$$ (f \\circ g)(x) = f(g(x)) $$\nDomain dari fungsi komposisi $f \\circ g$, dinotasikan $D_{f \\circ g}$, adalah himpunan semua titik $x \\in D_g$ sedemikian rupa sehingga nilai $g(x) \\in D_f$.\n:::\n\nPemahaman tentang perubahan grafik akibat perubahan konstanta fungsi sangat mempermudah penggambaran grafik secara cepat tanpa harus memetakan titik demi titik.\n\n:::formula {ref=\"ko-ma1101-ch00-graphic-transformations-form\"}\nDiberikan grafik fungsi asal $y = f(x)$ dan konstanta pergeseran $k > 0$. Aturan transformasi grafik adalah sebagai berikut:\n1. Pergeseran Vertikal: Grafik $y = f(x) + k$ menggeser grafik asal sejauh $k$ ke atas, sedangkan $y = f(x) - k$ menggeser sejauh $k$ ke bawah.\n2. Pergeseran Horizontal: Grafik $y = f(x - k)$ menggeser grafik asal sejauh $k$ ke kanan, sedangkan $y = f(x + k)$ menggeser sejauh $k$ ke kiri.\n3. Pencerminan: Grafik $y = -f(x)$ adalah pencerminan terhadap sumbu-$x$, sedangkan $y = f(-x)$ adalah pencerminan terhadap sumbu-$y$.\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $f(x)$ | Fungsi asal |\n| $k$ | Peubah konstanta pergeseran ($k > 0$) |\n:::\n\n:::engineering_insight {discipline=\"general\" title=\"Rekayasa Sipil dan Struktur\"}\nKonsep pergeseran dan transformasi grafik fungsi sering digunakan untuk memodelkan beban distribusi pada jembatan atau struktur elastis. Pembebanan yang bergeser sepanjang bentang jembatan dimodelkan sebagai pergeseran horizontal fungsi beban $w(x - k)$, di mana $k$ menyatakan posisi beban bergerak dari tumpuan kiri.\n:::\n\n---\n\n## 6. Pengantar Fungsi Trigonometri\n\nFungsi trigonometri memodelkan fenomena periodik yang berulang secara berkala, seperti gelombang, getaran, dan rotasi.\n\n:::definition {ref=\"ko-ma1101-ch00-trigonometric-functions-def\"}\nMisalkan sebuah titik $P(x, y)$ terletak pada lingkaran satuan (lingkaran berjari-jari satu yang berpusat di titik asal $O(0,0)$). Jika $\\theta$ adalah sudut yang dibentuk oleh sumbu-$x$ positif dengan garis hubung $OP$ (dihitung berlawanan arah putaran jarum jam), maka fungsi sinus dan cosinus didefinisikan secara geometris sebagai koordinat titik $P$:\n$$ \\sin \\theta = y \\quad \\text{dan} \\quad \\cos \\theta = x $$\nSatuan sudut $\\theta$ dinyatakan dalam radian, di mana keliling lingkaran satuan penuh setara dengan $2\\pi$ radian.\n:::\n\n:::formula {ref=\"ko-ma1101-ch00-trigonometric-functions-form\"}\nBeberapa rumus identitas fungsi trigonometri utama untuk setiap sudut real $\\theta$ dan $\\gamma$ adalah:\n1. Identitas Pythagoras: $\\sin^2 \\theta + \\cos^2 \\theta = 1$\n2. Identitas Tangen dan Secan: $1 + \\tan^2 \\theta = \\sec^2 \\theta$\n3. Rumus Jumlah Sudut Cosinus: $\\cos(\\theta + \\gamma) = \\cos \\theta \\cos \\gamma - \\sin \\theta \\sin \\gamma$\n4. Rumus Jumlah Sudut Sinus: $\\sin(\\theta + \\gamma) = \\sin \\theta \\cos \\gamma + \\cos \\theta \\sin \\gamma$\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $\\theta$ | Sudut real dalam satuan radian |\n| $\\gamma$ | Sudut real kedua dalam satuan radian |\n:::\n\n---\n\n## 7. Rangkuman Materi Bab 0\n\n:::summary\nPada Bab 0 ini, kita telah mempelajari fondasi dasar matematika kalkulus di Zyx Academy:\n* **Bilangan Real dan Pertaksamaan**: Aturan memanipulasi ketidaksamaan bilangan real, selang terbuka atau tertutup, dan menghindari kesalahan pembagian atau perkalian dengan peubah tak tentu.\n* **Pertaksamaan Rasional dan Akar**: Metode penyelesaian sistematis menggunakan pembuat nol penyebut dan pembilang, uji tanda pada garis bilangan, serta penerapan syarat numerus.\n* **Geometri Analitik**: Rumus jarak Pythagoras, sifat kemiringan garis (gradien) sejajar serta tegak lurus, dan irisan kerucut (lingkaran dan elips).\n* **Fungsi**: Memahami konsep pemetaan, domain, range, simetri fungsi genap atau ganjil, komposisi fungsi aljabar, pergeseran grafik, dan fungsi periodik trigonometri.\n:::\n"
+            "title": "Pertidaksamaan dan Fungsi",
+            "slug": "pertidaksamaan-dan-fungsi",
+            "canonicalMarkdown": "# Bab 1: Pertidaksamaan dan Fungsi\n\n## 1. Sistem Bilangan Real 🔢\n\nUntuk dapat mendalami kalkulus secara menyeluruh, pemahaman dasar mengenai sistem bilangan real menjadi kebutuhan yang mutlak. Bilangan real mencakup semua bilangan desimal yang dapat kita bayangkan, baik desimal yang berhenti, berulang secara teratur, maupun desimal tak teratur yang berjalan tanpa batas. Himpunan semesta dari seluruh bilangan desimal ini disimbolkan dengan notasi khusus $\\mathbb{R}$.\n\nSecara visual-geometris, struktur bilangan real dipetakan sebagai titik-titik diskret kontinu yang memenuhi sebuah garis lurus tanpa celah, yang akrab disebut sebagai garis bilangan real. Garis bilangan ini membantu kita mengonseptualisasikan relasi urutan dan jarak antarbilangan secara spatial.\n\n:::concept {ref=\"ko-ma1101-ch00-bilangan-real-overview\"}\nBilangan real didefinisikan sebagai himpunan bilangan yang dapat dituliskan dalam representasi bentuk desimal. Secara geometri, seluruh anggota himpunan bilangan real dapat digambarkan menempati titik-titik pada suatu garis lurus kontinu yang dinamakan garis bilangan real. Himpunan dari seluruh bilangan real biasa disimbolkan menggunakan huruf kapital khusus $\\mathbb{R}$.\n:::\n\nDi dalam ekosistem bilangan real sendiri, terdapat klasifikasi hierarkis yang memisahkan bilangan berdasarkan karakteristik pembentukan strukturnya. Pemahaman klasifikasi ini mencegah timbulnya kerancuan saat kita membatasi daerah asal atau daerah hasil suatu fungsi aljabar kelak.\n\nKonsep tak hingga ($\\infty$) sering kali disalahpahami sebagai bagian dari bilangan real. Dalam standar analisis matematika Zyx, penting untuk ditekankan bahwa tak hingga hanyalah sebuah visualisasi batas untuk menjelaskan pertumbuhan nilai yang melampaui batas bilangan real mana pun.\n\n:::definition {ref=\"ko-ma1101-ch00-bilangan-real-def\"}\nHimpunan bilangan real $\\mathbb{R}$ terdiri atas beberapa sub-himpunan penting. Pertama, himpunan bilangan asli $\\mathbb{N} = \\{1, 2, 3, \\dots\\}$. Kedua, himpunan bilangan bulat $\\mathbb{Z} = \\{\\dots, -2, -1, 0, 1, 2, \\dots\\}$. Ketiga, himpunan bilangan rasional $\\mathbb{Q} = \\{\\frac{m}{n} \\mid m,n \\in \\mathbb{Z}, n \\neq 0\\}$ yang desimalnya memiliki representasi berulang atau berhenti. Keempat, himpunan bilangan irasional yang merupakan bilangan real yang tidak bisa diubah menjadi pecahan biasa, contohnya $\\sqrt{2}$ dan $\\pi$. Simbol tak hingga ($\\infty$) dan minus tak hingga ($-\\infty$) bukan merupakan bilangan real, melainkan penunjuk perilaku nilai tanpa batas.\n:::\n\nSebagai contoh penting pembuktian eksistensi bilangan irasional, mari kita buktikan mengapa nilai $\\sqrt{2}$ tidak akan pernah bisa dinyatakan dalam bentuk rasio pecahan biasa $\\frac{a}{b}$.\n\n1. **Pengandaian Kontradiksi**: Andaikan $\\sqrt{2}$ adalah bilangan rasional. Maka ia dapat ditulis sebagai $\\sqrt{2} = \\frac{a}{b}$ di mana $a$ dan $b$ adalah bilangan bulat yang tidak memiliki faktor persekutuan selain 1 (bentuk pecahan paling sederhana).\n2. **Manipulasi Aljabar**: Kuadratkan kedua ruas persamaan untuk mendapatkan $2 = \\frac{a^2}{b^2}$, yang setara dengan $a^2 = 2b^2$. Karena $a^2$ merupakan kelipatan 2, maka $a^2$ adalah bilangan genap, yang secara otomatis memaksa $a$ juga merupakan bilangan genap.\n3. **Substitusi Nilai Genap**: Misalkan $a = 2k$ untuk suatu bilangan bulat $k$. Substitusi nilai ini ke persamaan awal menghasilkan $(2k)^2 = 2b^2 \\implies 4k^2 = 2b^2 \\implies b^2 = 2k^2$. Hubungan ini menunjukkan bahwa $b^2$ juga merupakan bilangan genap, sehingga $b$ haruslah genap.\n4. **Kontradiksi Akhir**: Jika $a$ dan $b$ keduanya genap, berarti mereka memiliki faktor persekutuan berupa 2. Hal ini bertentangan secara diametral dengan asumsi awal bahwa pecahan $\\frac{a}{b}$ sudah berada dalam bentuk paling sederhana. Dengan demikian, pengandaian runtuh dan terbukti bahwa $\\sqrt{2}$ adalah bilangan irasional.\n\n---\n\n## 2. Operator Relasional dan Selang Bilangan 📊\n\nUrutan posisi titik pada garis bilangan real diatur menggunakan operator relasional standar. Tanda-tanda ketaksamaan ini mendikte bagaimana kuantitas-kuantitas real saling berinteraksi saat dikenai operasi aritmetika dasar seperti penjumlahan dan perkalian.\n\nSaat memanipulasi pertidaksamaan, ketelitian arah tanda menjadi fokus krusial. Salah satu perangkap klasik mahasiswa adalah lupa membalik arah tanda pertidaksamaan ketika mengalikan atau membagi kedua ruas dengan kuantitas negatif.\n\n:::formula {ref=\"ko-ma1101-ch00-pertaksamaan-form\"}\nJika $a$, $b$, dan $c$ merupakan bilangan real, berlaku aturan-aturan operasional aljabar pertidaksamaan sebagai berikut:\n1. Sifat penjumlahan: $a < b \\implies a + c < b + c$.\n2. Sifat pengurangan: $a < b \\implies a - c < b - c$.\n3. Sifat perkalian positif: jika $c > 0$, maka $a < b \\implies ac < bc$.\n4. Sifat perkalian negatif: jika $c < 0$, maka $a < b \\implies bc < ac$ (arah tanda berbalik). Kasus khusus: $a < b \\implies -b < -a$.\n5. Sifat kebalikan nilai: jika $a$ dan $b$ keduanya bernilai positif atau keduanya negatif, maka $a < b \\implies \\frac{1}{b} < \\frac{1}{a}$.\n\n| Variabel | Keterangan |\n| :--- | :--- |\n| $a$ | Bilangan real pertama |\n| $b$ | Bilangan real kedua |\n| $c$ | Bilangan real pengali atau penambah |\n:::\n\nKumpulan atau himpunan titik-titik yang memenuhi suatu kondisi ketaksamaan tertentu biasanya diekspresikan dalam bentuk selang atau interval bilangan. Penulisan notasi selang ini harus dipahami secara presisi agar tidak tertukar antara batas terbuka dan batas tertutup.\n\nBatas terbuka disimbolkan dengan kurung biasa dan digambarkan dengan lingkaran berlubang kosong, sedangkan batas tertutup menggunakan kurung siku dan digambarkan dengan lingkaran penuh.\n\n:::definition {ref=\"ko-ma1101-ch00-selang-def\"}\nInterval atau selang didefinisikan sebagai suatu himpunan bagian dari bilangan real $\\mathbb{R}$ yang memuat minimal dua buah anggota dan mencakup semua bilangan real yang terletak di antara komponen batas-batasnya. Interval dibagi menjadi dua kategori utama, yaitu:\n1. Interval terbatas (*finite*), seperti selang terbuka $(a,b) = \\{x \\mid a < x < b\\}$ dan selang tertutup $[a,b] = \\{x \\mid a \\le x \\le b\\}$.\n2. Interval tak terbatas (*infinite*), seperti selang terbuka tak hingga $(a, \\infty) = \\{x \\mid x > a\\}$ dan seluruh garis real $(-\\infty, \\infty) = \\mathbb{R}$.\n:::\n\n---\n\n## 3. Polinom dan Teorema Faktorisasi 📐\n\nPolinom atau suku banyak merupakan fungsi aljabar yang tersusun atas kombinasi variabel berpangkat bulat tak negatif dengan koefisien-koefisien real. Menemukan nilai pembuat nol dari suatu polinom adalah fondasi utama untuk memecahkan masalah pertidaksamaan tak linear.\n\nDerajat dari suatu polinom ditentukan oleh pangkat tertinggi dari variabelnya. Polinom berderajat satu disebut linear, berderajat dua disebut kuadrat, dan seterusnya.\n\n:::definition {ref=\"ko-ma1101-ch00-polinom-def\"}\nBentuk umum dari suatu fungsi polinom atau suku banyak didefinisikan secara matematis sebagai $P(x) = a_0 + a_1x + a_2x^2 + \\dots + a_nx^n$. Nilai-nilai konstanta real $a_0, a_1, \\dots, a_n$ disebut sebagai koefisien polinom, sedangkan kuadrat pangkat bilangan bulat positif tertinggi $n$ menyatakan derajat utama dari polinom tersebut dengan ketentuan syarat $a_n \\neq 0$. Nilai bilangan real $r$ didefinisikan sebagai akar dari fungsi polinom $P(x)$ apabila memenuhi kondisi nilai substitusi $P(r) = 0$.\n:::\n\nFungsi kuadrat merupakan jenis polinom yang paling sering muncul dalam aplikasi kalkulus tingkat dasar. Grafiknya membentuk parabola yang arah kecekungan dan titik potongnya terhadap sumbu koordinat diatur oleh nilai koefisien-koefisien pembentuknya.\n\nNilai diskriminan bertindak sebagai indikator detektif untuk mengetahui apakah kurva parabola tersebut memotong sumbu koordinat horizontal atau menggantung bebas di atas/bawah bidang.\n\n:::formula {ref=\"ko-ma1101-ch00-parabola-form\"}\nPolinom derajat dua memiliki bentuk kuadratik umum $P(x) = ax^2 + bx + c$ dengan konstanta $a \\neq 0$. Karakteristik geometris kurva ditentukan oleh:\n1. Koefisien nilai $a$: jika $a > 0$ grafik parabola cekung ke atas, sedangkan jika $a < 0$ grafik parabola cekung ke bawah.\n2. Nilai Diskriminan $D = b^2 - 4ac$: menentukan jumlah pemotongan akar real di mana $D > 0$ menghasilkan dua akar berbeda, $D = 0$ menghasilkan dua akar kembar, dan $D < 0$ berarti tidak ada akar real (polinom bersifat definit). Akar dihitung dengan rumus kuadrat $x = \\frac{-b \\pm \\sqrt{D}}{2a}$ dan koordinat titik puncak parabola berada pada posisi $(\\frac{-b}{2a}, \\frac{-D}{4a})$.\n\n| Simbol | Keterangan |\n| :--- | :--- |\n| $a$ | Koefisien suku kuadrat ($x^2$) |\n| $b$ | Koefisien suku linear ($x$) |\n| $c$ | Konstanta / suku bebas |\n| $D$ | Nilai Diskriminan |\n:::\n\nUntuk polinom berderajat tinggi ($n \\ge 3$), mencari nilai pembuat nol secara langsung sering kali menjadi tantangan tersendiri. Beruntung, terdapat teorema eksistensi yang menjamin bahwa setiap fungsi suku banyak tingkat tinggi selalu bisa diurai ke komponen-komponen penyusun yang lebih mendasar.\n\nMeskipun teorema ini memberikan kepastian analitis bahwa pemfaktoran selalu bisa dicapai, mahasiswa tetap harus melatih insting aljabar mereka lewat metode pembagian suku banyak (seperti metode Horner) untuk menemukan faktor-faktornya secara manual.\n\n:::definition {ref=\"ko-ma1101-ch00-faktorisasi-def\"}\nBerdasarkan Teorema Faktorisasi Polinom, setiap fungsi suku banyak atau polinom yang memiliki nilai derajat pangkat $n \\ge 3$ akan selalu dapat direduksi atau difaktorkan secara matematis atas perkalian dari komponen faktor-faktor linear atau komponen faktor bentuk kuadrat yang bersifat definit. Teorema ini menjamin keberadaan hasil dari proses faktorisasi tersebut untuk mempermudah pengerjaan pertaksamaan tak linear, namun teorema ini tidak memuat instruksi prosedur teknis pengerjaannya.\n:::\n\n---\n\n## 4. Prosedur Penyelesaian Pertidaksamaan Rasional 🧮\n\nPertidaksamaan rasional melibatkan fungsi pecahan aljabar. Kunci utama pengerjaan pertidaksamaan jenis ini adalah kedisiplinan untuk **tidak melakukan perkalian silang variabel** antarruas, sebab tanda variabel yang tidak diketahui nilainya dapat membalikkan arah tanda pertidaksamaan secara ilegal tanpa disadari.\n\nProsedur standar yang aman adalah dengan memindahkan semua fungsi ke satu ruas tunggal hingga menyisakan nilai nol di ruas lainnya, dilanjutkan dengan penyamaan penyebut.\n\n:::concept {ref=\"ko-ma1101-ch00-pertaksamaan-rasional-overview\"}\nPertidaksamaan rasional didefinisikan sebagai suatu pertidaksamaan bentuk pecahan yang memuat fungsi-fungsi polinom pada bagian pembilang dan bagian penyebutnya, dengan struktur bentuk baku $\\frac{A(x)}{B(x)} < \\frac{C(x)}{D(x)}$ di mana tanda $<$ dapat berupa $\\le, >, \\ge$. Tujuan penyelesaiannya adalah menentukan seluruh nilai variabel $x$ real yang memenuhi kondisi pertidaksamaan tersebut. Operasi yang diperbolehkan meliputi penambahan kedua ruas dan perkalian dengan nilai positif, sedangkan perkalian bilangan negatif akan membalik arah tanda relasional.\n:::\n\nMari kita bedah pengerjaan kasus pertidaksamaan rasional pecahan tunggal secara mendalam agar Anda dapat memahami alur logikanya secara runtut.\n\n:::example {ref=\"ko-ma1101-ch00-pertaksamaan-rasional-ex-01\"}\n#### Problem\nSelesaikan pertidaksamaan pecahan rasional berikut dan tentukan wilayah solusinya:\n$$\\frac{x+1}{2-x} \\ge \\frac{x}{x+3}$$\n\n#### Solution\n**Langkah 1**: Tentukan daerah definisi di mana penyebut tidak boleh bernilai nol:\n$$2 - x \\neq 0 \\implies x \\neq 2$$\n$$x + 3 \\neq 0 \\implies x \\neq -3$$\n\n**Langkah 2**: Nol-kan ruas kanan dengan memindahkan suku ke ruas kiri:\n$$\\frac{x+1}{2-x} - \\frac{x}{x+3} \\ge 0$$\n\n**Langkah 3**: Samakan penyebut pecahan aljabar:\n$$\\frac{(x+1)(x+3) - x(2-x)}{(2-x)(x+3)} \\ge 0$$\n\n**Langkah 4**: Sederhanakan fungsi pada pembilang:\n$$\\frac{(x^2 + 4x + 3) - (2x - x^2)}{(2-x)(x+3)} \\ge 0 \\implies \\frac{2x^2 + 2x + 3}{(2-x)(x+3)} \\ge 0$$\nSekarang, mari uji diskriminan dari fungsi pembilang $2x^2 + 2x + 3$:\n$$D = b^2 - 4ac = 2^2 - 4(2)(3) = 4 - 24 = -20$$\nKarena $D < 0$ dan koefisien $a = 2 > 0$, maka pembilang berstatus **definit positif** (nilainya dijamin selalu positif untuk semua nilai $x$ real).\n\n**Langkah 5**: Letakkan nilai kritis penyebut ($x = -3$ dan $x = 2$) pada garis bilangan real. Gunakan lingkaran kosong karena batas penyebut tidak boleh disentuh. Lakukan uji titik untuk mengecek tanda:\n* Wilayah $x < -3$: Hasil pertidaksamaan bernilai negatif ($-$).\n* Wilayah $-3 < x < 2$: Hasil pertidaksamaan bernilai positif ($+$).\n* Wilayah $x > 2$: Hasil pertidaksamaan bernilai negatif ($-$).\n\nKarena pertidaksamaan mencari nilai $\\ge 0$, ambil wilayah bertanda positif.\nJadi, Himpunan Penyelesaiannya adalah: $\\text{HP} = (-3, 2)$.\n:::\n\nPada kasus pertidaksamaan ganda, penyelesaian dicari dengan membagi ekspresi menjadi dua sistem pertidaksamaan mandiri, kemudian mencari irisan (*intersection*) yang memenuhi kedua kondisi tersebut sekaligus.\n\n:::example {ref=\"ko-ma1101-ch00-pertaksamaan-ganda-ex-02\"}\n#### Problem\nTentukan seluruh nilai real $x$ yang memenuhi pertidaksamaan ganda berikut:\n$$2 \\le x^2 - x < 6$$\n\n#### Solution\nSistem di atas bermakna bahwa $2 \\le x^2 - x$ DAN $x^2 - x < 6$ harus terpenuhi bersama-sama.\n\n**Analisis Bagian Pertama**:\n$$2 \\le x^2 - x \\implies x^2 - x - 2 \\ge 0 \\implies (x-2)(x+1) \\ge 0$$\nTitik pembuat nolnya adalah $x = 2$ dan $x = -1$. Uji daerah menghasilkan nilai positif di area luar:\n$$\\text{HP}_1 = (-\\infty, -1] \\cup [2, \\infty)$$\n\n**Analisis Bagian Kedua**:\n$$x^2 - x < 6 \\implies x^2 - x - 6 < 0 \\implies (x-3)(x+2) < 0$$\nTitik pembuat nolnya adalah $x = 3$ dan $x = -2$. Uji daerah menghasilkan nilai negatif di area dalam:\n$$\\text{HP}_2 = (-2, 3)$$\n\n**Irisan Solusi Akhir**:\nMencari wilayah koordinat yang bertumpukan antara $\\text{HP}_1$ dan $\\text{HP}_2$ memberikan solusi final:\n$$\\text{HP} = \\text{HP}_1 \\cap \\text{HP}_2 = (-2, -1] \\cup [2, 3)$$\n:::\n\n---\n\n## 5. Pertidaksamaan Nilai Mutlak dan Bentuk Akar 🛑\n\nKonsep harga mutlak sering kali digambarkan sebagai alat untuk \"mempositifkan\" semua bilangan. Secara matematis-analitis, harga mutlak sebenarnya merupakan fungsi sepotong-sepotong yang mengukur jarak absolut kuantitas terhadap titik acuan.\n\nKarena jarak tidak pernah bernilai negatif, hasil keluar dari operasi nilai mutlak selalu berupa kuantitas non-negatif.\n\n:::definition {ref=\"ko-ma1101-ch00-harga-mutlak-def\"}\nMisalkan $x$ adalah sebuah bilangan real, maka nilai harga mutlak dari variabel $x$ dituliskan dengan simbol $|x|$ dan didefinisikan secara matematis menggunakan fungsi sepotong-sepotong (*piecewise function*) sebagai berikut: $|x| = x$ apabila $x > 0$, dan $|x| = -x$ apabila $x \\le 0$. Secara urutan geometris, nilai $|x|$ mengukur besarnya nilai jarak non-negatif yang membentang antara titik koordinat $x$ terhadap titik koordinat asal $0$ pada garis real. Secara umum, bentuk $|x - y|$ merepresentasikan jarak antara titik $x$ dan titik $y$.\n:::\n\nOperasi aljabar nilai mutlak dipandu oleh teorema-teorema limit batas selang yang rigid. Teorema-teorema ini mengonversi bentuk mutlak yang rumit menjadi bentuk pertidaksamaan linear biasa yang mudah dipecahkan.\n\nPertidaksamaan segitiga merupakan salah satu hukum batas paling fundamental yang menyatakan bahwa deviasi penjumlahan dua elemen tidak akan pernah melampaui jumlah deviasi masing-masing elemennya.\n\n:::formula {ref=\"ko-ma1101-ch00-harga-mutlak-form\"}\nUntuk setiap nilai komponen bilangan real $a, b,$ dan $x$, berlaku hukum teorema harga mutlak sebagai berikut:\n1. Sifat invers tanda: $|-a| = |a|$.\n2. Sifat perkalian: $|ab| = |a||b|$.\n3. Sifat pembagian: $\\left|\\frac{a}{b}\\right| = \\frac{|a|}{|b|}$ dengan penyebut $b \\neq 0$.\n4. Pertaksamaan Segitiga (*Triangle Inequality*): $|a + b| \\le |a| + |b|$.\n5. Hukum batas interval pertidaksamaan mutlak:\n   Jika $a > 0$, maka $|x| \\le a \\iff -a \\le x \\le a$.\n   Jika $a > 0$, maka $|x| \\ge a \\iff x \\le -a \\text{ atau } x \\ge a$.\n\n| Variabel | Deskripsi |\n| :--- | :--- |\n| $a$ | Konstanta batas real |\n| $b$ | Konstanta pembanding real |\n| $x$ | Variabel aljabar |\n:::\n\nSifat non-negatif dari harga mutlak memiliki kemiripan fisis dengan operasi akar kuadrat. Simbol akar kuadrat hanya mengeluarkan nilai positif murni, sehingga memunculkan hubungan identitas yang mengikat kedua operasi tersebut.\n\n:::definition {ref=\"ko-ma1101-ch00-bentuk-akar-def\"}\nMisalkan terdapat variabel bilangan real $x \\ge 0$, operasi akar kuadrat dari bilangan $x$ dinotasikan dengan penulisan simbol $\\sqrt{x}$ dan didefinisikan sebagai suatu bilangan real tak negatif $a$ yang memiliki karakteristik sifat kuadrat $a^2 = x$. Berdasarkan definisi operasional ini, untuk setiap komponen fungsi bilangan real berharga sebarang nilai variabel $x$ (baik positif maupun negatif), akan selalu berlaku identitas hubungan kesamaan absolut berupa $\\sqrt{x^2} = |x|$.\n:::\n\n---\n\n## 6. Sistem Koordinat Kartesius dan Geometri Analitik 🌐\n\nJembatan yang menghubungkan dunia aljabar analitis dengan dunia geometri visual dipelopori oleh sistem koordinat Kartesius. Dua buah garis lurus saling tegak lurus bertindak sebagai pemandu arah navigasi spasial kita di atas bidang datar.\n\nSetiap titik direpresentasikan secara presisi sebagai pasangan terurut yang menunjukkan letak relatifnya terhadap pusat semesta koordinat $(0,0)$.\n\n:::formula {ref=\"ko-ma1101-ch00-jarak-dua-titik-form\"}\nSistem koordinat Kartesius dibentuk oleh perpotongan garis horizontal sumbu $x$ dan garis vertikal sumbu $y$. Setiap titik dinyatakan sebagai pasangan terurut $P(a,b)$ dengan absis $a$ dan ordinat $b$. Jika terdapat dua buah titik koordinat $P(x_1, y_1)$ dan $Q(x_2, y_2)$ pada bidang dua dimensi, berlaku rumus geometris baku berikut:\n1. Jarak lurus murni antara titik $P$ dan titik $Q$ dihitung dengan rumus: $d = \\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$.\n2. Titik tengah (*midpoint*) dari segmen garis yang menghubungkan titik $P$ dan titik $Q$ berada pada koordinat posisi: $M = (\\frac{x_1 + x_2}{2}, \\frac{y_1 + y_2}{2})$.\n\n| Parameter | Makna Geometris |\n| :--- | :--- |\n| $d$ | Jarak Euclidean antar-dua titik |\n| $M$ | Titik tengah pembagi segmen garis |\n:::\n\nGaris lurus merupakan objek geometris paling sederhana pada bidang Kartesius. Karakteristik kemiringan dari garis ini diukur melalui besaran gradien, yang membandingkan delta ketinggian vertikal terhadap pergeseran horizontal.\n\nGradien juga menyimpan informasi mengenai hubungan ortogonalitas antargaris, apakah mereka berjalan beriringan saling sejajar atau berhantaman keras secara tegak lurus.\n\n:::formula {ref=\"ko-ma1101-ch00-garis-lurus-form\"}\nKemiringan atau gradien $m$ dari suatu garis lurus yang menghubungkan titik $P(x_1, y_1)$ dan $Q(x_2, y_2)$ didefinisikan sebagai nilai rasio perubahan vertikal terhadap perubahan horizontal dengan rumus: $m = \\frac{\\Delta y}{\\Delta x} = \\frac{y_2 - y_1}{x_2 - x_1}$. Persamaan garis lurus dapat dinyatakan berdasarkan dua kondisi teknis:\n1. Melalui satu titik $(x_1, y_1)$ dengan nilai gradien kemiringan $m$: $y - y_1 = m(x - x_1)$.\n2. Melalui dua buah titik koordinat $(x_1, y_1)$ dan $(x_2, y_2)$: $\\frac{y - y_1}{y_2 - y_1} = \\frac{x - x_1}{x_2 - x_1}$.\nHubungan dua garis: Dua garis sejajar jika gradiennya sama ($m_1 = m_2$), dan saling tegak lurus jika hasil kalinya bernilai negatif satu ($m_1 \\cdot m_2 = -1$).\n\n| Notasi | Pengertian |\n| :--- | :--- |\n| $m$ | Nilai kemiringan / gradien |\n| $\\Delta x$ | Selisih absis koordinat |\n| $\\Delta y$ | Selisih ordinat koordinat |\n:::\n\nSelain garis lurus, bidang Kartesius mampu menampung kurva-kurva melengkung mulus dari keluarga irasan kerucut. Persamaan bentuk kuadrat ganda variabel mengunci titik-titik koordinat untuk membentuk pola lingkaran, elips, hingga kurva hiperbola.\n\n:::formula {ref=\"ko-ma1101-ch00-kurva-kedua-form\"}\nBentuk formula baku dari kurva geometri dua dimensi pada koordinat Kartesius didefinisikan sebagai berikut:\n1. Persamaan kurva Lingkaran yang berpusat di koordinat $(p,q)$ dengan panjang jari-jari berupa konstanta $r$: $(x - p)^2 + (y - q)^2 = r^2$.\n2. Persamaan kurva Elips yang berpusat di koordinat $(p,q)$ dengan panjang sumbu horizontal $a$ dan sumbu vertikal $b$: $\\frac{(x - p)^2}{a^2} + \\frac{(y - q)^2}{b^2} = 1$.\n3. Persamaan kurva Hiperbola horizontal berpusat di titik asal $(0,0)$ dengan komponen asimtot garis miring $y = \\pm \\frac{b}{a}x$: $\\frac{x^2}{a^2} - \\frac{y^2}{b^2} = 1$. Jika kurva diputar $45^{\\circ}$, bentuk persamaannya menjadi hiperbola siku-siku $xy = k$.\n\n| Parameter Kurva | Deskripsi Geometris |\n| :--- | :--- |\n| $(p, q)$ | Titik pusat simetri kurva |\n| $r$ | Jari-jari lingkaran |\n| $a$ | Setengah panjang sumbu horizontal |\n| $b$ | Setengah panjang sumbu vertikal |\n:::\n\n---\n\n## 7. Konsep Dasar Fungsi dan Operasinya 🔄\n\nSecara filosofis, fungsi memodelkan bagaimana suatu kuantitas di alam berubah akibat pengaruh kuantitas lainnya, seperti titik didih air yang berubah mengikuti ketinggian posisi wilayah. Fungsi menegakkan aturan pemetaan yang disiplin dan konsisten tanpa ada ambiguitas cabang nilai output.\n\nDua pilar utama yang menyangga sebuah fungsi adalah domain (daerah asal input terdefinisi) dan range (daerah nilai output yang dihasilkan).\n\n:::definition {ref=\"ko-ma1101-ch00-fungsi-def\"}\nMisalkan terdapat dua buah himpunan tak kosong yang dinotasikan sebagai himpunan $D$ dan himpunan $Y$. Fungsi dari $D$ ke $Y$ didefinisikan sebagai sebuah aturan matematis baku yang memasangkan setiap elemen $x \\in D$ dengan tepat satu elemen tunggal nilai $y \\in Y$, ditulis dengan notasi rumus $y = f(x)$. Variabel $x$ disebut sebagai peubah bebas dan variabel $y$ disebut peubah tak bebas. Daerah Asal atau Domain dari fungsi $f$ didefinisikan sebagai himpunan $D_f = \\{x \\in D \\mid f(x) \\text{ terdefinisi secara real}\\}$, sedangkan Daerah Nilai atau Range fungsi didefinisikan sebagai himpunan hasil $R_f = \\{y \\in Y \\mid y = f(x), x \\in D\\}$.\n:::\n\nSuatu fungsi dapat memiliki perilaku simetri internal yang mencerminkan keteraturan struktur aljabarnya. Karakteristik simetri ini membagi fungsi ke dalam kelompok fungsi genap dan ganjil.\n\nMengetahui status simetri suatu fungsi sangat membantu efisiensi penggambaran grafik maupun pengerjaan kalkulus integral lanjut pada bab-bab mendatang.\n\n:::definition {ref=\"ko-ma1101-ch00-fungsi-genap-ganjil-def\"}\nSimetri dari kurva grafik fungsi real dapat diidentifikasi melalui sifat fungsi genap dan ganjil berikut:\n1. Sebuah fungsi $f$ diklasifikasikan sebagai fungsi genap apabila memenuhi kondisi rumus aljabar $f(-x) = f(x)$ untuk setiap nilai $x$ di dalam domainnya. Karakteristik kurva grafik fungsi genap adalah memiliki sifat simetri cermin terhadap sumbu $y$.\n2. Sebuah fungsi $f$ diklasifikasikan sebagai fungsi gasal atau fungsi ganjil apabila memenuhi kondisi rumus aljabar $f(-x) = -f(x)$. Karakteristik kurva grafik fungsi ganjil adalah memiliki sifat simetri titik terhadap pusat koordinat asal $(0,0)$.\n:::\n\nFungsi-fungsi mandiri dapat digabungkan membentuk rantai proses operasional yang kontinu lewat sistem fungsi komposisi. Input luar diproses oleh fungsi terdalam, lalu hasilnya dilempar menjadi input baru bagi fungsi terluar.\n\n:::definition {ref=\"ko-ma1101-ch00-fungsi-komposisi-def\"}\nMisalkan terdapat dua buah fungsi real yang masing-masing dinamakan fungsi $f$ dan fungsi $g$. Fungsi komposisi dari fungsi $f$ dengan fungsi $g$ dinotasikan dengan penulisan simbol $f \\circ g$ dan didefinisikan secara operasional melalui aturan rumus: $(f \\circ g)(x) = f(g(x))$. Daerah asal atau domain dari fungsi komposisi $f \\circ g$ didefinisikan sebagai himpunan seluruh titik nilai variabel $x$ yang berada di dalam daerah domain fungsi $g$ ($x \\in D_g$) dengan syarat nilai output pemetaannya harus berada di dalam daerah domain fungsi $f$ ($g(x) \\in D_f$).\n:::\n\n---\n\n## 8. Transformasi Grafik Fungsi 📈\n\nMenggambar grafik fungsi dari nol untuk setiap variasi rumus barunya adalah tindakan yang tidak efisien. Berbekal konsep transformasi, Anda cukup menghafal beberapa grafik fungsi master induk (seperti grafik $y = x^2$), lalu menerapkan operasi pergeseran koordinat.\n\nKonstanta penambah di luar fungsi akan mendongkrak grafik naik/turun, sementara konstanta di dalam argumen variabel akan menyeret grafik ke kanan/kiri.\n\n:::formula {ref=\"ko-ma1101-ch00-transformasi-grafik-form\"}\nDiberikan grafik fungsi real mula-mula $y = f(x)$ dan nilai konstanta pergeseran $k > 0$ serta konstanta peregangan $c > 1$. Berlaku rumus transformasi koordinat grafik fungsi asalnya sebagai berikut:\n1. Pergeseran vertikal: $y = f(x) + k$ menggeser grafik sejauh $k$ ke atas, dan $y = f(x) - k$ menggeser sejauh $k$ ke bawah.\n2. Pergeseran horizontal: $y = f(x - k)$ menggeser grafik sejauh $k$ ke kanan, dan $y = f(x + k)$ menggeser sejauh $k$ ke kiri.\n3. Pencerminan grafik: fungsi $y = -f(x)$ merepresentasikan hasil pencerminan terhadap garis sumbu $x$, sedangkan fungsi $y = f(-x)$ merepresentasikan hasil pencerminan terhadap sumbu $y$.\n\n| Operasi Transformasi | Pengaruh Koordinat Baru |\n| :--- | :--- |\n| $f(x) + k$ | $(x, y + k)$ |\n| $f(x - k)$ | $(x + k, y)$ |\n| $-f(x)$ | $(x, -y)$ |\n| $f(-x)$ | $(-x, y)$ |\n:::\n\n---\n\n## 9. Fungsi Trigonometri dan Identitasnya 🌀\n\nFungsi trigonometri memperluas konsep perbandingan segitiga siku-siku statis menjadi fungsi kontinu periodik berdasar putaran roda lingkaran satuan. Posisi horizontal memetakan nilai kosinus, sedangkan posisi vertikal memetakan nilai sinus.\n\nKarakteristik periodisitas fungsi trigonometri menyebabkan nilainya berulang secara bergelombang setiap putaran penuh $2\\pi$ radian tercapai.\n\n:::formula {ref=\"ko-ma1101-ch00-trigonometri-form\"}\nMisalkan terdapat sudut inklinasi $\\theta$ dalam satuan radian yang dibentuk lingkaran satuan berpusat di $(0,0)$ dengan jari-jari $r=1$. Fungsi trigonometri sinus dan kosinus didefinisikan melalui koordinat titik $P(x,y)$ pada lingkaran tersebut dengan aturan rumus: $\\sin(\\theta) = y$ dan $\\cos(\\theta) = x$. Nilai fungsi ini bersifat periodik dengan periode sebesar $2\\pi$. Berlaku rumus identitas dasar trigonometri yang sangat penting berikut:\n1. Identitas Pythagoras: $\\sin^2(\\theta) + \\cos^2(\\theta) = 1$, dan $1 + \\tan^2(\\theta) = \\sec^2(\\theta)$.\n2. Sifat simetri tanda sudut: $\\sin(-\\theta) = -\\sin(\\theta)$ (fungsi ganjil) dan $\\cos(-\\theta) = \\cos(\\theta)$ (fungsi genap).\n3. Rumus sudut ganda kuadrat: $\\cos^2(\\theta) = \\frac{1}{2} + \\frac{1}{2}\\cos(2\\theta)$ serta $\\sin^2(\\theta) = \\frac{1}{2} - \\frac{1}{2}\\cos(2\\theta)$.\n\n| Komponen | Definisi Fungsi Lingkaran Satuan |\n| :--- | :--- |\n| $\\sin(\\theta)$ | Ketinggian vertikal ordinat $y$ |\n| $\\cos(\\theta)$ | Panjang horizontal absis $x$ |\n| $\\tan(\\theta)$ | Nilai kemiringan tangen $\\frac{y}{x}$ |\n:::"
           }
         ],
         "flashcardSets": [
           {
             "$id": "fset-ma1101-ch00",
-            "title": "Kumpulan Flashcard - Pertaksamaan dan Fungsi",
+            "title": "Flashcards - Pertidaksamaan dan Fungsi",
             "flashcards": [
               {
-                "ko$ref": "ko-ma1101-ch00-real-numbers-def",
-                "front": "Apakah simbol standar yang digunakan untuk merepresentasikan himpunan semua bilangan real?",
-                "back": "$\\mathbb{R}$",
-                "explanation": "Simbol $\\mathbb{R}$ berasal dari kata 'real' dalam bahasa Inggris atau bahasa Jerman."
+                "ko$ref": "ko-ma1101-ch00-bilangan-real-overview",
+                "front": "Apakah simbol tak hingga ($?\\infty$) merupakan anggota dari himpunan bilangan real $\\mathbb{R}$?",
+                "back": "Bukan.",
+                "explanation": "Simbol $\\infty$ dan $-\\infty$ bukan merupakan bilangan real, melainkan hanya sebuah notasi untuk menyatakan kuantitas yang membesar atau mengecil tanpa batas. Di dalam sistem Zyx, setiap bilangan real harus dapat dinyatakan sebagai desimal."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-real-numbers-def",
-                "front": "Bilangan real terdiri dari dua gabungan himpunan bilangan besar, yaitu bilangan rasional dan bilangan...",
-                "back": "irasional",
-                "explanation": "Bilangan rasional dapat ditulis dalam bentuk pecahan $m/n$, sedangkan bilangan irasional tidak dapat dinyatakan demikian."
+                "ko$ref": "ko-ma1101-ch00-bilangan-real-def",
+                "front": "Apa syarat bagi pecahan $\\frac{m}{n}$ agar dapat dikategorikan sebagai bilangan rasional $\\mathbb{Q}$?",
+                "back": "$m, n \\in \\mathbb{Z}$ dan $n \\neq 0$.",
+                "explanation": "Bilangan rasional didefinisikan sebagai pembagian antara dua bilangan bulat ($m$ dan $n$) dengan syarat mutlak bahwa nilai penyebut ($n$) tidak boleh sama dengan nol."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-inequality-properties-form",
-                "front": "Jika $a < b$ dan $c < 0$, bagaimana hubungan pertaksamaan antara $ac$ dan $bc$?",
-                "back": "$ac > bc$",
-                "explanation": "Mengalikan kedua ruas pertaksamaan dengan bilangan negatif akan membalik arah tanda pertaksamaan."
+                "ko$ref": "ko-ma1101-ch00-bilangan-real-def",
+                "front": "Bagaimanakah karakteristik representasi desimal dari fungsi bilangan irasional?",
+                "back": "Desimalnya tidak pernah berhenti dan tidak memiliki pola yang berulang.",
+                "explanation": "Berbeda dengan bilangan rasional yang desimalnya berhenti atau membentuk pola berulang, bilangan irasional memiliki representasi desimal yang terus berlanjut tanpa batas tanpa ada pengulangan pola."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-inequality-properties-form",
-                "front": "Jika $a > 0$, bagaimana tanda dari kebalikannya, yaitu $1/a$?",
-                "back": "Positif ($1/a > 0$)",
-                "explanation": "Kebalikan dari bilangan positif selalu bernilai positif."
+                "ko$ref": "ko-ma1101-ch00-pertaksamaan-form",
+                "front": "Jika $a < b$ dan $c < 0$, bagaimanakah tanda relasionalnya setelah kedua ruas dikalikan dengan bilangan $c$?",
+                "back": "Tanda pertidaksamaan berbalik arah menjadi $ac > bc$.",
+                "explanation": "Sifat dasar aljabar menyatakan bahwa mengalikan atau membagi kedua ruas pertidaksamaan dengan bilangan real bernilai negatif ($c < 0$) wajib mengubah tanda relasional menjadi kebalikannya."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-inequality-properties-mis",
-                "front": "Mengapa kita dilarang mengalikan kedua ruas pertaksamaan $1/x < 2$ langsung dengan variabel $x$?",
-                "back": "Karena tanda $x$ tidak diketahui (bisa positif atau negatif)",
-                "explanation": "Jika $x$ bernilai negatif, arah tanda pertaksamaan harus berbalik. Jika tandanya belum pasti, perkalian langsung tidak boleh dilakukan."
+                "ko$ref": "ko-ma1101-ch00-pertaksamaan-form",
+                "front": "Jika $a$ dan $b$ keduanya positif dan memenuhi $a < b$, bagaimanakah hubungan nilai kebalikan $\\frac{1}{a}$ dan $\\frac{1}{b}$?",
+                "back": "$\\frac{1}{b} < \\frac{1}{a}$",
+                "explanation": "Jika dua buah bilangan real memiliki tanda yang sama (sama-sama positif atau sama-sama negatif), maka membalik nilai kedua bilangan tersebut akan membalik arah tanda pertidaksamaannya."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-intervals-def",
-                "front": "Tuliskan notasi himpunan dari interval terbuka $(a, b)$ untuk variabel real $x$.",
-                "back": "$\\{x \\in \\mathbb{R} \\mid a < x < b\\}$",
-                "explanation": "Interval terbuka tidak menyertakan titik ujung $a$ dan $b$ ke dalam himpunan."
+                "ko$ref": "ko-ma1101-ch00-selang-def",
+                "front": "Apakah komponen titik batas $a$ dan $b$ termasuk dalam anggota dari selang terbuka $(a, b)$?",
+                "back": "Tidak termasuk.",
+                "explanation": "Selang terbuka $(a, b)$ didefinisikan secara matematis sebagai himpunan $\\{x \\mid a < x < b\\}$, sehingga nilai titik batas $a$ dan $b$ dikeluarkan dari keanggotaan selang."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-intervals-def",
-                "front": "Notasi kurung siku $[a, b]$ menyatakan bahwa interval tersebut bersifat...",
-                "back": "tertutup",
-                "explanation": "Interval tertutup menyertakan kedua titik ujung $a$ dan $b$ ke dalam himpunan."
+                "ko$ref": "ko-ma1101-ch00-selang-def",
+                "front": "Tuliskan deskripsi himpunan untuk notasi interval setengah terbuka $[a, b)$!",
+                "back": "$\\{x \\mid a \\le x < b\\}$",
+                "explanation": "Tanda kurung siku $[$ menunjukkan bahwa batas bawah $a$ termasuk ke dalam interval ($\\le$), sedangkan kurung biasa $)$ menunjukkan batas atas $b$ tidak termasuk ($<$)."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-polynomials-def",
-                "front": "Pada polinom $P(x) = a_0 + a_1x + \\dots + a_nx^n$, bilangan bulat $n$ menunjukkan apa?",
-                "back": "Derajat polinom",
-                "explanation": "Derajat polinom adalah pangkat tertinggi dari variabel dengan koefisien tidak nol."
+                "ko$ref": "ko-ma1101-ch00-polinom-def",
+                "front": "Apa syarat koefisien utama $a_n$ pada suatu fungsi polinom berderajat $n$?",
+                "back": "$a_n \\neq 0$",
+                "explanation": "Koefisien utama dari variabel dengan pangkat tertinggi ($n$) tidak boleh bernilai nol agar fungsi suku banyak tersebut tetap terdefinisi sebagai polinom berderajat $n$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-polynomials-form",
-                "front": "Tuliskan rumus diskriminan $D$ untuk polinom kuadrat $ax^2 + bx + c$.",
-                "back": "$D = b^2 - 4ac$",
-                "explanation": "Nilai diskriminan ini menentukan karakteristik dan banyaknya akar real dari polinom kuadrat."
+                "ko$ref": "ko-ma1101-ch00-parabola-form",
+                "front": "Bagaimanakah kecekungan grafik polinom kuadrat $y = ax^2 + bx + c$ jika koefisien $a < 0$?",
+                "back": "Grafik terbuka ke bawah (cekung ke bawah).",
+                "explanation": "Nilai koefisien utama $a$ pada fungsi kuadrat menentukan kecekungan parabola. Jika nilai $a$ negatif, grafik akan cekung ke bawah."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-polynomials-form",
-                "front": "Apa sebutan bagi polinom kuadrat yang tidak memiliki akar real dan selalu bernilai positif untuk semua nilai $x$ real?",
-                "back": "Definit positif",
-                "explanation": "Kondisi definit positif terjadi ketika diskriminan $D < 0$ dan koefisien utama $a > 0$."
+                "ko$ref": "ko-ma1101-ch00-parabola-form",
+                "front": "Berapakah jumlah akar real yang dimiliki oleh persamaan kuadrat jika nilai Diskriminannya $D < 0$?",
+                "back": "Tidak ada akar real (nol).",
+                "explanation": "Ketika nilai $D < 0$, polinom kuadrat tidak memiliki akar real, yang berarti grafik parabolanya bersifat definit dan tidak akan pernah memotong sumbu $x$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-rational-inequalities-overview",
-                "front": "Mengapa metode kali silang dilarang dalam menyelesaikan pertaksamaan rasional?",
-                "back": "Karena penyebut yang dikalikan dapat bernilai negatif dan mengubah tanda pertaksamaan",
-                "explanation": "Cara yang aman adalah memindahkan seluruh suku ke ruas kiri agar ruas kanan menjadi nol, lalu menyamakan penyebut."
+                "ko$ref": "ko-ma1101-ch00-faktorisasi-def",
+                "front": "Menurut Teorema Faktorisasi, setiap polinom berderajat $\\ge 3$ selalu dapat difaktorkan atas faktor linear atau faktor apa?",
+                "back": "Faktor kuadrat definit.",
+                "explanation": "Teorema faktorisasi menjamin bahwa polinom derajat tinggi selalu dapat direduksi menjadi perkalian atas komponen yang lebih sederhana berupa faktor linear atau kuadrat definit."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-rational-inequalities-ex-01",
-                "front": "Sebutkan syarat daerah definisi (domain) penyebut dari pertaksamaan $\\frac{x+1}{2-x} \\ge \\frac{x}{x+3}$.",
-                "back": "$x \\neq 2$ dan $x \\neq -3$",
-                "explanation": "Penyebut pecahan tidak boleh bernilai nol agar ekspresi matematika tersebut terdefinisi."
+                "ko$ref": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
+                "front": "Mengapa nilai fungsi penyebut pada pertidaksamaan rasional tidak boleh sama dengan nol?",
+                "back": "Sebab pembagian dengan nilai nol menghasilkan nilai yang tidak terdefinisi.",
+                "explanation": "Dalam matematika Zyx, pembagian dengan nilai nol tidak terdefinisi, sehingga titik pembuat nol dari penyebut wajib dikeluarkan dari daerah definisi solusi."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-absolute-value-def",
-                "front": "Secara geometri pada garis bilangan real, $|x-y|$ merepresentasikan apa?",
-                "back": "Jarak antara titik $x$ dan titik $y$",
-                "explanation": "Nilai mutlak selalu bernilai tak negatif karena merepresentasikan konsep jarak."
+                "ko$ref": "ko-ma1101-ch00-harga-mutlak-def",
+                "front": "Tuliskan definisi aljabar dari harga mutlak $|x|$ khusus untuk kondisi nilai $x \\le 0$!",
+                "back": "$|x| = -x$",
+                "explanation": "Berdasarkan definisi fungsi sepotong-sepotong (*piecewise*), jika nilai variabel di dalam tanda mutlak bernilai negatif atau nol, kita wajib mengalikannya dengan $-1$ (menjadi $-x$) agar hasil akhirnya berupa nilai non-negatif."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-absolute-value-form",
-                "front": "Untuk $a \\ge 0$, tuliskan bentuk setara dari pertaksamaan $|x| \\le a$ tanpa menggunakan nilai mutlak.",
-                "back": "$-a \\le x \\le a$",
-                "explanation": "Sifat ini menyatakan bahwa jarak titik $x$ dari titik asal kurang dari atau sama dengan $a$."
+                "ko$ref": "ko-ma1101-ch00-harga-mutlak-def",
+                "front": "Secara geometri analitik, apakah arti dari notasi harga mutlak $|x - y|$?",
+                "back": "Jarak antara titik $x$ dan titik $y$ pada garis bilangan.",
+                "explanation": "Operasi pengurangan yang berada di dalam tanda mutlak menyatakan besarnya nilai jarak geometris murni antara kedua posisi titik tersebut pada garis real."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-absolute-value-form",
-                "front": "Tuliskan pertaksamaan segitiga untuk nilai mutlak dari penjumlahan $a + b$.",
+                "ko$ref": "ko-ma1101-ch00-harga-mutlak-form",
+                "front": "Tuliskan rumus pertidaksamaan segitiga (*triangle inequality*) pada nilai mutlak!",
                 "back": "$|a + b| \\le |a| + |b|$",
-                "explanation": "Nilai mutlak dari penjumlahan dua bilangan selalu kurang dari atau sama dengan jumlah nilai mutlak masing-masing bilangan."
+                "explanation": "Pertidaksamaan ini menyatakan bahwa nilai mutlak dari penjumlahan dua bilangan akan selalu bernilai lebih kecil atau sama dengan jumlah dari masing-masing nilai mutlak komponennya."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-irrational-inequalities-def",
-                "front": "Apa nama syarat yang mewajibkan ekspresi di dalam tanda akar $\\sqrt{x}$ bernilai tak negatif?",
-                "back": "Syarat numerus",
-                "explanation": "Ekspresi di bawah tanda akar kuadrat harus $\\ge 0$ agar menghasilkan nilai bilangan real."
+                "ko$ref": "ko-ma1101-ch00-harga-mutlak-form",
+                "front": "Jika konstanta $a > 0$, bagaimanakah bentuk ekuivalen tanpa mutlak dari pertidaksamaan $|x| \\le a$?",
+                "back": "$-a \\le x \\le a$",
+                "explanation": "Berdasarkan teorema batas harga mutlak, jarak titik $x$ yang kurang dari atau sama dengan $a$ menempatkan posisi $x$ di antara wilayah $-a$ hingga $a$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-irrational-inequalities-ex-01",
-                "front": "Berapakah batas nilai $x$ dari syarat numerus pertaksamaan $\\sqrt{x-1} < 1$?",
-                "back": "$x \\ge 1$",
-                "explanation": "Agar bentuk akar terdefinisi, ekspresi di dalam akar harus tak negatif: $x - 1 \\ge 0 \\implies x \\ge 1$."
+                "ko$ref": "ko-ma1101-ch00-bentuk-akar-def",
+                "front": "Apakah bentuk tunggal penyederhanaan yang setara dengan ekspresi $\\sqrt{x^2}$?",
+                "back": "$|x|$",
+                "explanation": "Karena operasi akar kuadrat hanya mendefinisikan nilai keluaran berupa bilangan tak negatif, maka bentuk $\\sqrt{x^2}$ dituliskannya setara dengan harga mutlak $|x|$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-cartesian-coordinates-def",
-                "front": "Pada titik koordinat Kartesius $P(a, b)$, komponen $b$ disebut sebagai...",
-                "back": "ordinat",
-                "explanation": "Sedangkan komponen $a$ disebut sebagai absis."
+                "ko$ref": "ko-ma1101-ch00-jarak-dua-titik-form",
+                "front": "Apa nama komponen vertikal $b$ pada pasangan terurut sistem koordinat Kartesius $P(a, b)$?",
+                "back": "Ordinat.",
+                "explanation": "Pada bidang koordinat persegi panjang Kartesius, komponen horizontal $a$ dinamakan sebagai absis, sedangkan komponen vertikal $b$ dinamakan sebagai ordinat."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-cartesian-coordinates-form",
-                "front": "Tuliskan rumus jarak $d(P, Q)$ antara titik $P(a, b)$ dan $Q(c, d)$ pada bidang Kartesius.",
-                "back": "$d(P, Q) = \\sqrt{(c - a)^2 + (d - b)^2}$",
-                "explanation": "Rumus ini diturunkan langsung menggunakan teorema Pythagoras."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-straight-lines-def",
-                "front": "Tuliskan persamaan garis lurus dengan gradien $m$ yang melalui titik $(x_1, y_1)$.",
-                "back": "$y - y_1 = m(x - x_1)$",
-                "explanation": "Ini dikenal sebagai persamaan garis lurus bentuk titik-kemiringan (point-slope form)."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-conic-sections-form",
-                "front": "Tuliskan persamaan standar lingkaran yang berpusat di titik $(p, q)$ dengan jari-jari $r$.",
-                "back": "$(x - p)^2 + (y - q)^2 = r^2$",
-                "explanation": "Persamaan ini diturunkan dari definisi lingkaran sebagai himpunan semua titik berjarak $r$ dari pusat $(p, q)$."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-straight-lines-form",
-                "front": "Bagaimana hubungan antara gradien $m_1$ dan $m_2$ dari dua garis lurus yang saling tegak lurus?",
+                "ko$ref": "ko-ma1101-ch00-garis-lurus-form",
+                "front": "Bagaimanakah hubungan nilai gradien kemiringan $m_1$ dan $m_2$ dari dua buah garis lurus yang saling tegak lurus?",
                 "back": "$m_1 \\cdot m_2 = -1$",
-                "explanation": "Gradien garis yang satu merupakan kebalikan negatif dari gradien garis yang lainnya."
+                "explanation": "Dua buah garis lurus pada bidang Kartesius dikatakan saling tegak lurus jika dan hanya jika hasil perkalian dari kedua nilai gradiennya bernilai sama dengan $-1$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-function-basics-def",
-                "front": "Apakah istilah untuk himpunan semua nilai keluaran $f(x)$ dari suatu fungsi?",
-                "back": "Daerah nilai (range)",
-                "explanation": "Daerah nilai dinotasikan dengan $R_f$, sedangkan himpunan nilai masukan disebut daerah asal (domain)."
+                "ko$ref": "ko-ma1101-ch00-fungsi-def",
+                "front": "Bolehkah sebuah elemen input $x$ pada daerah domain dipasangkan dengan dua elemen berbeda di daerah kawan pada aturan fungsi?",
+                "back": "Tidak boleh.",
+                "explanation": "Berdasarkan definisi formal, aturan fungsi secara ketat menetapkan bahwa setiap satu elemen $x \\in D$ harus dipasangkan dengan tepat satu elemen tunggal nilai $y \\in Y$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-function-basics-form",
-                "front": "Fungsi ganjil memiliki grafik yang simetris terhadap...",
-                "back": "titik asal $O(0,0)$",
-                "explanation": "Secara aljabar, fungsi ganjil memenuhi hubungan $f(-x) = -f(x)$."
+                "ko$ref": "ko-ma1101-ch00-fungsi-genap-ganjil-def",
+                "front": "Grafik fungsi jenis apakah yang memiliki karakteristik bentuk simetri cermin terhadap garis sumbu $y$?",
+                "back": "Fungsi genap.",
+                "explanation": "Fungsi genap didefinisikan melalui pemenuhan rumus $f(-x) = f(x)$, yang berakibat bentuk visual grafik di ruas kiri dan kanan sumbu $y$ adalah simetris sempurna."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-function-basics-form",
-                "front": "Fungsi genap memenuhi persamaan aljabar apa?",
-                "back": "$f(-x) = f(x)$",
-                "explanation": "Grafik fungsi genap selalu simetris terhadap sumbu-$y$."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-function-operations-def",
-                "front": "Tuliskan aturan definisi dari fungsi komposisi $(f \\circ g)(x)$.",
+                "ko$ref": "ko-ma1101-ch00-fungsi-komposisi-def",
+                "front": "Tuliskan formulasi aturan definisi untuk fungsi komposisi $(f \\circ g)(x)$!",
                 "back": "$f(g(x))$",
-                "explanation": "Fungsi komposisi ini menyuapkan keluaran dari fungsi $g(x)$ sebagai masukan untuk fungsi $f$."
+                "explanation": "Fungsi komposisi bekerja secara berurutan dengan cara memasukkan seluruh fungsi hasil nilai pemetaan $g(x)$ ke dalam fungsi utama $f$."
               },
               {
-                "ko$ref": "ko-ma1101-ch00-graphic-transformations-form",
-                "front": "Grafik $y = f(x - k)$ dengan $k > 0$ merupakan hasil pergeseran grafik $y = f(x)$ sejauh $k$ ke arah...",
-                "back": "kanan",
-                "explanation": "Pengurangan konstan pada variabel masukan $x$ menggeser grafik secara horizontal ke kanan."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-graphic-transformations-form",
-                "front": "Bagaimana cara melakukan pencerminan grafik fungsi $y = f(x)$ terhadap sumbu-$x$?",
-                "back": "Mengubah fungsi menjadi $y = -f(x)$",
-                "explanation": "Mengalikan seluruh keluaran fungsi dengan $-1$ akan membalikkan grafik secara vertikal."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-trigonometric-functions-def",
-                "front": "Pada lingkaran satuan, ordinat (koordinat $y$) dari titik ujung sudut $\\theta$ mendefinisikan fungsi...",
-                "back": "sinus ($\\sin \\theta$)",
-                "explanation": "Sedangkan absis (koordinat $x$) mendefinisikan fungsi cosinus ($\\cos \\theta$)."
-              },
-              {
-                "ko$ref": "ko-ma1101-ch00-trigonometric-functions-form",
-                "front": "Tuliskan identitas Pythagoras paling mendasar yang menghubungkan fungsi sinus dan cosinus.",
-                "back": "$\\sin^2 \\theta + \\cos^2 \\theta = 1$",
-                "explanation": "Identitas trigonometri ini berlaku secara umum untuk semua nilai sudut $\\theta$ real."
+                "ko$ref": "ko-ma1101-ch00-trigonometri-form",
+                "front": "Apakah fungsi trigonometri kosinus $\\cos(\\theta)$ termasuk ke dalam kategori fungsi genap atau fungsi ganjil?",
+                "back": "Fungsi genap.",
+                "explanation": "Fungsi kosinus dikategorikan sebagai fungsi genap karena memenuhi identitas kesamaan $\\cos(-\\theta) = \\cos(\\theta)$, sehingga grafiknya simetris terhadap sumbu vertikal."
               }
             ]
           }
@@ -694,144 +620,132 @@
     ],
     "knowledgeRelationships": [
       {
-        "sourceKo$ref": "ko-ma1101-ch00-real-numbers-def",
-        "targetKo$ref": "ko-ma1101-ch00-inequality-properties-form",
+        "sourceKo$ref": "ko-ma1101-ch00-bilangan-real-overview",
+        "targetKo$ref": "ko-ma1101-ch00-bilangan-real-def",
+        "type": "extends"
+      },
+      {
+        "sourceKo$ref": "ko-ma1101-ch00-bilangan-real-def",
+        "targetKo$ref": "ko-ma1101-ch00-pertaksamaan-form",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-real-numbers-def",
-        "targetKo$ref": "ko-ma1101-ch00-intervals-def",
+        "sourceKo$ref": "ko-ma1101-ch00-pertaksamaan-form",
+        "targetKo$ref": "ko-ma1101-ch00-selang-def",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-real-numbers-def",
-        "targetKo$ref": "ko-ma1101-ch00-absolute-value-def",
+        "sourceKo$ref": "ko-ma1101-ch00-polinom-def",
+        "targetKo$ref": "ko-ma1101-ch00-parabola-form",
+        "type": "extends"
+      },
+      {
+        "sourceKo$ref": "ko-ma1101-ch00-polinom-def",
+        "targetKo$ref": "ko-ma1101-ch00-faktorisasi-def",
+        "type": "extends"
+      },
+      {
+        "sourceKo$ref": "ko-ma1101-ch00-selang-def",
+        "targetKo$ref": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-real-numbers-def",
-        "targetKo$ref": "ko-ma1101-ch00-cartesian-coordinates-def",
+        "sourceKo$ref": "ko-ma1101-ch00-parabola-form",
+        "targetKo$ref": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-inequality-properties-form",
-        "targetKo$ref": "ko-ma1101-ch00-rational-inequalities-overview",
-        "type": "prerequisite"
+        "sourceKo$ref": "ko-ma1101-ch00-faktorisasi-def",
+        "targetKo$ref": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
+        "type": "related"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-inequality-properties-mis",
-        "targetKo$ref": "ko-ma1101-ch00-inequality-properties-form",
-        "type": "misconception_of"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-intervals-def",
-        "targetKo$ref": "ko-ma1101-ch00-rational-inequalities-ex-01",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-polynomials-def",
-        "targetKo$ref": "ko-ma1101-ch00-polynomials-form",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-polynomials-def",
-        "targetKo$ref": "ko-ma1101-ch00-rational-inequalities-overview",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-polynomials-form",
-        "targetKo$ref": "ko-ma1101-ch00-rational-inequalities-ex-01",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-rational-inequalities-overview",
-        "targetKo$ref": "ko-ma1101-ch00-rational-inequalities-ex-01",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-rational-inequalities-ex-01",
-        "targetKo$ref": "ko-ma1101-ch00-rational-inequalities-overview",
+        "sourceKo$ref": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
+        "targetKo$ref": "ko-ma1101-ch00-pertaksamaan-rasional-ex-01",
         "type": "example_of"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-absolute-value-def",
-        "targetKo$ref": "ko-ma1101-ch00-absolute-value-form",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-absolute-value-form",
-        "targetKo$ref": "ko-ma1101-ch00-irrational-inequalities-def",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-irrational-inequalities-def",
-        "targetKo$ref": "ko-ma1101-ch00-irrational-inequalities-ex-01",
-        "type": "prerequisite"
-      },
-      {
-        "sourceKo$ref": "ko-ma1101-ch00-irrational-inequalities-ex-01",
-        "targetKo$ref": "ko-ma1101-ch00-irrational-inequalities-def",
+        "sourceKo$ref": "ko-ma1101-ch00-pertaksamaan-rasional-overview",
+        "targetKo$ref": "ko-ma1101-ch00-pertaksamaan-ganda-ex-02",
         "type": "example_of"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-cartesian-coordinates-def",
-        "targetKo$ref": "ko-ma1101-ch00-cartesian-coordinates-form",
+        "sourceKo$ref": "ko-ma1101-ch00-bilangan-real-def",
+        "targetKo$ref": "ko-ma1101-ch00-harga-mutlak-def",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-cartesian-coordinates-def",
-        "targetKo$ref": "ko-ma1101-ch00-straight-lines-def",
+        "sourceKo$ref": "ko-ma1101-ch00-harga-mutlak-def",
+        "targetKo$ref": "ko-ma1101-ch00-harga-mutlak-form",
+        "type": "extends"
+      },
+      {
+        "sourceKo$ref": "ko-ma1101-ch00-harga-mutlak-def",
+        "targetKo$ref": "ko-ma1101-ch00-bentuk-akar-def",
+        "type": "related"
+      },
+      {
+        "sourceKo$ref": "ko-ma1101-ch00-jarak-dua-titik-form",
+        "targetKo$ref": "ko-ma1101-ch00-garis-lurus-form",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-straight-lines-def",
-        "targetKo$ref": "ko-ma1101-ch00-straight-lines-form",
+        "sourceKo$ref": "ko-ma1101-ch00-jarak-dua-titik-form",
+        "targetKo$ref": "ko-ma1101-ch00-kurva-kedua-form",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-cartesian-coordinates-form",
-        "targetKo$ref": "ko-ma1101-ch00-conic-sections-form",
+        "sourceKo$ref": "ko-ma1101-ch00-bilangan-real-overview",
+        "targetKo$ref": "ko-ma1101-ch00-fungsi-def",
         "type": "prerequisite"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-function-basics-def",
-        "targetKo$ref": "ko-ma1101-ch00-function-basics-form",
-        "type": "prerequisite"
+        "sourceKo$ref": "ko-ma1101-ch00-fungsi-def",
+        "targetKo$ref": "ko-ma1101-ch00-fungsi-genap-ganjil-def",
+        "type": "extends"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-function-basics-def",
-        "targetKo$ref": "ko-ma1101-ch00-function-operations-def",
-        "type": "prerequisite"
+        "sourceKo$ref": "ko-ma1101-ch00-fungsi-def",
+        "targetKo$ref": "ko-ma1101-ch00-fungsi-komposisi-def",
+        "type": "extends"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-function-basics-def",
-        "targetKo$ref": "ko-ma1101-ch00-graphic-transformations-form",
-        "type": "prerequisite"
+        "sourceKo$ref": "ko-ma1101-ch00-fungsi-def",
+        "targetKo$ref": "ko-ma1101-ch00-transformasi-grafik-form",
+        "type": "related"
       },
       {
-        "sourceKo$ref": "ko-ma1101-ch00-trigonometric-functions-def",
-        "targetKo$ref": "ko-ma1101-ch00-trigonometric-functions-form",
-        "type": "prerequisite"
+        "sourceKo$ref": "ko-ma1101-ch00-fungsi-def",
+        "targetKo$ref": "ko-ma1101-ch00-trigonometri-form",
+        "type": "related"
       }
     ],
     "assessmentSources": [
       {
-        "$id": "asrc-ma1101-tutorial-2022-1",
-        "title": "Tutorial Bab 0: Pendahuluan (2022/2023)",
+        "title": "Tutorial Bab 0 Matematika IA 2023/2024",
         "category": "tutorial",
-        "year": 2022,
+        "year": 2023,
         "semester": 1,
         "chapters": [
-          "ch00"
+          "ch00-ma1101"
         ],
-        "sourceMarkdown": "Tutorial Bab 0 Pendahuluan Matematika IA ITB Tahun 2022/2023. Membahas sistem bilangan real, pertidaksamaan aljabar, pertidaksamaan nilai mutlak, koordinat geometri, persamaan lingkaran, dan konsep dasar fungsi serta transformasi grafiknya.",
+        "sourceMarkdown": "Dokumen ini memuat seluruh rangkaian 29 soal perkuliahan resmi Tutorial Bab 0 Bagian I untuk mata kuliah MA1101 Matematika IA di FMIPA ITB, mencakup telaah konsep, geometri analitik, pemfaktoran, hingga pertidaksamaan lanjut.",
         "assessmentObjects": [
           {
             "questionType": "short_essay",
-            "difficulty": 5,
-            "options": null,
-            "questionMarkdown": "Tentukan himpunan penyelesaian dari pertaksamaan nilai mutlak berikut:\n$$ |2x - 3| \\le 1 $$",
-            "answerMarkdown": "Untuk menyelesaikan pertaksamaan nilai mutlak $|2x - 3| \\le 1$, kita gunakan sifat dasar dari pertaksamaan nilai mutlak:\n$$ |u| \\le a \\iff -a \\le u \\le a $$\n\nDalam kasus ini, ambil $u = 2x - 3$ dan $a = 1$. Maka pertaksamaannya dapat dituliskan kembali menjadi:\n$$ -1 \\le 2x - 3 \\le 1 $$\n\nTambahkan $3$ pada seluruh ruas pertaksamaan:\n$$ -1 + 3 \\le 2x \\le 1 + 3 $$\n$$ 2 \\le 2x \\le 4 $$\n\nBagi seluruh ruas dengan $2$ untuk mendapatkan peubah $x$:\n$$ 1 \\le x \\le 2 $$\n\nHimpunan penyelesaian dari pertaksamaan tersebut dalam notasi interval adalah $[1, 2]$.",
+            "difficulty": 3,
+            "questionMarkdown": "1. Telaah Konsep:\n(a) Jarak antara titik $(x_1, y_1)$ dan $(x_2, y_2)$ adalah __\n(b) Persamaan lingkaran yang berpusat di titik $(a, b)$ dan berjari-jari $r$ adalah __\n(c) Titik tengah dari ruas garis yang menghubungkan $(x_1, y_1)$ dan $(x_2, y_2)$ adalah __\n(d) Misalkan $a \\neq c$. Gradien garis yang melalui titik $(a, b)$ dan $(c, d)$ adalah __\n(e) Garis $y = mx + c$ memotong sumbu-$y$ di titik __\n(f) Penulisan $\\{x \\in \\mathbb{R} : -3 \\le x \\le 5\\}$ dalam notasi interval adalah __\n(g) Jika $x < y$ dan $z < 0$, maka $xz$ __ $yz$\n(h) Jika $x < 0$, maka $|x| = __$\n(i) Jarak dari $x$ ke 6 pada garis bilangan real adalah 5. Nilai $x$ yang mungkin adalah __",
+            "answerMarkdown": "Berikut adalah isian telaah konsep dasar:\n(a) Berdasarkan Pythagoras, jaraknya $\\sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$.\n(b) Persamaan bakunya $(x - a)^2 + (y - b)^2 = r^2$.\n(c) Titik tengah rata-rata adalah $\\left(\\frac{x_1 + x_2}{2}, \\frac{y_1 + y_2}{2}\\right)$.\n(d) Gradien $m = \\frac{d - b}{c - a}$.\n(e) Memotong sumbu-$y$ ketika $x=0$, yaitu pada titik $(0, c)$.\n(f) Dalam notasi selang tertutup, ditulis $[-3, 5]$.\n(g) Perkalian dengan bilangan negatif ($z<0$) membalik tanda, sehingga $xz > yz$.\n(h) Sesuai definisi mutlak untuk nilai negatif, $|x| = -x$.\n(i) Modelkan sebagai $|x - 6| = 5$. Menghasilkan dua solusi: $x - 6 = 5 \\implies x = 11$, atau $x - 6 = -5 \\implies x = 1$.",
+            "pattern": "parameter_analysis",
+            "reasoningType": "conceptual",
+            "estimatedSteps": 1,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 3,
+            "questionMarkdown": "2. Sederhanakan bentuk aritmetika berikut:\n(a) $3(-1(1+5-2)-4)-7$\n(b) $\\frac{\\frac{2}{3}-\\frac{1}{4}}{\\frac{1}{2}+\\frac{2}{5}}$\n(c) $(\\sqrt{7}-\\sqrt{3})^2$",
+            "answerMarkdown": "(a) $1+5-2=4$. Kalikan $-1 \\implies -4$. Lanjut dalam kurung: $-4-4=-8$. Kalikan 3 $\\implies -24$. Terakhir, $-24-7 = -31$.\n(b) Pembilang: $\\frac{2}{3}-\\frac{1}{4} = \\frac{8-3}{12} = \\frac{5}{12}$. Penyebut: $\\frac{1}{2}+\\frac{2}{5} = \\frac{5+4}{10} = \\frac{9}{10}$. Bagikan: $\\frac{5}{12} \\times \\frac{10}{9} = \\frac{50}{108} = \\frac{25}{54}$.\n(c) Ekspansi $(a-b)^2 = a^2 - 2ab + b^2$: $(\\sqrt{7})^2 - 2\\sqrt{7}\\sqrt{3} + (\\sqrt{3})^2 = 7 - 2\\sqrt{21} + 3 = 10 - 2\\sqrt{21}$.",
             "pattern": "direct_computation",
             "reasoningType": "procedural",
             "estimatedSteps": 3,
@@ -839,57 +753,140 @@
           },
           {
             "questionType": "short_essay",
-            "difficulty": 6,
-            "options": null,
-            "questionMarkdown": "Tentukan persamaan lingkaran yang memiliki pusat $(5, -4)$ dan melalui titik $(1, -1)$.",
-            "answerMarkdown": "Persamaan standar lingkaran dengan pusat $(p, q)$ dan jari-jari $r$ didefinisikan sebagai:\n$$ (x - p)^2 + (y - q)^2 = r^2 $$\n\nDiketahui pusat lingkaran berada pada titik $(p, q) = (5, -4)$. Substitusikan titik pusat ini ke dalam persamaan:\n$$ (x - 5)^2 + (y - (-4))^2 = r^2 \\implies (x - 5)^2 + (y + 4)^2 = r^2 $$\n\nKarena lingkaran tersebut melalui titik $(1, -1)$, kita dapat mensubstitusikan koordinat titik ini ke dalam persamaan lingkaran untuk mencari nilai kuadrat jari-jari $r^2$:\n$$ (1 - 5)^2 + (-1 + 4)^2 = r^2 $$\n$$ (-4)^2 + (3)^2 = r^2 $$\n$$ 16 + 9 = r^2 \\implies r^2 = 25 $$\n\nSubstitusikan kembali nilai $r^2 = 25$ ke dalam persamaan standar lingkaran. Persamaan lingkaran yang dicari adalah:\n$$ (x - 5)^2 + (y + 4)^2 = 25 $$",
+            "difficulty": 3,
+            "questionMarkdown": "3. Jabarkan atau sederhanakan bentuk aljabar berikut:\n(a) $(3t-2)^2$\n(b) $(3y+2)^3$\n(c) $\\frac{x^2-x-12}{x-4}$",
+            "answerMarkdown": "(a) $(3t)^2 - 2(3t)(2) + 2^2 = 9t^2 - 12t + 4$.\n(b) Gunakan $(a+b)^3 = a^3 + 3a^2b + 3ab^2 + b^3$: $(3y)^3 + 3(3y)^2(2) + 3(3y)(4) + 8 = 27y^3 + 54y^2 + 36y + 8$.\n(c) Faktorkan pembilang menjadi $(x-4)(x+3)$. Sederhanakan pecahan $\\frac{(x-4)(x+3)}{x-4}$ menjadi $x+3$ dengan syarat $x \\neq 4$.",
             "pattern": "direct_computation",
-            "reasoningType": "conceptual",
-            "estimatedSteps": 3,
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
             "applicationLevel": 1
           },
           {
             "questionType": "short_essay",
-            "difficulty": 7,
-            "options": null,
-            "questionMarkdown": "Tentukan himpunan penyelesaian dari pertaksamaan rasional berikut:\n$$ \\frac{2x + 3}{x + 4} \\le x $$",
-            "answerMarkdown": "Untuk menyelesaikan pertaksamaan rasional, kita dilarang melakukan kali silang langsung karena tanda peubah penyebut tidak diketahui. Pindahkan semua suku ke ruas kiri agar ruas kanan bernilai nol:\n$$ \\frac{2x + 3}{x + 4} - x \\le 0 $$\n\nSamakan penyebut pecahan pada ruas kiri:\n$$ \\frac{2x + 3 - x(x + 4)}{x + 4} \\le 0 \\implies \\frac{2x + 3 - x(x + 4)}{x + 4} \\le 0 $$\n$$ \\frac{-x^2 - 2x + 3}{x + 4} \\le 0 $$\n\nKalikan pembilang dengan $-1$ dan balikkan tanda pertaksamaannya:\n$$ \\frac{x^2 + 2x - 3}{x + 4} \\ge 0 $$\n\nFaktorkan pembilang polinom kuadrat tersebut:\n$$ \\frac{(x + 3)(x - 1)}{x + 4} \\ge 0 $$\n\nSyarat daerah definisi penyebut adalah penyebut tidak boleh nol, sehingga $x \\neq -4$.\nTitik pembuat nol pembilang dan penyebut adalah $x = -4$, $x = -3$, dan $x = 1$. Lakukan uji tanda pada garis bilangan untuk pecahan tersebut:\n- Untuk $x < -4$: nilai pecahan bernilai negatif.\n- Untuk $-4 < x \\le -3$: nilai pecahan bernilai positif.\n- Untuk $-3 \\le x \\le 1$: nilai pecahan bernilai negatif.\n- Untuk $x \\ge 1$: nilai pecahan bernilai positif.\n\nKarena kita mencari nilai $\\ge 0$ (tak negatif), daerah yang memenuhi adalah $-4 < x \\le -3$ atau $x \\ge 1$.\nHimpunan penyelesaiannya adalah $\\text{HP} = (-4, -3] \\cup [1, \\infty)$.",
+            "difficulty": 4,
+            "questionMarkdown": "4. Berikan contoh bilangan real di antara dua bilangan berikut:\n(a) $\\frac{1}{100}$ dan $\\frac{1}{99}$\n(b) $-\\frac{3}{4}$ dan $-\\frac{4}{5}$",
+            "answerMarkdown": "Salah satu cara mencari bilangan di tengah interval adalah menghitung rata-ratanya:\n(a) Nilai tengahnya adalah $\\frac{1}{2}(\\frac{1}{100} + \\frac{1}{99}) = \\frac{1}{2}(\\frac{199}{9900}) = \\frac{199}{19800}$.\n(b) Ubah ke pecahan per 40: $-\\frac{30}{40}$ dan $-\\frac{32}{40}$. Bilangan yang berada di tengahnya adalah $-\\frac{31}{40}$ atau $-0.775$.",
+            "pattern": "parameter_analysis",
+            "reasoningType": "analytical",
+            "estimatedSteps": 2,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "5. Periksa kebenaran pernyataan logika berikut:\n(a) Jika $x < 1$, maka $x^2 < 1$.\n(b) Untuk setiap bilangan real $x$, terdapat $y$ sehingga $x^2 + 1 < y$.\n(c) Terdapat bilangan $y$ sehingga untuk setiap $x$ berlaku $x^2 + 1 \\ge y$.",
+            "answerMarkdown": "(a) **SALAH**. Jika kita ambil nilai $x = -2$ (memenuhi $x < 1$), maka $x^2 = 4$. Di mana $4 > 1$, tidak memenuhi klaim.\n(b) **BENAR**. Karena nilai $x^2 + 1$ selalu berupa bilangan real tertentu (terbatas untuk setiap $x$ individual), kita selalu bisa menunjuk bilangan real $y$ yang lebih besar darinya (contoh: pilih $y = x^2 + 2$).\n(c) **BENAR**. Karena rentang nilai $x^2 \\ge 0$, maka $x^2 + 1 \\ge 1$ untuk semua $x$. Kita bisa memilih konstanta $y = 1$ (atau kurang dari 1) agar ketaksamaan ini selalu berlaku.",
+            "pattern": "proof",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 3,
+            "questionMarkdown": "6. Hitung jarak antara titik $(3,5)$ dan $(-3,3)$ serta tentukan titik tengah ruas garisnya.",
+            "answerMarkdown": "**Jarak Geometris**:\n$$d = \\sqrt{(-3 - 3)^2 + (3 - 5)^2} = \\sqrt{(-6)^2 + (-2)^2} = \\sqrt{36 + 4} = \\sqrt{40} = 2\\sqrt{10}$$\n**Titik Tengah (Midpoint)**:\n$$M = \\left(\\frac{3 + (-3)}{2}, \\frac{5 + 3}{2}\\right) = \\left(0, \\frac{8}{2}\\right) = (0, 4)$$",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "7. Tentukan persamaan lingkaran yang memiliki pusat $(5,-4)$ dan melalui titik $(1,-1)$.",
+            "answerMarkdown": "Kuadrat jari-jari ($r^2$) adalah kuadrat jarak antara titik pusat ke titik pada lingkaran:\n$$r^2 = (1 - 5)^2 + (-1 - (-4))^2$$\n$$r^2 = (-4)^2 + (3)^2 = 16 + 9 = 25$$\nSubstitusikan pusat dan $r^2$ ke bentuk baku persamaan lingkaran:\n$$(x - 5)^2 + (y - (-4))^2 = 25 \\implies (x - 5)^2 + (y + 4)^2 = 25$$",
+            "pattern": "modeling",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "8. Tentukan pusat dan jari-jari lingkaran dari persamaan: $x^2 + 6x + y^2 - 2y + 1 = 0$",
+            "answerMarkdown": "Gunakan metode melengkapkan kuadrat sempurna untuk variabel $x$ dan $y$:\n$$(x^2 + 6x) + (y^2 - 2y) = -1$$\nTambahkan konstanta kuadrat sempurna $(\\frac{b}{2})^2$ pada kedua ruas:\n$$(x^2 + 6x + 9) + (y^2 - 2y + 1) = -1 + 9 + 1$$\n$$(x + 3)^2 + (y - 1)^2 = 9$$\nBerdasarkan persamaan baku, lingkaran memiliki titik pusat $(-3, 1)$ dan panjang jari-jari $r = \\sqrt{9} = 3$.",
             "pattern": "direct_computation",
             "reasoningType": "analytical",
-            "estimatedSteps": 4,
+            "estimatedSteps": 3,
             "applicationLevel": 2
-          }
-        ]
-      },
-      {
-        "$id": "asrc-ma1101-tutorial-2023-1",
-        "title": "Tutorial Bab 0 Bagian 1 (2023/2024)",
-        "category": "tutorial",
-        "year": 2023,
-        "semester": 1,
-        "chapters": [
-          "ch00"
-        ],
-        "sourceMarkdown": "Tutorial Bab 0 Bagian 1 FMIPA ITB Matematika IA Tahun 2023/2024. Membahas sistem koordinat Kartesius, garis lurus, persamaan lingkaran, pertaksamaan, operasi aljabar fungsi, komposisi fungsi, dan sifat-sifat fungsi genap serta ganjil.",
-        "assessmentObjects": [
+          },
           {
             "questionType": "short_essay",
-            "difficulty": 6,
-            "options": null,
-            "questionMarkdown": "Tentukan persamaan garis yang melalui titik $(2, 1)$ dan tegak lurus dengan garis $2x + 3y = 5$.",
-            "answerMarkdown": "Pertama, cari gradien $m_1$ dari garis yang diketahui, yaitu $2x + 3y = 5$ dengan mengubahnya ke bentuk kemiringan-intersep $y = mx + c$:\n$$ 3y = -2x + 5 \\implies y = -\\frac{2}{3}x + \\frac{5}{3} $$\nMaka diperoleh gradien pertama $m_1 = -\\frac{2}{3}$.\n\nKarena garis baru yang dicari saling tegak lurus dengan garis pertama, maka hubungan antara kedua gradiennya memenuhi:\n$$ m_1 \\cdot m_2 = -1 \\implies -\\frac{2}{3} \\cdot m_2 = -1 \\implies m_2 = \\frac{3}{2} $$\n\nPersamaan garis lurus yang memiliki gradien $m_2 = \\frac{3}{2}$ dan melalui titik $(2, 1)$ dapat dicari menggunakan rumus titik-kemiringan:\n$$ y - y_1 = m_2(x - x_1) $$\n$$ y - 1 = \\frac{3}{2}(x - 2) $$\n$$ y - 1 = \\frac{3}{2}x - 3 \\implies y = \\frac{3}{2}x - 2 $$\n\nPersamaan garis baru tersebut juga dapat dituliskan dalam bentuk standar implisit:\n$$ 3x - 2y = 4 $$",
+            "difficulty": 4,
+            "questionMarkdown": "9. Hitung gradien garis yang melalui $(-5,1)$ dan $(0,9)$ lalu tentukan persamaannya.",
+            "answerMarkdown": "Hitung gradien ($m$) terlebih dahulu:\n$$m = \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{9 - 1}{0 - (-5)} = \\frac{8}{5}$$\nGunakan bentuk persamaan titik-gradien dengan salah satu titik, misal $(0,9)$ yang juga bertindak sebagai perpotongan sumbu-$y$ ($c=9$):\n$$y = mx + c \\implies y = \\frac{8}{5}x + 9$$\nAtau dalam bentuk linear implisit (dikalikan 5):\n$$5y = 8x + 45 \\implies 8x - 5y + 45 = 0$$",
+            "pattern": "modeling",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "10. Tentukan persamaan garis yang melalui $(2,1)$ dan tegak lurus dengan garis $2x+3y=5$.",
+            "answerMarkdown": "Cari gradien garis referensi ($m_1$) dengan mengeksplisitkan persamaan $y$:\n$$3y = -2x + 5 \\implies y = -\\frac{2}{3}x + \\frac{5}{3} \\implies m_1 = -\\frac{2}{3}$$\nSyarat tegak lurus adalah $m_1 \\cdot m_2 = -1$, sehingga gradien garis baru adalah $m_2 = \\frac{3}{2}$.\nMasukkan ke persamaan titik-gradien:\n$$y - 1 = \\frac{3}{2}(x - 2)$$\n$$2(y - 1) = 3(x - 2) \\implies 2y - 2 = 3x - 6 \\implies 3x - 2y - 4 = 0$$",
             "pattern": "direct_computation",
-            "reasoningType": "conceptual",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 3,
+            "questionMarkdown": "11. Tentukan gradien dan perpotongan sumbu-sumbu dari garis $6x+y=6$.",
+            "answerMarkdown": "Ubah ke bentuk eksplisit $y = mx + c$:\n$$y = -6x + 6$$\nDari sini kita dapatkan nilai gradien $m = -6$.\n* **Potong Sumbu-$y$** terjadi saat $x=0$, maka $y = 6$. Titiknya adalah $(0, 6)$.\n* **Potong Sumbu-$x$** terjadi saat $y=0$, maka $0 = -6x + 6 \\implies 6x = 6 \\implies x = 1$. Titiknya adalah $(1, 0)$.",
+            "pattern": "graph_interpretation",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "12. Tentukan persamaan linear hubungan suhu Celcius (C) dan Fahrenheit (F) jika diketahui $0^\\circ\\text{C} = 32^\\circ\\text{F}$ dan $100^\\circ\\text{C} = 212^\\circ\\text{F}$. Ubah $100^\\circ\\text{F}$ ke Celcius.",
+            "answerMarkdown": "Kita cari persamaan garis yang melalui koordinat $(F_1, C_1) = (32, 0)$ dan $(F_2, C_2) = (212, 100)$.\nGradien garis: $m = \\frac{100 - 0}{212 - 32} = \\frac{100}{180} = \\frac{5}{9}$.\nPersamaan linear:\n$$C - 0 = \\frac{5}{9}(F - 32) \\implies C = \\frac{5}{9}(F - 32)$$\nJika $F = 100^\\circ\\text{F}$:\n$$C = \\frac{5}{9}(100 - 32) = \\frac{5}{9}(68) = \\frac{340}{9} \\approx 37.78^\\circ\\text{C}$$",
+            "pattern": "modeling",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 3,
+            "questionMarkdown": "13. Tentukan bilangan real $x$ yang memenuhi persamaan: $\\frac{1-x}{2x} + \\frac{1}{9} = 0$",
+            "answerMarkdown": "Pindahkan pecahan konstanta ke ruas kanan:\n$$\\frac{1-x}{2x} = -\\frac{1}{9}$$\nLakukan perkalian silang (karena ini persamaan aljabar tunggal, dengan syarat penyebut $x \\neq 0$):\n$$9(1 - x) = -1(2x)$$\n$$9 - 9x = -2x$$\nPindahkan variabel $x$ ke satu ruas:\n$$9 = 7x \\implies x = \\frac{9}{7}$$\nSolusi tersebut real dan memenuhi syarat penyebut.",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
             "estimatedSteps": 3,
             "applicationLevel": 1
           },
           {
             "questionType": "short_essay",
-            "difficulty": 7,
-            "options": null,
-            "questionMarkdown": "Diberikan fungsi $f(x) = \\sqrt{x-1}$ dan $g(x) = x^2 + 1$. Tentukan daerah asal (domain) dari fungsi komposisi $f \\circ g$.",
-            "answerMarkdown": "Fungsi komposisi $f \\circ g$ didefinisikan secara aljabar sebagai:\n$$ (f \\circ g)(x) = f(g(x)) $$\n\nSubstitusikan aturan fungsi $g(x)$ ke dalam fungsi $f(x)$:\n$$ (f \\circ g)(x) = f(x^2 + 1) = \\sqrt{(x^2 + 1) - 1} = \\sqrt{x^2} = |x| $$\n\nUntuk mencari daerah asal fungsi komposisi $D_{f \\circ g}$, kita gunakan aturan definisi domain komposisi:\n$$ D_{f \\circ g} = \\{x \\in D_g \\mid g(x) \\in D_f\\} $$\n\n1. Daerah asal dari $g(x) = x^2 + 1$ adalah seluruh bilangan real karena merupakan fungsi kuadrat, sehingga $D_g = \\mathbb{R}$.\n2. Daerah asal dari $f(x) = \\sqrt{x-1}$ mensyaratkan ekspresi di bawah tanda akar bernilai tak negatif (syarat numerus):\n$$ x - 1 \\ge 0 \\implies x \\ge 1 \\implies D_f = [1, \\infty) $$\n\n3. Maka syarat agar $g(x) \\in D_f$ adalah:\n$$ g(x) \\ge 1 \\implies x^2 + 1 \\ge 1 \\implies x^2 \\ge 0 $$\nSifat $x^2 \\ge 0$ selalu bernilai benar untuk setiap bilangan real $x \\in \\mathbb{R}$.\n\nHasil irisan dari daerah asal $D_g = \\mathbb{R}$ dan syarat $x^2 \\ge 0$ adalah seluruh bilangan real.\nSehingga, daerah asal dari fungsi komposisi tersebut adalah $D_{f \\circ g} = \\mathbb{R}$.",
-            "pattern": "parameter_analysis",
+            "difficulty": 4,
+            "questionMarkdown": "14. Faktorkan $p(x) = x^3 - x^2 - 20x$, lalu tentukan akar persamaannya.",
+            "answerMarkdown": "Keluarkan variabel persekutuan $x$ terlebih dahulu:\n$$p(x) = x(x^2 - x - 20)$$\nFaktorkan bagian kuadratiknya dengan mencari bilangan yang dikalikan hasilnya $-20$ dan dijumlahkan hasilnya $-1$:\n$$p(x) = x(x - 5)(x + 4)$$\nAkar-akar persamaan $p(x) = 0$ diperoleh dari masing-masing faktor pembuat nol:\n$x = 0$, $x - 5 = 0 \\implies x = 5$, dan $x + 4 = 0 \\implies x = -4$.",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "15. Gunakan rumus ABC untuk menentukan solusi persamaan kuadrat $4x^2 - 5x + 1 = 0$.",
+            "answerMarkdown": "Diketahui komponen $a = 4$, $b = -5$, dan $c = 1$. Hitung nilai diskriminannya:\n$$D = b^2 - 4ac = (-5)^2 - 4(4)(1) = 25 - 16 = 9$$\nKarena $D > 0$, ada dua solusi real berbeda. Terapkan ke rumus kuadratis:\n$$x = \\frac{-b \\pm \\sqrt{D}}{2a} = \\frac{-(-5) \\pm \\sqrt{9}}{2(4)} = \\frac{5 \\pm 3}{8}$$\nMaka, solusi akar-akarnya adalah:\n$$x_1 = \\frac{5+3}{8} = 1 \\quad \\text{dan} \\quad x_2 = \\frac{5-3}{8} = \\frac{2}{8} = \\frac{1}{4}$$",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "16. Diberikan $P(x)=3x^4+4x^2+x$ dan $Q(x)=x^2+2x+5$. Bagilah $P(x)$ dengan $Q(x)$ dan nyatakan sebagai $P(x)=R(x)Q(x)+S(x)$.",
+            "answerMarkdown": "Gunakan algoritma pembagian kurung bersusun panjang (pembagian suku banyak):\n1. $(3x^4 + 4x^2 + x) \\div (x^2 + 2x + 5)$ \n2. Suku pertama hasil bagi: $3x^4 / x^2 = 3x^2$. Kalikan $3x^2$ dengan $Q(x)$ $\\implies 3x^4 + 6x^3 + 15x^2$.\n3. Kurangi $P(x)$: Sisa sementara $=-6x^3 - 11x^2 + x$.\n4. Suku kedua hasil bagi: $-6x^3 / x^2 = -6x$. Kalikan dengan $Q(x)$ $\\implies -6x^3 - 12x^2 - 30x$.\n5. Kurangi sisa: $(-11x^2 - (-12x^2)) + (x - (-30x)) = x^2 + 31x$.\n6. Suku ketiga hasil bagi: $x^2 / x^2 = 1$. Kalikan dengan $Q(x)$ $\\implies x^2 + 2x + 5$.\n7. Kurangi sisa akhir: $(31x - 2x) + (0 - 5) = 29x - 5$.\n\nMaka, Fungsi Hasil Bagi $R(x) = 3x^2 - 6x + 1$ dan Sisa Pembagian $S(x) = 29x - 5$.",
+            "pattern": "direct_computation",
             "reasoningType": "analytical",
             "estimatedSteps": 4,
             "applicationLevel": 2
@@ -897,13 +894,202 @@
           {
             "questionType": "short_essay",
             "difficulty": 4,
-            "options": null,
-            "questionMarkdown": "Periksa kebenaran dari pernyataan implikasi berikut: Jika $x < 1$, maka $x^2 < 1$.",
-            "answerMarkdown": "Pernyataan tersebut bernilai **salah**.\n\nUntuk membuktikannya, kita dapat mencari contoh penyangkal (counterexample). Misalkan kita memilih nilai $x = -2$. Nilai ini memenuhi premis awal karena:\n$$ -2 < 1 $$\n\nNamun, kuadrat dari nilai tersebut adalah:\n$$ x^2 = (-2)^2 = 4 $$\nNilai $4$ jelas tidak kurang dari $1$ ($4 \\nless 1$), sehingga kesimpulan $x^2 < 1$ bernilai salah.\n\nSecara umum, implikasi tersebut hanya bernilai benar jika kita membatasi domain $x$ pada selang $(-1, 1)$. Untuk setiap $x < -1$, nilai $x^2$ selalu bernilai lebih besar dari $1$.",
-            "pattern": "proof",
-            "reasoningType": "conceptual",
+            "questionMarkdown": "17. Sketsa grafik persamaan: (a) $y = 4x - x^2$ dan (b) $x^2 + y^2 = 9x + 16y$.",
+            "answerMarkdown": "(a) $y = -x^2 + 4x$. Ini adalah parabola dengan koefisien kuadrat negatif, sehingga grafiknya cekung terbuka ke bawah. Memotong sumbu-$x$ di $x(4-x)=0 \\implies x=0$ dan $x=4$. Koordinat puncaknya ada di $(\\frac{-4}{-2}, f(2)) = (2, 4)$.\n(b) $x^2 - 9x + y^2 - 16y = 0$. Ini adalah persamaan kerucut berbentuk lingkaran. Dengan melengkapkan kuadrat parsial: $(x - 4.5)^2 + (y - 8)^2 = 4.5^2 + 8^2 = 20.25 + 64 = 84.25$. Grafiknya berupa lingkaran sempurna dengan titik pusat $(4.5, 8)$ dan jari-jari $\\sqrt{84.25}$.",
+            "pattern": "graph_interpretation",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "18. Tentukan titik potong antara dua kurva: parabola $y=x^2-1$ dan garis lurus $y=x+5$.",
+            "answerMarkdown": "Samakan kedua persamaan karena nilai koordinat ordinat-$y$ di titik potong adalah sama:\n$$x^2 - 1 = x + 5$$\nPindahkan semua suku ke ruas kiri untuk membuat persamaan kuadrat bernilai nol:\n$$x^2 - x - 6 = 0$$\nFaktorkan akar-akarnya:\n$$(x - 3)(x + 2) = 0$$\nMaka absis pemotongannya terjadi pada titik $x = 3$ dan $x = -2$. Substitusikan nilai $x$ ke persamaan linear $y = x + 5$:\n* Saat $x = 3$, maka $y = 3 + 5 = 8 \\implies (3, 8)$\n* Saat $x = -2$, maka $y = -2 + 5 = 3 \\implies (-2, 3)$\nTitik potong kedua grafik tersebut berada di $(3, 8)$ dan $(-2, 3)$.",
+            "pattern": "parameter_analysis",
+            "reasoningType": "procedural",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 3,
+            "questionMarkdown": "19. Tentukan himpunan penyelesaian pertaksamaan: $3 \\le 4x+7 < 15$.",
+            "answerMarkdown": "Selesaikan pertidaksamaan ganda ini dengan menerapkan operasi aritmetika ke seluruh tiga ruas secara simultan.\nKurangi semua ruas dengan 7:\n$$3 - 7 \\le 4x < 15 - 7$$\n$$-4 \\le 4x < 8$$\nBagi semua ruas dengan konstanta positif 4 (arah tanda tetap):\n$$-1 \\le x < 2$$\nHimpunan penyelesaiannya adalah selang setengah terbuka: $\\text{HP} = [-1, 2)$.",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
             "estimatedSteps": 2,
             "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "20. Tentukan himpunan penyelesaian pertaksamaan kubik: $x^3 - 3x^2 + 2x < 0$.",
+            "answerMarkdown": "Keluarkan faktor umum $x$ terlebih dahulu:\n$$x(x^2 - 3x + 2) < 0$$\nFaktorkan bentuk fungsi kuadratik sisanya:\n$$x(x - 2)(x - 1) < 0$$\nTitik kritis pembuat nol adalah $x=0$, $x=1$, dan $x=2$. Plot pada garis bilangan real:\n* Wilayah $x < 0$: Hasil negatif ($-$).\n* Wilayah $0 < x < 1$: Hasil positif ($+$).\n* Wilayah $1 < x < 2$: Hasil negatif ($-$).\n* Wilayah $x > 2$: Hasil positif ($+$).\nKarena yang diminta adalah area yang kurang dari nol ($<0$), ambil rentang yang negatif.\n$$\\text{HP} = (-\\infty, 0) \\cup (1, 2)$$",
+            "pattern": "parameter_analysis",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "21. Tentukan himpunan penyelesaian pertaksamaan rasional:\n$$\\frac{3}{2x-1} > \\frac{2}{x}$$",
+            "answerMarkdown": "Pindahkan pecahan kanan ke ruas kiri (jangan kali silang):\n$$\\frac{3}{2x-1} - \\frac{2}{x} > 0$$\nSamakan penyebutnya menjadi pecahan tunggal gabungan:\n$$\\frac{3x - 2(2x-1)}{x(2x-1)} > 0$$\n$$\\frac{3x - 4x + 2}{x(2x-1)} > 0 \\implies \\frac{2-x}{x(2x-1)} > 0$$\nTitik kritis batas fungsi: $x=2$ (dari pembilang), serta $x=0$ dan $x=0.5$ (dari penyebut). Analisis uji tanda pada garis batas:\n* $x < 0$ (misal -1): Num=+3, Denom=+3 $\\implies$ Positif ($+$)\n* $0 < x < 0.5$ (misal 0.25): Num=+1.75, Denom=-0.125 $\\implies$ Negatif ($-$)\n* $0.5 < x < 2$ (misal 1): Num=+1, Denom=+1 $\\implies$ Positif ($+$)\n* $x > 2$ (misal 3): Num=-1, Denom=+15 $\\implies$ Negatif ($-$)\nKarena yang diminta adalah bilangan yang lebih besar dari nol ($>0$), ambil wilayah positif.\n$$\\text{HP} = (-\\infty, 0) \\cup \\left(\\frac{1}{2}, 2\\right)$$",
+            "pattern": "direct_computation",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "22. Tentukan himpunan penyelesaian dari pertaksamaan faktor berpangkat genap:\n$$(x-1)^4(x+3) \\le 0$$",
+            "answerMarkdown": "Titik pembuat nol faktor adalah $x=1$ (berpangkat genap, tanda keliling tidak berubah) dan $x=-3$ (berpangkat ganjil).\nLakukan uji tanda di garis interval:\n* Wilayah $x < -3$: $(-)^4(-) = (+)(-) = -$ (Negatif).\n* Wilayah $-3 < x < 1$: $(-)^4(+) = (+)(+) = +$ (Positif).\n* Wilayah $x > 1$: $(+)^4(+) = +$ (Positif).\nKita memerlukan daerah $\\le 0$ (negatif ATAU tepat nol).\nDaerah negatif adalah $x \\le -3$. Namun, di titik $x = 1$ ekspresi juga tepat bernilai nol, sehingga valid.\n$$\\text{HP} = (-\\infty, -3] \\cup \\{1\\}$$",
+            "pattern": "parameter_analysis",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "23. Tentukan himpunan penyelesaian pertaksamaan majemuk dengan relasi ATAU:\n$$4x - 7 < -1 \\quad \\text{atau} \\quad 5x + 3 > 18$$",
+            "answerMarkdown": "Selesaikan kedua persamaan independen tersebut:\n1. $4x < 6 \\implies x < \\frac{6}{4} \\implies x < 1.5$\n2. $5x > 15 \\implies x > 3$\nKata hubung \"atau\" bermakna kita mencari *gabungan* (union) dari kedua rentang nilai tersebut, di mana nilai solusi cukup memenuhi salah satu syarat saja.\n$$\\text{HP} = (-\\infty, 1.5) \\cup (3, \\infty)$$",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
+            "estimatedSteps": 2,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "24. Tentukan himpunan penyelesaian pertidaksamaan mutlak:\n$$\\left|\\frac{x}{x-1} - \\frac{3}{2}\\right| \\ge \\frac{1}{2}$$",
+            "answerMarkdown": "Gunakan aturan mutlak $|u| \\ge a \\iff u \\le -a \\text{ atau } u \\ge a$:\n\n**Bagian 1:** $\\frac{x}{x-1} - \\frac{3}{2} \\le -\\frac{1}{2}$\n$$\\frac{x}{x-1} \\le 1 \\implies \\frac{x - (x-1)}{x-1} \\le 0 \\implies \\frac{1}{x-1} \\le 0$$\nDaerah yang memenuhi adalah penyebut negatif, yakni $x < 1$.\n\n**Bagian 2:** $\\frac{x}{x-1} - \\frac{3}{2} \\ge \\frac{1}{2}$\n$$\\frac{x}{x-1} \\ge 2 \\implies \\frac{x - 2(x-1)}{x-1} \\ge 0 \\implies \\frac{2 - x}{x-1} \\ge 0$$\nTitik kritis 1 dan 2. Karena ingin positif, daerahnya berada di antara nilai tersebut: $1 < x \\le 2$.\n\nGabungkan kedua batasan solusi tersebut (Union):\n$$\\text{HP} = (-\\infty, 1) \\cup (1, 2]$$",
+            "pattern": "direct_computation",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 6,
+            "questionMarkdown": "25. Jelaskan secara matematis mengapa implikasi logika berikut bernilai benar:\n$$|x-1| < \\frac{\\epsilon}{5} \\implies |5x-5| < \\epsilon$$",
+            "answerMarkdown": "Kita dapat membuktikannya dengan berangkat dari ekspresi implikasi kesimpulan sebelah kanan dan menggunakan manipulasi sifat aljabar nilai mutlak.\nKeluarkan konstanta faktor skalar 5 dari ekspresi mutlak:\n$$|5x - 5| = |5(x - 1)|$$\nMenurut sifat perkalian harga mutlak $|ab| = |a||b|$:\n$$|5(x - 1)| = |5| \\cdot |x - 1| = 5|x - 1|$$\nDari syarat awal (hipotesis) diketahui batasan nilai absolut bahwa $|x - 1| < \\frac{\\epsilon}{5}$. Oleh karena itu, kita dapat melakukan substitusi batasan tersebut:\n$$5|x - 1| < 5 \\left( \\frac{\\epsilon}{5} \\right)$$\n$$5|x - 1| < \\epsilon$$\nKarena persamaan terhubung, terbukti secara logis bahwa jika syarat awal terpenuhi, maka konsekuensinya ($|5x - 5| < \\epsilon$) dijamin mutlak benar.",
+            "pattern": "proof",
+            "reasoningType": "conceptual",
+            "estimatedSteps": 3,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 6,
+            "questionMarkdown": "26. Misalkan $\\epsilon > 0$. Tentukan suatu nilai deviasi delta $\\delta > 0$ (bergantung dari epsilon) agar implikasi berikut bernilai pasti benar:\n$$|x+2| < \\delta \\implies |3x+6| < \\epsilon$$",
+            "answerMarkdown": "Tujuan kita adalah mereduksi bentuk target kesimpulan menjadi bentuk yang proporsional dengan syarat hipotesisnya.\nMulai dari bentuk ekspresi konsekuensi kesimpulan di ruas kanan:\n$$|3x + 6| < \\epsilon$$\nKeluarkan faktor dominan 3 dari nilai mutlak tersebut:\n$$|3(x + 2)| < \\epsilon$$\n$$|3| \\cdot |x + 2| < \\epsilon$$\n$$3|x + 2| < \\epsilon$$\nBagi kedua ruas ketaksamaan dengan konstanta positif 3:\n$$|x + 2| < \\frac{\\epsilon}{3}$$\nBentuk terakhir ini telah identik secara struktural dengan hipotesis nilai epsilon kiri, yakni $|x+2| < \\delta$. Oleh karena itu, pemilihan relasi limit batas terbesarnya adalah dengan mendefinisikan deviasi:\n$$\\delta = \\frac{\\epsilon}{3}$$",
+            "pattern": "parameter_analysis",
+            "reasoningType": "analytical",
+            "estimatedSteps": 3,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "27. Panjang sisi suatu persegi diperkirakan sekitar 10 cm dengan nilai toleransi batas ukur $\\delta$. Tentukan nilai $\\delta$ agar akumulasi galat deviasi penghitungan keliling batas persegi dijamin memiliki nilai penyimpangan kurang dari 0,01 cm.",
+            "answerMarkdown": "Secara matematis, keliling persegi merupakan fungsi dari panjang sisinya: $K(x) = 4x$.\nNilai estimasi sasaran sisi adalah $a = 10$, dan toleransi galat output keliling diatur agar berbatas maksimal $0,01$, sehingga $\\epsilon = 0,01$.\nPenyimpangan ukur keliling dari target utamanya dirumuskan sebagai:\n$$|K(x) - K(10)| < 0,01$$\nSubstitusikan formula fisisnya:\n$$|4x - 4(10)| < 0,01$$\n$$|4x - 40| < 0,01$$\nFaktorkan konstanta mutlak:\n$$4|x - 10| < 0,01$$\n$$|x - 10| < \\frac{0,01}{4} = 0,0025$$\nSimbolisasi ekspresi rentang $|x - 10|$ menyatakan nilai dari tingkat kebebasan simpangan ukur $\\delta$. Maka nilai $\\delta$ maksimum yang diizinkan adalah:\n$$\\delta = 0,0025\\text{ cm}$$",
+            "pattern": "modeling",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 6,
+            "questionMarkdown": "28. Jelaskan secara aljabar matematis mengapa fungsi implikasi batas berikut dipastikan benar:\n$$0 < c < 1 \\implies c^2(c+1) < 2$$",
+            "answerMarkdown": "Jika diketahui rentang batas nilai fungsi $0 < c < 1$, kita dapat mengevaluasi dan membangun perilaku batas (*bounding*) untuk setiap sub-komponen operasi aljabar di ruas kanan.\nPertama, evaluasi rentang maksimal pada faktor $c^2$:\nKarena batas tertinggi $c < 1$, dan $c$ positif, maka memangkatkannya tidak akan melebihi angka $1$.\n$$c < 1 \\implies c^2 < 1$$\n\nKedua, evaluasi rentang maksimal pada komponen faktor fungsi $(c + 1)$ dengan menambah 1 ke batas awal:\n$$c < 1 \\implies c + 1 < 1 + 1 \\implies c + 1 < 2$$\n\nKetiga, kalikan batas-batas nilai maksimum per komponen mutlak tersebut karena kedua besaran bersifat bernilai positif absolut:\n$$c^2(c + 1) < (1)(2) \\implies c^2(c+1) < 2$$\nProses deduksi tersebut secara empiris membuktikan bahwa implikasi batas atas tersebut adalah valid.",
+            "pattern": "proof",
+            "reasoningType": "conceptual",
+            "estimatedSteps": 3,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 7,
+            "questionMarkdown": "29. Tentukan suatu konstanta batas bilangan asli $n$ agar pernyataan limit implikasi berikut bernilai logis benar:\n$$2 < c < 3 \\implies \\frac{1}{n} \\cdot \\frac{c^2}{1+c} < \\frac{1}{10000}$$",
+            "answerMarkdown": "Kita perlu mencari taksiran batas atas teoretik tertinggi (*upper bound limit*) dari fungsi pecahan murni $\\frac{c^2}{1+c}$ pada interval rentang terbuka $2 < c < 3$.\nNilai dari fungsi pecahan tersebut akan mencapai batas nilai maksimumnya ketika posisi komponen bagian pembilang mencapai titik puncaknya (terbesar) dan komponen bagian penyebut mencapai titik palungnya (terkecil).\n* Batas atas pembilang: $c < 3 \\implies c^2 < 3^2 = 9$\n* Batas bawah penyebut: $c > 2 \\implies 1+c > 1+2 = 3$\nMaka, nilai rasio pembanding rasionalnya pasti lebih kecil dari pembagian batas tersebut:\n$$\\frac{c^2}{1+c} < \\frac{9}{3} = 3$$\nSubstitusikan batas taksiran ini kembali ke dalam pertidaksamaan target awal:\n$$\\frac{1}{n} \\cdot \\frac{c^2}{1+c} < \\frac{1}{n} \\cdot 3$$\nAgar nilai akhirnya terjamin aman berada di bawah ambang toleransi $\\frac{1}{10000}$, kita harus menetapkan kriteria:\n$$\\frac{3}{n} \\le \\frac{1}{10000}$$\n$$n \\ge 30000$$\nMaka bilangan asimtotik asli $n$ yang memenuhi syarat bisa kita pilih $n = 30000$ (atau nilai lain berapapun yang lebih besar darinya).",
+            "pattern": "parameter_analysis",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 3,
+            "questionMarkdown": "1. Telaah Konsep Fungsi:\n(a) Jika grafik fungsi $f$ melalui titik $(1,7)$, maka $f(1) = $ __\n(b) Grafik fungsi ganjil yang memuat titik $(-1,9)$ juga akan memuat titik __\n(c) Jika $f$ fungsi genap yang memenuhi $f(x) = \\sqrt{x}$ untuk $x \\ge 0$, maka nilai $f(-1) = $ __\n(d) Himpunan semua bilangan real $x$ sedemikian hingga $f(x)$ terdefinisi disebut __\n(e) Grafik fungsi $g(x) = f(x-3)+2$ diperoleh dengan menggeser grafik $f$ ke __ sejauh __ kemudian ke __ sejauh __\n(f) Fungsi rasional didefinisikan sebagai __\n(g) Daerah asal fungsi sinus adalah __ dan daerah hasilnya adalah __\n(h) Fungsi kosinus merupakan fungsi __\n(i) Periode fungsi tangen adalah __",
+            "answerMarkdown": "Berikut adalah isian telaah konsep dasar fungsi:\n(a) Koordinat grafik ditulis sebagai $(x, y)$, sehingga $f(1) = 7$.\n(b) Fungsi ganjil memenuhi sifat simetri titik asal $f(-x) = -f(x)$. Jika $f(-1) = 9$, maka $f(1) = -9$. Titiknya adalah $(1, -9)$.\n(c) Fungsi genap memenuhi simetri $f(-x) = f(x)$. Maka $f(-1) = f(1) = \\sqrt{1} = 1$.\n(d) Kumpulan input tersebut dinamakan Daerah Asal atau Domain.\n(e) Pergeseran nilai di dalam kurung $(x-3)$ menggeser ke Kanan sejauh 3, dan penambahan $+2$ di luar fungsi menggeser ke Atas sejauh 2.\n(f) Fungsi rasional didefinisikan sebagai hasil bagi dua fungsi polinom $\\frac{P(x)}{Q(x)}$ dengan syarat $Q(x) \\neq 0$.\n(g) Daerah asal sinus mencakup seluruh bilangan real $(-\\infty, \\infty)$ atau $\\mathbb{R}$. Daerah hasilnya terbatas pada rentang $[-1, 1]$.\n(h) Karena memenuhi $\\cos(-\\theta) = \\cos(\\theta)$, kosinus adalah fungsi Genap.\n(i) Nilai fungsi tangen berulang identik setiap rentang interval $\\pi$.",
+            "pattern": "parameter_analysis",
+            "reasoningType": "conceptual",
+            "estimatedSteps": 1,
+            "applicationLevel": 1
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "Evaluasi dan Analisis Domain Fungsi (Soal 2, 3, dan 4):\n(a) Misalkan $f(x) = 2x^2 - 3x$. Tentukan nilai $f(3)$ dan sederhanakan ekspresi rasio $\\frac{f(2+h) - f(2)}{h}$.\n(b) Tentukan daerah asal (domain) dari fungsi $f(x) = \\sqrt{2x - 6}$ dan $g(x) = \\frac{1}{x^2 - 3x + 2}$.\n(c) Tentukan daerah hasil (range) dari fungsi $h(x) = x^2 - 4x$ dan $p(x) = \\sqrt{9 - x^2}$.",
+            "answerMarkdown": "(a) Substitusikan $x=3$ ke dalam fungsi: $f(3) = 2(3)^2 - 3(3) = 18 - 9 = 9$.\nUntuk rasio perbedaan limit:\n$f(2+h) = 2(2+h)^2 - 3(2+h) = 2(4 + 4h + h^2) - 6 - 3h = 8 + 8h + 2h^2 - 6 - 3h = 2h^2 + 5h + 2$.\n$f(2) = 2(2)^2 - 3(2) = 8 - 6 = 2$.\nMaka: $\\frac{(2h^2 + 5h + 2) - 2}{h} = \\frac{2h^2 + 5h}{h} = 2h + 5$.\n\n(b) Syarat fungsi akar adalah nilai di dalam akar tidak boleh negatif: $2x - 6 \\ge 0 \\implies 2x \\ge 6 \\implies x \\ge 3$. Domain $f$ adalah $[3, \\infty)$.\nSyarat fungsi pecahan adalah penyebut tidak boleh nol: $x^2 - 3x + 2 \\neq 0 \\implies (x-1)(x-2) \\neq 0$. Domain $g$ adalah himpunan semua bilangan real kecuali $x=1$ dan $x=2$.\n\n(c) Untuk fungsi $h(x) = x^2 - 4x$, ini adalah parabola yang terbuka ke atas. Titik puncak minimum berada di $x = -\\frac{-4}{2(1)} = 2$. Nilai minimumnya adalah $h(2) = 2^2 - 4(2) = -4$. Karena grafiknya menjulang ke tak hingga, daerah hasilnya adalah $[-4, \\infty)$.\nUntuk $p(x) = \\sqrt{9 - x^2}$, ini adalah representasi setengah lingkaran bagian atas yang berpusat di $(0,0)$ dengan jari-jari $r=3$. Nilai maksimumnya adalah tinggi jari-jari yakni 3, dan nilai minimumnya adalah 0 (karena akar tidak pernah negatif). Daerah hasilnya adalah $[0, 3]$.",
+            "pattern": "direct_computation",
+            "reasoningType": "procedural",
+            "estimatedSteps": 4,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "Tentukan pemodelan fungsi matematika untuk berbagai kasus terapan berikut (Soal 5, 6, 7, 8):\n(a) Luas persegi panjang dengan keliling 100 dan salah satu sisinya $x$.\n(b) Volume kotak tertutup dari karton berukuran $5 \\times 8$ yang dipotong ujungnya sebesar $x$.\n(c) Volume tabung tanpa tutup dengan luas permukaan tetap $100\\text{ cm}^2$ sebagai fungsi jari-jari $r$.\n(d) Kemiringan garis $PQ$ yang menghubungkan titik tetap $P(2,4)$ dan titik variabel $Q(x,x^2)$ pada kurva parabola $y=x^2$.",
+            "answerMarkdown": "(a) Rumus keliling persegi panjang adalah $K = 2x + 2y = 100 \\implies x + y = 50 \\implies y = 50 - x$. Model Luasnya adalah $L(x) = x(50 - x) = 50x - x^2$. Daerah asal (domain) mensyaratkan kedua sisi harus bernilai positif, sehingga $x > 0$ dan $50-x > 0 \\implies x < 50$. Domain: $(0, 50)$.\n\n(b) Berdasarkan skema pemotongan lipatan kotak, dimensi tiga ruangnya menjadi: panjang $p = 8 - 2x$, lebar $l = 5 - 2x$, dan tinggi $t = x$. Model Volume $V(x) = x(8 - 2x)(5 - 2x)$. Daerah asal mensyaratkan semua sisi lipatan lebih besar dari nol, sehingga batasan paling ketat adalah $5 - 2x > 0 \\implies x < 2.5$. Domain: $(0, 2.5)$.\n\n(c) Luas permukaan tabung tanpa tutup adalah $L = \\pi r^2 + 2\\pi r h = 100$. Isolasi variabel tinggi tabung: $h = \\frac{100 - \\pi r^2}{2\\pi r}$. Model Volume tabung tersebut adalah $V(r) = \\pi r^2 h = \\pi r^2 \\left(\\frac{100 - \\pi r^2}{2\\pi r}\\right) = \\frac{r}{2}(100 - \\pi r^2)$. Daerah asal mensyaratkan nilai $r > 0$ dan $h > 0 \\implies 100 - \\pi r^2 > 0 \\implies r^2 < \\frac{100}{\\pi} \\implies r < \\frac{10}{\\sqrt{\\pi}}$. Domain: $\\left(0, \\frac{10}{\\sqrt{\\pi}}\\right)$.\n\n(d) Gradien garis lurus yang menghubungkan koordinat $P(2,4)$ dan $Q(x, x^2)$ dirumuskan sebagai $m(x) = \\frac{\\Delta y}{\\Delta x} = \\frac{x^2 - 4}{x - 2}$. Karena dapat difaktorkan menjadi $\\frac{(x-2)(x+2)}{x-2}$, fungsi tersebut dapat disederhanakan menjadi $m(x) = x + 2$ dengan syarat daerah asal $x \\neq 2$ agar tidak terjadi pembagian dengan nol.",
+            "pattern": "modeling",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "Komposisi dan Operasi Aljabar Fungsi (Soal 10, 11, 12, 14):\n(a) Misalkan $f(x)=x+5$, $g(x)=2x$, dan $h(x)=x^2-x$. Tentukan formula $(f \\circ g \\circ h)(x)$.\n(b) Jika $f(x)=x-2\\sqrt{x}$ dan $g(x)=x+\\sqrt{x}$, tentukan formula $(f+2g)(x)$ beserta daerah asalnya.\n(c) Jelaskan secara matematis apakah fungsi $p(x)=\\sqrt{x}\\cdot\\sqrt{x-2}$ dan $q(x)=\\sqrt{x(x-2)}$ memiliki daerah asal yang persis sama.\n(d) Jika $u(x)=\\sqrt{x-1}$ dan $v(x)=x^2+1$, tentukan domain dari fungsi komposisi $u \\circ v$ dan $v \\circ u$.",
+            "answerMarkdown": "(a) Komposisi dikerjakan berurutan dari dalam ke luar: $g(h(x)) = g(x^2 - x) = 2(x^2 - x) = 2x^2 - 2x$. Kemudian masukkan ke fungsi terluar: $f(g(h(x))) = (2x^2 - 2x) + 5 = 2x^2 - 2x + 5$.\n\n(b) Lakukan operasi aljabar fungsi: $(f+2g)(x) = (x - 2\\sqrt{x}) + 2(x + \\sqrt{x}) = x - 2\\sqrt{x} + 2x + 2\\sqrt{x} = 3x$. Daerah asal operasi penjumlahan adalah irisan dari domain masing-masing fungsi penyusun. Karena $f(x)$ dan $g(x)$ memiliki komponen $\\sqrt{x}$, domain asli mereka adalah $x \\ge 0$. Maka, daerah asalnya adalah $[0, \\infty)$.\n\n(c) **Tidak sama**. Untuk fungsi $p(x) = \\sqrt{x}\\cdot\\sqrt{x-2}$, syaratnya harus berlaku simultan: $x \\ge 0$ DAN $x - 2 \\ge 0 \\implies x \\ge 2$. Irisannya adalah $x \\ge 2$. Sebaliknya, fungsi $q(x) = \\sqrt{x(x-2)}$ hanya mensyaratkan satu fungsi kuadrat utuh bernilai positif: $x(x-2) \\ge 0$. Uji tanda menghasilkan rentang $x \\le 0$ ATAU $x \\ge 2$. Domain $q(x)$ jauh lebih luas karena akar ganda dari komponen negatif dikali negatif menjadi valid.\n\n(d) Analisis komposisi silang:\n- $(u \\circ v)(x) = u(x^2+1) = \\sqrt{(x^2+1)-1} = \\sqrt{x^2} = |x|$. Daerah asalnya mencakup semua bilangan real $\\mathbb{R}$ karena $v(x)$ mendistribusikan nilai input yang selalu valid ke fungsi $u$.\n- $(v \\circ u)(x) = v(\\sqrt{x-1}) = (\\sqrt{x-1})^2 + 1 = (x-1) + 1 = x$. Meskipun formula akhir sangat sederhana, daerah asalnya dikunci secara permanen oleh fungsi penangkap input paling awal, yaitu $u(x)$. Karena $u(x)$ membutuhkan $x - 1 \\ge 0$, maka domain komposisi ini hanya terbatas pada selang $[1, \\infty)$.",
+            "pattern": "parameter_analysis",
+            "reasoningType": "conceptual",
+            "estimatedSteps": 4,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 4,
+            "questionMarkdown": "Dasar Trigonometri dan Evaluasi Sudut (Soal 17, 18, 20):\n(a) Ubah sudut $150^{\\circ}$ dan $-30^{\\circ}$ menjadi satuan radian.\n(b) Diberikan segitiga siku-siku $ABC$ dengan sudut $\\angle ABC = \\frac{\\pi}{2}$. Jika sisi $AB = 4$ dan hipotenusa $AC = 7$, hitung rasio trigonometri $\\sin(A)$, $\\cos(A)$, dan $\\tan(C)$.\n(c) Diketahui $0 < \\alpha < \\frac{\\pi}{2}$ dan $\\frac{\\pi}{2} < \\beta < \\pi$, dengan informasi $\\sin(\\alpha) = \\frac{3}{5}$ dan $\\sin(\\beta) = \\frac{5}{12}$. Hitung nilai pasti dari $\\cos(\\alpha+\\beta)$.",
+            "answerMarkdown": "(a) Faktor konversi derajat ke radian adalah dikalikan dengan $\\frac{\\pi}{180^{\\circ}}$.\n- $150^{\\circ} \\times \\frac{\\pi}{180^{\\circ}} = \\frac{15}{18}\\pi = \\frac{5\\pi}{6}$ radian.\n- $-30^{\\circ} \\times \\frac{\\pi}{180^{\\circ}} = -\\frac{3}{18}\\pi = -\\frac{\\pi}{6}$ radian.\n\n(b) Karena sudut siku-siku berada di $B$, sisi miring (hipotenusa) adalah sisi $AC=7$. Sisi vertikal tinggi terhadap sudut referensi $C$ adalah $AB=4$. Hitung sisi mendatar $BC$ menggunakan Teorema Pythagoras: $BC = \\sqrt{AC^2 - AB^2} = \\sqrt{7^2 - 4^2} = \\sqrt{49 - 16} = \\sqrt{33}$.\n- $\\sin(A) = \\frac{\\text{sisi depan } A}{\\text{miring}} = \\frac{BC}{AC} = \\frac{\\sqrt{33}}{7}$.\n- $\\cos(A) = \\frac{\\text{sisi samping } A}{\\text{miring}} = \\frac{AB}{AC} = \\frac{4}{7}$.\n- $\\tan(C) = \\frac{\\text{sisi depan } C}{\\text{sisi samping } C} = \\frac{AB}{BC} = \\frac{4}{\\sqrt{33}}$.\n\n(c) Kuadran $0 < \\alpha < \\frac{\\pi}{2}$ adalah Kuadran I (semua trigonometri positif). Menggunakan hukum triple Pythagoras 3-4-5, jika $\\sin(\\alpha) = \\frac{3}{5}$, maka $\\cos(\\alpha) = \\frac{4}{5}$.\nKuadran $\\frac{\\pi}{2} < \\beta < \\pi$ adalah Kuadran II (hanya komponen $\\sin$ yang positif, $\\cos$ bernilai negatif). Jika $\\sin(\\beta) = \\frac{5}{12}$, sisi datar dihitung $x = \\sqrt{12^2 - 5^2} = \\sqrt{144 - 25} = \\sqrt{119}$. Maka nilai $\\cos(\\beta) = -\\frac{\\sqrt{119}}{12}$.\nTerapkan rumus identitas penjumlahan sudut:\n$$\\cos(\\alpha+\\beta) = \\cos(\\alpha)\\cos(\\beta) - \\sin(\\alpha)\\sin(\\beta)$$\n$$\\cos(\\alpha+\\beta) = \\left(\\frac{4}{5}\\right)\\left(-\\frac{\\sqrt{119}}{12}\\right) - \\left(\\frac{3}{5}\\right)\\left(\\frac{5}{12}\\right) = \\frac{-4\\sqrt{119} - 15}{60}$$",
+            "pattern": "direct_computation",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 2
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 5,
+            "questionMarkdown": "Periksa dan terapkan sifat fungsi genap, ganjil, serta periodisitas pada kasus-kasus berikut (Soal 23, 24, 25):\n(a) Identifikasi apakah fungsi berikut merupakan fungsi genap, ganjil, atau tidak keduanya: $f(x)=x^8-5x^4+1$, $g(x)=x\\sin(x)$, dan $h(t)=\\frac{\\tan(t)}{t^2}$.\n(b) Diberikan fungsi $p(x)$ dengan daerah asal $\\mathbb{R}$ merupakan fungsi periodik dengan periode berulang 2 dan memenuhi pola aturan $p(x)=2x-x^2$ pada selang batasan $0 \\le x < 2$. Tentukan nilai konkret dari $p(100)$ dan $p(111)$.\n(c) Suatu fungsi $q(x)$ adalah fungsi ganjil dan periodik dengan periode berulang 8. Diketahui bahwa nilai basisnya adalah $q(x)=2-|x-2|$ untuk $0 \\le x \\le 4$. Tentukan evaluasi hasil nilai dari $q(100)$ dan $q(103)$.",
+            "answerMarkdown": "(a) Uji karakter simetri dengan substitusi input negatif $-x$ atau $-t$:\n- $f(-x) = (-x)^8 - 5(-x)^4 + 1 = x^8 - 5x^4 + 1 = f(x)$. Ini adalah **Fungsi Genap**.\n- $g(-x) = (-x)\\sin(-x) = (-x)(-\\sin(x)) = x\\sin(x) = g(x)$. Ini adalah **Fungsi Genap**.\n- $h(-t) = \\frac{\\tan(-t)}{(-t)^2} = \\frac{-\\tan(t)}{t^2} = -h(t)$. Ini adalah **Fungsi Ganjil**.\n\n(b) Karena sifat periode fungsi adalah $p=2$, maka nilai fungsi akan berulang identik untuk setiap penambahan atau pengurangan kelipatan mutlak 2 secara matematis: $p(x + 2k) = p(x)$.\n- Nilai $100$ dapat direduksi sebagai $0 + 50(2)$, sehingga posisinya ekuivalen dengan $0$. Evaluasi: $p(100) = p(0) = 2(0) - 0^2 = 0$.\n- Nilai $111$ dapat direduksi sebagai $1 + 55(2)$, sehingga posisinya ekuivalen dengan siklus $1$. Evaluasi: $p(111) = p(1) = 2(1) - 1^2 = 1$.\n\n(c) Fungsi tersebut memiliki periode pengulangan siklus asimtotik $p=8$, maka berlaku relasi $q(x + 8k) = q(x)$. Selain itu, sifat fungsi ganjil menambahkan relasi pencerminan tambahan bahwa $q(-x) = -q(x)$.\n- Nilai input $100$ dapat direduksi dengan kelipatan siklus terdekat $96$ ($12 \\times 8$), sehingga tersisa $4$. Maka, evaluasi $q(100) = q(4) = 2 - |4 - 2| = 2 - 2 = 0$.\n- Nilai input $103$ dapat direduksi sejauh $96$ juga, menyisakan $7$. Namun, fungsi penentu kita hanya mendefinisikan batas hingga $x=4$. Maka dari itu, kita kurangi siklusnya sejauh satu fase periodik mundur ke belakang ($8$): $q(7) = q(7 - 8) = q(-1)$.\n- Memanfaatkan dalil pencerminan fungsi ganjil, kita pindahkan minusnya: $q(-1) = -q(1)$.\n- Sekarang kita dapat mengevaluasi nilai basis pada rentang yang valid: $q(1) = 2 - |1 - 2| = 2 - 1 = 1$.\n- Terakhir, kalikan dengan minus: $q(103) = -q(1) = -1$.",
+            "pattern": "parameter_analysis",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 3
+          },
+          {
+            "questionType": "short_essay",
+            "difficulty": 6,
+            "questionMarkdown": "Pecahkan pemodelan aplikasi trigonometri terapan pada geometri lingkaran berikut (Soal 27, 28, 29):\n(a) Tinjau juring $AOP$ pada kuadran pertama lingkaran satuan dengan sudut juring sebesar $\\theta$. Buktikan keabsahan logis berlakunya ketaksamaan ganda $\\sin(\\theta) \\le \\theta \\le \\tan(\\theta)$ dengan cara membandingkan langsung proporsi luas $\\triangle AOP$, area juring $AOP$, dan $\\triangle AOB$ (dimana $B$ terletak pada perpanjangan $OP$ secara vertikal langsung dari $A$).\n(b) Empat buah titik sudut sebuah trapesium sama kaki $ABCD$ diletakkan dengan pas berada pada garis keliling lingkaran berdiameter $AD$ sebesar 10 satuan. Jika besaran sudut internal didefinisikan sebagai $\\angle AOB = \\alpha$, nyatakan formulasi analitik luas trapesium tersebut murni sebagai fungsi sudut parameter $\\alpha$.\n(c) Suatu poligon segi-$n$ beraturan (reguler) diposisikan persis tepat berada di dalam sebuah lingkaran yang berjari-jari ideal $r=1$. Tentukan rumusan umum keliling total poligon dan luas area utuh dari segi-$n$ tersebut.",
+            "answerMarkdown": "(a) Pada bangun lingkaran satuan berdimensi $r=1$ bersumbu $A(1,0)$, tinggi dari segitiga terkonstruksi $\\triangle AOP$ adalah persis sama dengan ordinat komponen sinus, yaitu $t = \\sin(\\theta)$. Luas $\\triangle AOP = \\frac{1}{2}(\\text{alas})(\\text{tinggi}) = \\frac{1}{2}(1)(\\sin(\\theta)) = \\frac{1}{2}\\sin(\\theta)$.\nSecara teoritis, luas area utuh dari suatu juring $AOP$ dihitung menggunakan bagian rasio proporsional dari luas total radian lingkaran: $\\frac{1}{2}r^2\\theta = \\frac{1}{2}(1)^2\\theta = \\frac{1}{2}\\theta$.\nSelanjutnya, $\\triangle AOB$ memanjang melampaui kurva dan memiliki alas horizontal $OA=1$ dan tinggi siku-siku vertikal sempurna di $A$ dengan tinggi $AB = \\tan(\\theta)$. Maka, Luas $\\triangle AOB = \\frac{1}{2}(1)(\\tan(\\theta)) = \\frac{1}{2}\\tan(\\theta)$.\nBerdasarkan inklusi visual geometris absolut, kita dapat melihat bahwa $\\triangle AOP$ terkandung sepenuhnya di dalam Juring $AOP$, yang juga terkandung sepenuhnya di dalam $\\triangle AOB$. Oleh karena itu, rasio luasan mereka memenuhi ketaksamaan mutlak: $\\frac{1}{2}\\sin(\\theta) \\le \\frac{1}{2}\\theta \\le \\frac{1}{2}\\tan(\\theta)$. Jika dikalikan angka $2$, maka terbukti $\\sin(\\theta) \\le \\theta \\le \\tan(\\theta)$.\n\n(b) Alas bawah paralel trapesium merupakan diameter utama lingkaran: $AD = 2r = 10$. Kita dapat menentukan posisi spasial koordinat titik-titik tersebut secara trigonometri. Titik simpul atas $B$ relatif terhadap sudut $\\alpha$ berada di posisi $(5\\cos(\\alpha), 5\\sin(\\alpha))$. Karena trapesium ini simetris sama kaki, maka posisi $C$ adalah $(-5\\cos(\\alpha), 5\\sin(\\alpha))$.\nPanjang sisi sejajar atap atas dihitung sebagai selisih absis mendatar: $BC = 5\\cos(\\alpha) - (-5\\cos(\\alpha)) = 10\\cos(\\alpha)$. Ketinggian trapesium vertikal adalah nilai ordinatnya murni, $h = 5\\sin(\\alpha)$.\nRumus luas trapesium adalah setengah jumlah garis sejajar dikali tinggi: $L(\\alpha) = \\frac{1}{2}(AD + BC)h = \\frac{1}{2}(10 + 10\\cos(\\alpha))(5\\sin(\\alpha))$. Jika ditarik faktor konstantanya keluar, model areanya akan menjadi $L(\\alpha) = 25\\sin(\\alpha)(1 + \\cos(\\alpha))$.\n\n(c) Objek segi-$n$ beraturan ekuivalen dengan lingkaran yang dipisah membelah menjadi potongan setara berjumlah $n$ buah bentuk segitiga sama kaki bersudut tengah puncak $\\frac{2\\pi}{n}$. Untuk mencari panjang satu potongan sisi batas terluar ($s$), kita dapat membagi segitiga itu menjadi dua irisan segitiga siku-siku, sehingga ukuran sisi luarnya menjadi gandaan proyeksi sinus: $s = 2 \\cdot (1) \\cdot \\sin\\left(\\frac{\\pi}{n}\\right)$.\nKeliling total poligon mengalikan satu sisi ini sebanyak $n$ kali lipat batasan sisi: $K(n) = n \\cdot 2\\sin\\left(\\frac{\\pi}{n}\\right)$.\nSementara itu, luas tiap segitiga irisan individu dihitung cepat dengan rumus luas perkalian dua sisi dan sinus sudut apitnya: $\\frac{1}{2} \\cdot r \\cdot r \\cdot \\sin\\left(\\frac{2\\pi}{n}\\right) = \\frac{1}{2}(1)(1)\\sin\\left(\\frac{2\\pi}{n}\\right)$. Mengalikan fungsi tersebut secara total sebanyak $n$ siklus memberikan total Area $L(n) = \\frac{n}{2}\\sin\\left(\\frac{2\\pi}{n}\\right)$.",
+            "pattern": "modeling",
+            "reasoningType": "analytical",
+            "estimatedSteps": 4,
+            "applicationLevel": 3
           }
         ]
       }
