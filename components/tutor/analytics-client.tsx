@@ -195,6 +195,34 @@ export function AnalyticsClient({ courseId, analytics, updatedAt }: Props) {
         </section>
       </Reveal>
 
+      {/* Section 4b: Top misconceptions (cohort-wide) */}
+      <Reveal>
+        <section aria-labelledby="misconceptions-heading">
+          <h2 id="misconceptions-heading" className="text-body-base font-semibold mb-3">
+            Most common misconceptions
+          </h2>
+          {analytics.topMisconceptions.length === 0 ? (
+            <p className="text-body-sm text-muted-foreground">
+              Appears once enough students answer questions tagged with a misconception.
+            </p>
+          ) : (
+            <div className="divide-y divide-border">
+              {analytics.topMisconceptions.slice(0, 10).map((m) => (
+                <div key={m.misconceptionKoId} className="py-3 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-body-base font-medium truncate">{m.label}</p>
+                    <p className="text-body-sm text-muted-foreground">
+                      {m.conceptName} &middot; {m.sampleSize} attempts
+                    </p>
+                  </div>
+                  <Badge variant="secondary" className="shrink-0">{m.pctSelected}%</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </Reveal>
+
       {/* Section 5: Watchlist */}
       <Reveal>
         <section aria-labelledby="watchlist-heading">

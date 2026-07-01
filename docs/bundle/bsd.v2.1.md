@@ -4,6 +4,15 @@ Status: Canonical Contract for AI Ingestion and Bundle Generation
 Target Bundle Version: V1.1.1
 Target Importer Version: V1.1.1
 
+> **Update**: Learning content and assessment content are now two separate, independently
+> uploadable bundles. This document's sections 1-10 (course, chapter, concept, knowledge object,
+> knowledge relationship, website material, flashcard set, flashcard) describe the
+> [Learning Bundle](./learning-bundle-spec.md). Sections 11-12 (`assessmentSources`,
+> `assessmentObject`) now belong to the separate [Assessment Bundle](./assessment-bundle-spec.md)
+> (schema version `1.0`) instead of being embedded in the course-level `assessmentSources` array
+> shown below. The combined shape on this page still works for backward compatibility but new
+> exports should use the two split bundles.
+
 ---
 
 # Purpose

@@ -35,7 +35,7 @@ export function DashboardWeakConcepts({ concepts, courseTitle = "Kuliah" }: Dash
   const displayConcepts = concepts.slice(0, 4);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-card/65 p-5 shadow-sm backdrop-blur-md text-left">
+    <section className="border-b border-border/70 pb-6 text-left">
       {/* Clean Accessible Header */}
       <div className="mb-4 flex items-center justify-between border-b border-border/40 pb-3">
         <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2">
@@ -57,8 +57,8 @@ export function DashboardWeakConcepts({ concepts, courseTitle = "Kuliah" }: Dash
                 <span>Konsep Aljabar Limit</span>
                 <span className="font-mono text-xs">75%</span>
               </div>
-              <div className="h-2 rounded-full bg-muted w-full overflow-hidden">
-                <div className="h-full bg-brand-primary w-3/4 rounded-full" />
+              <div className="h-2 w-full overflow-hidden rounded-md bg-muted">
+                <div className="h-full w-3/4 rounded-md bg-brand-primary" />
               </div>
             </div>
             <div className="flex flex-col gap-1.5">
@@ -66,8 +66,8 @@ export function DashboardWeakConcepts({ concepts, courseTitle = "Kuliah" }: Dash
                 <span>Kekontinuan Fungsi</span>
                 <span className="font-mono text-xs">40%</span>
               </div>
-              <div className="h-2 rounded-full bg-muted w-full overflow-hidden">
-                <div className="h-full bg-brand-secondary w-2/5 rounded-full" />
+              <div className="h-2 w-full overflow-hidden rounded-md bg-muted">
+                <div className="h-full w-2/5 rounded-md bg-brand-secondary" />
               </div>
             </div>
           </div>
@@ -115,6 +115,6 @@ export function DashboardWeakConcepts({ concepts, courseTitle = "Kuliah" }: Dash
           </p>
         </div>
       )}
-    </div>
+    </section>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { TrendingUp, TrendingDown, Minus, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Reveal } from "@/components/ui/reveal";
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 interface ConceptInfo {
   conceptName: string;
+  conceptSlug: string | null;
   masteryScore: number | null;
   confidence: number | null;
   trend: "improving" | "stable" | "declining" | null;
@@ -24,6 +26,7 @@ interface ChapterGroup {
 }
 
 interface ConceptMapProps {
+  courseId: string;
   groups: ChapterGroup[];
 }
 
@@ -40,7 +43,7 @@ function TrendIcon({ trend }: { trend?: "improving" | "stable" | "declining" | n
   return null;
 }
 
-export function ConceptMap({ groups }: ConceptMapProps) {
+export function ConceptMap({ courseId, groups }: ConceptMapProps) {
   return (
     <div className="space-y-8">
       {groups.map((group) => (
@@ -58,9 +61,18 @@ export function ConceptMap({ groups }: ConceptMapProps) {
                 >
                   {/* Col 1: Name and blocked chip */}
                   <div className="min-w-0">
-                    <span className="text-body-base font-medium text-foreground block truncate">
-                      {c.conceptName}
-                    </span>
+                    {c.conceptSlug ? (
+                      <Link
+                        href={`/courses/${courseId}/concept/${c.conceptSlug}`}
+                        className="text-body-base font-medium text-foreground block truncate hover:underline hover:text-primary transition-colors"
+                      >
+                        {c.conceptName}
+                      </Link>
+                    ) : (
+                      <span className="text-body-base font-medium text-foreground block truncate">
+                        {c.conceptName}
+                      </span>
+                    )}
                     {c.blockedBy.length > 0 && (
                       <Badge variant="outline" className="text-muted-foreground mt-1 gap-1 text-[11px] rounded-md">
                         <Lock className="size-3" />

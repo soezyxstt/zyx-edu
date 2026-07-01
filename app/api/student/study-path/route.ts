@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { db } from "@/db";
 import { enrollments } from "@/db/schema";
 import { and, eq, gt } from "drizzle-orm";
-import { getOrComputeStudyPath } from "@/lib/study-path-service";
+import { getOrComputeStudyPath, bucketStudyPathByDays } from "@/lib/study-path-service";
 import { env } from "@/lib/env";
 
 export async function GET(req: NextRequest) {
@@ -43,7 +43,13 @@ export async function GET(req: NextRequest) {
 
   try {
     const steps = await getOrComputeStudyPath(session.user.id, courseId);
-    return NextResponse.json({ steps });
+
+    // Optional deadline-driven day plan: ?days=N ("I have a midterm in N days").
+    const daysParam = req.nextUrl.searchParams.get("days");
+    const days = daysParam ? Number.parseInt(daysParam, 10) : null;
+    const dayPlan = days && Number.isFinite(days) && days > 0 ? bucketStudyPathByDays(steps, days) : null;
+
+    return NextResponse.json({ steps, dayPlan });
   } catch (err: any) {
     console.error("Error retrieving study path:", err);
     return NextResponse.json(

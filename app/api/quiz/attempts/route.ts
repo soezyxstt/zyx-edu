@@ -12,6 +12,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { and, or, eq, asc, inArray, sql, desc, notInArray } from 'drizzle-orm';
 import { env } from '@/lib/env';
+import { getAdaptiveDifficultyProportions } from '@/lib/adaptive-quiz';
 
 const StartSchema = z.object({
  templateId: z.string().min(1),
@@ -61,11 +62,16 @@ export async function POST(req: NextRequest) {
 
  const rules = template.selectionRules as Record<string, unknown>;
  const totalCount = Number(rules.count ?? 10);
- const proportions = (rules.difficulty_proportions as Record<string, number> | undefined) ?? {
+ const explicitProportions = rules.difficulty_proportions as Record<string, number> | undefined;
+ const proportions =
+ explicitProportions ??
+ (env.FEATURE_ADAPTIVE_QUIZ === '1'
+ ? await getAdaptiveDifficultyProportions(studentId, template.courseId, totalCount)
+ : {
  easy: Math.round(totalCount * 0.3),
  medium: Math.round(totalCount * 0.5),
  hard: totalCount - Math.round(totalCount * 0.3) - Math.round(totalCount * 0.5),
- };
+ });
 
  const tags = (rules.tags as string[] | undefined) || [];
  const tagConditions = tags.map(
@@ -118,6 +124,14 @@ export async function POST(req: NextRequest) {
 
  // Shuffle selected questions
  selected = selected.sort(() => Math.random() - 0.5);
+
+ // Bump useCount so the next attempt's "prefer least-used" ordering (above) is meaningful.
+ if (selected.length > 0) {
+ await db
+ .update(aiQuestionBank)
+ .set({ useCount: sql`${aiQuestionBank.useCount} + 1` })
+ .where(inArray(aiQuestionBank.id, selected.map((q) => q.id)));
+ }
 
  if (selected.length === 0) {
  return NextResponse.json(

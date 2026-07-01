@@ -450,6 +450,53 @@ export function BundleImporterTab() {
         </div>
       )}
 
+      {/* Impact Analysis: per-chapter diff, computed (and in dry-run mode, rolled back) before commit */}
+      {result && !loading && result.success && result.stats && result.stats.chapterDiffs.length > 0 && (
+        <Card className="border border-border shadow-sm rounded-xl overflow-hidden bg-card">
+          <CardHeader className="border-b border-border bg-muted/20 py-4">
+            <CardTitle className="font-heading text-body-md font-semibold text-foreground flex items-center gap-2">
+              <Layers className="size-5 text-brand-primary" />
+              {dryRun ? "Pratinjau Dampak (belum disimpan)" : "Ringkasan Perubahan"}
+            </CardTitle>
+            <p className="text-body-sm text-muted-foreground">
+              {dryRun
+                ? "Inilah yang akan terjadi jika Anda mempublikasikan bundel ini, dihitung dari basis data saat ini tanpa menuliskan apa pun."
+                : "Perubahan Knowledge Object per bab pada import ini."}
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border">
+              {result.stats.chapterDiffs.map((diff) => (
+                <div key={diff.chapterId} className="p-4 flex items-center justify-between gap-4 text-left">
+                  <div className="min-w-0">
+                    <p className="text-body-sm font-semibold text-foreground truncate">{diff.chapterTitle}</p>
+                    <p className="text-body-xs text-muted-foreground mt-0.5">
+                      {diff.cascadedStaleness
+                        ? "Konten berubah; materi website, flashcard, diktat, dan bank soal terkait akan ditandai usang."
+                        : "Tidak ada perubahan substantif; tidak ada aset turunan yang akan ditandai usang."}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0 text-body-xs font-mono">
+                    {diff.koAdded > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-status-success/15 text-status-success">+{diff.koAdded}</span>
+                    )}
+                    {diff.koUpdated > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-status-warning/15 text-status-warning">~{diff.koUpdated}</span>
+                    )}
+                    {diff.koUnchanged > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-muted text-muted-foreground">={diff.koUnchanged}</span>
+                    )}
+                    {diff.koRetired > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-md bg-status-error/15 text-status-error">-{diff.koRetired}</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Failure alert */}
       {result && !loading && !result.success && (
         <div className="space-y-6">

@@ -455,12 +455,55 @@ export const courseAnalyticsSnapshotCron = inngest.createFunction(
   }
 );
 
+// ─── Continuous Improvement: daily content-quality audit cron ────────────────
+// Runs once per day at 03:00 UTC, after the analytics snapshot above so any
+// just-recomputed mastery/attempt data is current. See lib/content-quality-auditor.ts.
+
+export const contentQualityAuditCron = inngest.createFunction(
+  {
+    id: "content-quality-audit-cron",
+    name: "Content Quality Audit Cron",
+    triggers: [{ cron: "0 3 * * *" }],
+  },
+  async ({ step }) => {
+    const now = new Date();
+
+    const activeCourseIds = await step.run("fetch-active-courses", async () => {
+      const rows = await db
+        .select({ courseId: enrollments.courseId })
+        .from(enrollments)
+        .where(gt(enrollments.expiresAt, now))
+        .groupBy(enrollments.courseId)
+        .having(sql`COUNT(*) > 0`);
+      return rows.map((r) => r.courseId);
+    });
+
+    let flagged = 0;
+    let failed = 0;
+
+    for (const courseId of activeCourseIds) {
+      try {
+        const flags = await step.run(`audit-course-${courseId}`, async () => {
+          const { auditCourseContentQuality } = await import("@/lib/content-quality-auditor");
+          return await auditCourseContentQuality(courseId);
+        });
+        flagged += flags.length;
+      } catch {
+        failed++;
+      }
+    }
+
+    return { activeCourseIds: activeCourseIds.length, flagged, failed };
+  }
+);
+
 // ─── PWR: Weekly Learning Reflection Cron ────────────────────────────────────
 
-import { computeWeeklyReflection, getPreviousWeekRange } from "@/lib/reflection-service";
-import { learningEvents } from "@/db/schema";
+import { computeWeeklyReflection, getPreviousWeekRange, formatDateStr } from "@/lib/reflection-service";
+import { learningEvents, weeklyReflections } from "@/db/schema";
 import { env } from "@/lib/env";
 import { gte, lte } from "drizzle-orm";
+import { resend } from "@/lib/resend";
 
 export const weeklyReflectionCron = inngest.createFunction(
   {
@@ -503,9 +546,92 @@ export const weeklyReflectionCron = inngest.createFunction(
 
     const isEmailEnabled = env.FEATURE_REFLECTION_EMAIL === "1";
     if (isEmailEnabled && activeStudentIds.length <= 90) {
-      await step.run("email-branch-placeholder", async () => {
-        console.log(`Email branch active for ${activeStudentIds.length} students (placeholder)`);
-      });
+      for (const studentId of activeStudentIds) {
+        try {
+          const weekStartStr = formatDateStr(monday);
+          await step.run(`send-reflection-email-${studentId}-${weekStartStr}`, async () => {
+            // 1. Fetch student details
+            const [student] = await db
+              .select({ name: user.name, email: user.email })
+              .from(user)
+              .where(eq(user.id, studentId))
+              .limit(1);
+
+            if (!student || !student.email) {
+              console.warn(`No email found for student ${studentId}`);
+              return;
+            }
+
+            // 2. Fetch weekly reflection row
+            const [reflection] = await db
+              .select()
+              .from(weeklyReflections)
+              .where(
+                and(
+                  eq(weeklyReflections.studentId, studentId),
+                  eq(weeklyReflections.weekStart, weekStartStr)
+                )
+              )
+              .limit(1);
+
+            if (!reflection) {
+              console.warn(`No reflection row found for student ${studentId} and week ${weekStartStr}`);
+              return;
+            }
+
+            const payload = reflection.payload;
+            const completed = payload.completed;
+            const streak = payload.streak;
+
+            // 3. Construct email html and send
+            const fromEmail = env.NEXT_PUBLIC_BRAND_EMAIL || "contact@zyxacademy.com";
+
+            await resend.emails.send({
+              from: `Zyx Academy <${fromEmail}>`,
+              to: student.email,
+              subject: `Weekly Learning Reflection: ${weekStartStr}`,
+              html: `
+                <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e7eb; border-radius: 12px; background-color: #ffffff;">
+                  <h1 style="font-family: 'Lexend', sans-serif; font-size: 24px; color: #0f172a; margin-top: 0; font-weight: 700;">Halo ${student.name},</h1>
+                  <p style="font-size: 16px; line-height: 1.5; color: #475569;">Berikut adalah ringkasan pembelajaran kamu untuk minggu yang dimulai pada <strong>${weekStartStr}</strong>.</p>
+                  
+                  <div style="margin: 24px 0; padding: 16px; background-color: #f8fafc; border-radius: 8px;">
+                    <h2 style="font-family: 'Lexend', sans-serif; font-size: 18px; color: #1e293b; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Aktivitas Terhitung:</h2>
+                    <ul style="margin: 0; padding-left: 20px; color: #334155; font-size: 15px; line-height: 1.6;">
+                      <li>Kuis diselesaikan: <strong>${completed.quizzes}</strong></li>
+                      <li>Kartu hafalan dipelajari: <strong>${completed.flashcards}</strong></li>
+                      <li>Modul diselesaikan: <strong>${completed.modules}</strong></li>
+                    </ul>
+                  </div>
+
+                  <div style="margin: 24px 0; padding: 16px; background-color: #f8fafc; border-radius: 8px;">
+                    <h2 style="font-family: 'Lexend', sans-serif; font-size: 18px; color: #1e293b; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Kemajuan Materi:</h2>
+                    <ul style="margin: 0; padding-left: 20px; color: #334155; font-size: 15px; line-height: 1.6;">
+                      <li>Pertumbuhan Pemahaman: <strong>${payload.masteryGrowth > 0 ? "+" : ""}${payload.masteryGrowth}%</strong></li>
+                      ${payload.mostImproved ? `<li>Topik Paling Meningkat: <strong>${payload.mostImproved}</strong></li>` : ""}
+                    </ul>
+                  </div>
+
+                  <div style="margin: 24px 0; padding: 16px; background-color: #f8fafc; border-radius: 8px;">
+                    <h2 style="font-family: 'Lexend', sans-serif; font-size: 18px; color: #1e293b; margin-top: 0; margin-bottom: 12px; font-weight: 600;">Streak Belajar:</h2>
+                    <ul style="margin: 0; padding-left: 20px; color: #334155; font-size: 15px; line-height: 1.6;">
+                      <li>Streak Saat Ini: <strong>${streak.currentStreak} hari</strong></li>
+                      <li>Streak Terpanjang: <strong>${streak.longestStreak} hari</strong></li>
+                    </ul>
+                  </div>
+
+                  <hr style="border: 0; border-top: 1px solid #e5e7eb; margin: 32px 0;" />
+                  <p style="font-size: 14px; color: #64748b; line-height: 1.4; margin-bottom: 0; text-align: center;">
+                    Terus tingkatkan belajarmu di <strong>Zyx Academy</strong>!
+                  </p>
+                </div>
+              `
+            });
+          });
+        } catch (err) {
+          console.error(`Failed to send reflection email to student ${studentId}:`, err);
+        }
+      }
     }
 
     return {

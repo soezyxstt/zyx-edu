@@ -21,30 +21,42 @@ interface StudyPathStep {
   masteryScore?: number;
 }
 
+interface StudyDayPlan {
+  day: number;
+  steps: StudyPathStep[];
+  totalMinutes: number;
+}
+
 type Props = {
   courseId: string;
 };
 
 export function StudyPathTimeline({ courseId }: Props) {
   const [steps, setSteps] = useState<StudyPathStep[]>([]);
+  const [dayPlan, setDayPlan] = useState<StudyDayPlan[] | null>(null);
+  const [daysInput, setDaysInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [planning, setPlanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStudyPath = async () => {
-    setLoading(true);
+  const fetchStudyPath = async (days?: number) => {
+    const isPlanRequest = typeof days === "number";
+    isPlanRequest ? setPlanning(true) : setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/student/study-path?courseId=${courseId}`);
+      const qs = isPlanRequest ? `&days=${days}` : "";
+      const res = await fetch(`/api/student/study-path?courseId=${courseId}${qs}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || "Gagal memuat alur belajar");
       }
       const data = await res.json();
       setSteps(data.steps || []);
+      setDayPlan(data.dayPlan ?? null);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan koneksi");
     } finally {
-      setLoading(false);
+      isPlanRequest ? setPlanning(false) : setLoading(false);
     }
   };
 
@@ -52,6 +64,12 @@ export function StudyPathTimeline({ courseId }: Props) {
     fetchStudyPath();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
+
+  const handleBuildPlan = () => {
+    const days = Number.parseInt(daysInput, 10);
+    if (!Number.isFinite(days) || days <= 0) return;
+    fetchStudyPath(days);
+  };
 
   if (loading) {
     return (
@@ -79,7 +97,7 @@ export function StudyPathTimeline({ courseId }: Props) {
       <div className="flex items-center gap-2 rounded-xl border border-status-error/20 bg-status-error/5 p-4 text-status-error">
         <TriangleAlert className="size-4 shrink-0" />
         <span className="text-body-sm font-medium flex-1">{error}</span>
-        <Button variant="ghost" size="sm" onClick={fetchStudyPath} className="h-8 rounded-md text-status-error hover:bg-status-error/10">
+        <Button variant="ghost" size="sm" onClick={() => fetchStudyPath()} className="h-8 rounded-md text-status-error hover:bg-status-error/10">
           Coba Lagi
         </Button>
       </div>
@@ -106,6 +124,71 @@ export function StudyPathTimeline({ courseId }: Props) {
     locked: "bg-muted border-border",
   };
 
+  return (
+    <div className="space-y-6">
+      {/* Deadline input: "I have a midterm in N days" -> day-by-day plan */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <label htmlFor="study-path-days" className="text-body-sm text-muted-foreground">
+          Ada ujian dalam
+        </label>
+        <input
+          id="study-path-days"
+          type="number"
+          min={1}
+          max={60}
+          value={daysInput}
+          onChange={(e) => setDaysInput(e.target.value)}
+          placeholder="7"
+          className="w-16 rounded-md border border-input bg-background px-2 py-1 text-body-sm focus-visible:border-primary focus-visible:ring-1 focus-visible:ring-primary/50"
+        />
+        <span className="text-body-sm text-muted-foreground">hari</span>
+        <Button size="sm" variant="outline" onClick={handleBuildPlan} disabled={planning || !daysInput} className="rounded-md">
+          {planning ? "Menyusun..." : "Buat rencana"}
+        </Button>
+        {dayPlan && (
+          <Button size="sm" variant="ghost" onClick={() => setDayPlan(null)} className="rounded-md text-muted-foreground">
+            Lihat alur penuh
+          </Button>
+        )}
+      </div>
+
+      {dayPlan && dayPlan.length > 0 ? (
+        <div className="divide-y divide-border">
+          {dayPlan.map((d) => (
+            <div key={d.day} className="py-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-body-base font-medium text-foreground">Hari {d.day}</span>
+                <span className="text-body-sm text-muted-foreground tabular-nums">{d.totalMinutes} min</span>
+              </div>
+              <div className="space-y-1.5">
+                {d.steps.map((step) => (
+                  <div key={step.conceptName} className="flex items-center justify-between gap-3 text-body-sm">
+                    <span className="text-foreground">{step.conceptName}</span>
+                    <span className="text-muted-foreground tabular-nums shrink-0">{step.estimatedMinutes} min</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <FullStudyPathTimeline courseId={courseId} steps={steps} firstActiveIdx={firstActiveIdx} dotClasses={dotClasses} />
+      )}
+    </div>
+  );
+}
+
+function FullStudyPathTimeline({
+  courseId,
+  steps,
+  firstActiveIdx,
+  dotClasses,
+}: {
+  courseId: string;
+  steps: StudyPathStep[];
+  firstActiveIdx: number;
+  dotClasses: Record<StudyPathStep["status"], string>;
+}) {
   return (
     <div className="relative pl-6">
       {/* Continuous Timeline Rail */}

@@ -33,6 +33,7 @@ function emptySnapshot(base: Awaited<ReturnType<typeof getCohortAnalytics>>): Sn
     ...base,
     conceptTrends: {},
     mostMissed: {},
+    topMisconceptions: [],
     watchlist: [],
     engagement: { quizParticipationPct: 0, flashcardAdherencePct: 0 },
   };

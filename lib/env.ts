@@ -22,6 +22,8 @@ export const env = createEnv({
  GOOGLE_CLIENT_SECRET: z.string(),
  /** From https://uploadthing.com/dashboard ; replaces direct S3/Tigris uploads. */
  UPLOADTHING_TOKEN: z.string().min(1),
+ /** Resend API Key for sending transactional emails. */
+ RESEND_API_KEY: z.string().min(1),
  /** Nomor WhatsApp admin (digits; `+`/spaces allowed). Contoh: `6281234567890`. */
  WHATSAPP_ADMIN_NUMBER: z.string().optional(),
  /** Gemini API Key for AI operations (primary) */
@@ -95,6 +97,8 @@ export const env = createEnv({
  LIVE_HMAC_SECRET: z.string().optional(),
  FEATURE_REFLECTION: z.string().optional(),
  FEATURE_REFLECTION_EMAIL: z.string().optional(),
+ /** Adaptive quiz difficulty: bias a quiz's easy/medium/hard mix by the student's course mastery. "1" enables. */
+ FEATURE_ADAPTIVE_QUIZ: z.string().optional(),
  // ── P8 Vectorize Migration ─────────────────────────────────────────────
  /** Active vector store: 'pinecone' (default) | 'dual' (write both) | 'vectorize' (read from VZ) */
  VECTOR_STORE: z.enum(['pinecone', 'vectorize', 'dual']).optional(),
@@ -120,11 +124,20 @@ export const env = createEnv({
  NEXT_PUBLIC_WHATSAPP_NUMBER: z.string().optional(),
   /** Base URL of the Cloudflare Worker for real-time quiz (P9). e.g. https://zyx-realtime.workers.dev */
   NEXT_PUBLIC_REALTIME_URL: z.string().url().optional(),
+  /** Email resmi brand Zyx Academy. */
+  NEXT_PUBLIC_BRAND_EMAIL: z.string().email().optional().default("contact@zyxacademy.com"),
+  /** Akun Instagram resmi brand Zyx Academy. */
+  NEXT_PUBLIC_BRAND_INSTAGRAM: z.string().url().optional().default("https://instagram.com/zyx_academy"),
+  /** Akun TikTok resmi brand Zyx Academy. */
+  NEXT_PUBLIC_BRAND_TIKTOK: z.string().url().optional().default("https://tiktok.com/@zyx_academy"),
   },
  runtimeEnv: {
  NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
  NEXT_PUBLIC_DESMOS_API_KEY: process.env.NEXT_PUBLIC_DESMOS_API_KEY,
  NEXT_PUBLIC_WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER,
+ NEXT_PUBLIC_BRAND_EMAIL: process.env.NEXT_PUBLIC_BRAND_EMAIL,
+ NEXT_PUBLIC_BRAND_INSTAGRAM: process.env.NEXT_PUBLIC_BRAND_INSTAGRAM,
+ NEXT_PUBLIC_BRAND_TIKTOK: process.env.NEXT_PUBLIC_BRAND_TIKTOK,
  DATABASE_URL: process.env.DATABASE_URL,
  TURSO_CONNECTION_URL: process.env.TURSO_CONNECTION_URL,
  TURSO_AUTH_TOKEN: process.env.TURSO_AUTH_TOKEN,
@@ -133,6 +146,7 @@ export const env = createEnv({
  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
  GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
  UPLOADTHING_TOKEN: process.env.UPLOADTHING_TOKEN,
+ RESEND_API_KEY: process.env.RESEND_API_KEY,
  WHATSAPP_ADMIN_NUMBER: process.env.WHATSAPP_ADMIN_NUMBER,
  GEMINI_API_KEY: process.env.GEMINI_API_KEY,
  GEMINI_API_KEY_2: process.env.GEMINI_API_KEY_2,
@@ -171,6 +185,7 @@ export const env = createEnv({
  LIVE_HMAC_SECRET: process.env.LIVE_HMAC_SECRET,
  FEATURE_REFLECTION: process.env.FEATURE_REFLECTION,
  FEATURE_REFLECTION_EMAIL: process.env.FEATURE_REFLECTION_EMAIL,
+ FEATURE_ADAPTIVE_QUIZ: process.env.FEATURE_ADAPTIVE_QUIZ,
   NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
  VECTOR_STORE: process.env.VECTOR_STORE,
  VECTORIZE_WORKER_URL: process.env.VECTORIZE_WORKER_URL,

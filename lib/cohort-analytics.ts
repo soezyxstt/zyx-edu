@@ -13,9 +13,11 @@ import {
   quizTemplates,
   aiQuestionBank,
   knowledgeObjects,
+  questionOptionStats,
   user,
 } from "@/db/schema";
 import { and, desc, eq, gt, gte, inArray, sql, count, avg } from "drizzle-orm";
+import { QUESTION_TOTAL_INDEX } from "@/lib/option-stats";
 
 const MIN_STUDENTS = 5;
 const MIN_QUESTION_ATTEMPTS = 5;
@@ -68,9 +70,19 @@ export interface WatchlistStudent {
   lastActiveAt: string | null; // ISO string
 }
 
+/** Cohort-wide misconception prevalence: closes the audit's "aggregate, not just per-attempt" gap. */
+export interface MisconceptionStat {
+  misconceptionKoId: string;
+  label: string;
+  conceptName: string;
+  pctSelected: number; // % of attempts at questions tagging this misconception that picked it
+  sampleSize: number;  // total attempts across those questions
+}
+
 export interface SnapshotPayload extends CohortAnalytics {
   conceptTrends: Record<string, ConceptTrend[]>;
   mostMissed: Record<string, MostMissedQuestion[]>;
+  topMisconceptions: MisconceptionStat[];
   watchlist: WatchlistStudent[];
   engagement: {
     quizParticipationPct: number;
@@ -348,6 +360,77 @@ export async function computeSnapshotPayload(courseId: string): Promise<Snapshot
     }
   }
 
+  // ── Top misconceptions (cohort-wide aggregation over tagged distractors) ──
+  // distractorMap tags individual wrong options on a question with a
+  // misconceptionKoId at generation time (lib/distractor-mapper.ts); this
+  // aggregates real selection data across every published question in the
+  // course that tags a given misconception, answering "what % of students
+  // hold this specific wrong belief," not just "did this one student."
+
+  const topMisconceptions: MisconceptionStat[] = [];
+
+  const taggedQuestions = await db
+    .select({
+      id: aiQuestionBank.id,
+      distractorMap: aiQuestionBank.distractorMap,
+      conceptName: knowledgeObjects.conceptName,
+    })
+    .from(aiQuestionBank)
+    .leftJoin(knowledgeObjects, eq(aiQuestionBank.knowledgeObjectId, knowledgeObjects.id))
+    .where(and(eq(aiQuestionBank.courseId, courseId), eq(aiQuestionBank.reviewStatus, "published")));
+
+  const misconceptionQuestionIds = taggedQuestions
+    .filter((q) => (q.distractorMap ?? []).some((d) => d.kind === "misconception" && d.misconceptionKoId))
+    .map((q) => q.id);
+
+  if (misconceptionQuestionIds.length > 0) {
+    const optionStatRows = await db
+      .select()
+      .from(questionOptionStats)
+      .where(inArray(questionOptionStats.questionId, misconceptionQuestionIds));
+
+    const statsByQuestion = new Map<string, typeof optionStatRows>();
+    for (const row of optionStatRows) {
+      const arr = statsByQuestion.get(row.questionId) ?? [];
+      arr.push(row);
+      statsByQuestion.set(row.questionId, arr);
+    }
+
+    const agg = new Map<string, { label: string; conceptName: string; selected: number; totalAttempts: number }>();
+
+    for (const q of taggedQuestions) {
+      const map = q.distractorMap ?? [];
+      const stats = statsByQuestion.get(q.id) ?? [];
+      const totalAttempts = stats.find((s) => s.optionIndex === QUESTION_TOTAL_INDEX)?.totalAttempts ?? 0;
+      if (totalAttempts < MIN_QUESTION_ATTEMPTS) continue;
+
+      for (const d of map) {
+        if (d.kind !== "misconception" || !d.misconceptionKoId) continue;
+        const selected = stats.find((s) => s.optionIndex === d.optionIndex)?.selectedCount ?? 0;
+        const existing = agg.get(d.misconceptionKoId) ?? {
+          label: d.label,
+          conceptName: q.conceptName ?? "_unknown",
+          selected: 0,
+          totalAttempts: 0,
+        };
+        existing.selected += selected;
+        existing.totalAttempts += totalAttempts;
+        agg.set(d.misconceptionKoId, existing);
+      }
+    }
+
+    for (const [misconceptionKoId, v] of agg.entries()) {
+      topMisconceptions.push({
+        misconceptionKoId,
+        label: v.label,
+        conceptName: v.conceptName,
+        pctSelected: v.totalAttempts > 0 ? Math.round((v.selected / v.totalAttempts) * 100) : 0,
+        sampleSize: v.totalAttempts,
+      });
+    }
+    topMisconceptions.sort((a, b) => b.pctSelected - a.pctSelected);
+  }
+
   // ── Watchlist ─────────────────────────────────────────────────────────────
 
   const watchlistStudentIds = new Set<string>();
@@ -395,6 +478,7 @@ export async function computeSnapshotPayload(courseId: string): Promise<Snapshot
     ...base,
     conceptTrends,
     mostMissed,
+    topMisconceptions,
     watchlist,
     engagement: { quizParticipationPct, flashcardAdherencePct: 0 },
   };

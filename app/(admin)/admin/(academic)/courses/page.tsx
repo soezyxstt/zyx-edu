@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { GraduationCap, FileText, Layers } from "lucide-react";
+import { GraduationCap, FileText, Layers, HelpCircle } from "lucide-react";
 import { pageTitle } from "@/lib/site";
 import { assertAdmin } from "@/lib/uploadthing-admin";
 import { getCourses, getAllChapters, getUploadedMaterials } from "./actions";
 import { CoursesDashboard } from "@/components/admin/courses-dashboard";
 import { PDFMaterialsTab } from "@/components/admin/pdf-materials-tab";
 import { BundleImporterTab } from "@/components/admin/bundle-importer-tab";
+import { AssessmentBundleImporterTab } from "@/components/admin/assessment-bundle-importer-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const metadata: Metadata = {
@@ -41,7 +42,11 @@ export default async function AdminCoursesPage() {
           </TabsTrigger>
           <TabsTrigger value="bundle-importer" className="rounded-lg font-semibold flex items-center gap-1.5 px-4 py-2">
             <Layers className="size-4" />
-            Import Course Bundle
+            Import Learning Bundle
+          </TabsTrigger>
+          <TabsTrigger value="assessment-bundle-importer" className="rounded-lg font-semibold flex items-center gap-1.5 px-4 py-2">
+            <HelpCircle className="size-4" />
+            Import Assessment Bundle
           </TabsTrigger>
         </TabsList>
 
@@ -59,6 +64,10 @@ export default async function AdminCoursesPage() {
 
         <TabsContent value="bundle-importer" className="outline-hidden">
           <BundleImporterTab />
+        </TabsContent>
+
+        <TabsContent value="assessment-bundle-importer" className="outline-hidden">
+          <AssessmentBundleImporterTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -2439,3 +2439,179 @@ export const masteryRecomputeQueueRelations = relations(masteryRecomputeQueue, (
     references: [courses.id],
   }),
 }));
+
+// ─── Learning Outcomes: CPL -> CPMK -> Sub-CPMK hierarchy ──────────────────
+// Closes the audit's deepest structural gap (docs/audit/00-master-summary.md):
+// without this, "curriculum coverage" can only ever mean material-to-KO
+// coverage, never accreditation-style outcome coverage.
+export const learningOutcomes = sqliteTable(
+  "learning_outcomes",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    level: text("level").$type<"cpl" | "cpmk" | "sub_cpmk">().notNull(),
+    parentId: text("parent_id").references((): any => learningOutcomes.id, { onDelete: "cascade" }),
+    code: text("code").notNull(), // e.g. "CPL-1", "CPMK-1.2", "Sub-CPMK-1.2.1"
+    description: text("description").notNull(),
+    bloomTarget: text("bloom_target").$type<"remember" | "understand" | "apply" | "analyze" | "evaluate" | "create">(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("idx_learning_outcomes_course").on(table.courseId),
+    index("idx_learning_outcomes_parent").on(table.parentId),
+    unique("uq_learning_outcomes_course_code").on(table.courseId, table.code),
+  ]
+);
+
+// Join table: which concepts each outcome (typically a CPMK / Sub-CPMK) is realized by.
+// Mirrors the assessmentObjectConcepts pattern so coverage queries can join
+// learningOutcomes -> learningOutcomeConcepts -> concepts -> knowledgeObjects/assessmentObjectConcepts
+// the same way assessment coverage already works.
+export const learningOutcomeConcepts = sqliteTable(
+  "learning_outcome_concepts",
+  {
+    id: text("id").primaryKey(),
+    learningOutcomeId: text("learning_outcome_id")
+      .notNull()
+      .references(() => learningOutcomes.id, { onDelete: "cascade" }),
+    conceptId: text("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("idx_lo_concepts_lo").on(table.learningOutcomeId),
+    index("idx_lo_concepts_concept").on(table.conceptId),
+    unique("uq_lo_concepts").on(table.learningOutcomeId, table.conceptId),
+  ]
+);
+
+export const learningOutcomesRelations = relations(learningOutcomes, ({ one, many }) => ({
+  course: one(courses, {
+    fields: [learningOutcomes.courseId],
+    references: [courses.id],
+  }),
+  parent: one(learningOutcomes, {
+    fields: [learningOutcomes.parentId],
+    references: [learningOutcomes.id],
+    relationName: "learningOutcomeParent",
+  }),
+  children: many(learningOutcomes, { relationName: "learningOutcomeParent" }),
+  concepts: many(learningOutcomeConcepts),
+}));
+
+export const learningOutcomeConceptsRelations = relations(learningOutcomeConcepts, ({ one }) => ({
+  learningOutcome: one(learningOutcomes, {
+    fields: [learningOutcomeConcepts.learningOutcomeId],
+    references: [learningOutcomes.id],
+  }),
+  concept: one(concepts, {
+    fields: [learningOutcomeConcepts.conceptId],
+    references: [concepts.id],
+  }),
+}));
+
+// ─── Continuous Improvement: deterministic content-quality flags ──────────
+// Closes docs/audit/admin-knowledge-infrastructure-audit.md item 7: the data
+// needed already existed (questionOptionStats, aiQuestionBank.qualityScore),
+// nothing computed into it. Pure SQL aggregation, no AI (AGENT_CONTEXT.md
+// zero-AI-for-analytics rule) ; mirrors the aiExtractionFailures observability
+// table pattern.
+export const contentQualityFlags = sqliteTable(
+  "content_quality_flags",
+  {
+    id: text("id").primaryKey(),
+    courseId: text("course_id")
+      .notNull()
+      .references(() => courses.id, { onDelete: "cascade" }),
+    questionId: text("question_id")
+      .notNull()
+      .references(() => aiQuestionBank.id, { onDelete: "cascade" }),
+    flagType: text("flag_type")
+      .$type<"too_easy" | "too_hard" | "dead_distractor">()
+      .notNull(),
+    detail: text("detail", { mode: "json" }).$type<Record<string, unknown>>().notNull(),
+    sampleSize: integer("sample_size").notNull(),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("idx_cqf_course").on(table.courseId),
+    index("idx_cqf_question").on(table.questionId),
+    unique("uq_cqf_question_type").on(table.questionId, table.flagType),
+  ]
+);
+
+export const contentQualityFlagsRelations = relations(contentQualityFlags, ({ one }) => ({
+  course: one(courses, {
+    fields: [contentQualityFlags.courseId],
+    references: [courses.id],
+  }),
+  question: one(aiQuestionBank, {
+    fields: [contentQualityFlags.questionId],
+    references: [aiQuestionBank.id],
+  }),
+}));
+
+// ─── Career-Oriented Learning ───────────────────────────────────────────────
+// Closes docs/audit/active-recall-and-exploration-audit.md item 4: net-new
+// feature, no existing foundation beyond the prerequisite graph itself.
+// Career -> target concept set is admin-curated (not AI-inferred), consistent
+// with AGENT_CONTEXT.md's AI-quota philosophy. Ordering reuses the
+// prerequisite-graph + topological-sort approach already proven in
+// lib/study-path-service.ts, scoped to this target set instead of one course.
+export const careerPathTemplates = sqliteTable(
+  "career_path_templates",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    description: text("description"),
+    createdAt: integer("created_at", { mode: "timestamp" }).defaultNow().notNull(),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [unique("uq_career_path_templates_title").on(table.title)]
+);
+
+export const careerPathConcepts = sqliteTable(
+  "career_path_concepts",
+  {
+    id: text("id").primaryKey(),
+    careerPathTemplateId: text("career_path_template_id")
+      .notNull()
+      .references(() => careerPathTemplates.id, { onDelete: "cascade" }),
+    conceptId: text("concept_id")
+      .notNull()
+      .references(() => concepts.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    index("idx_career_path_concepts_template").on(table.careerPathTemplateId),
+    index("idx_career_path_concepts_concept").on(table.conceptId),
+    unique("uq_career_path_concepts").on(table.careerPathTemplateId, table.conceptId),
+  ]
+);
+
+export const careerPathTemplatesRelations = relations(careerPathTemplates, ({ many }) => ({
+  concepts: many(careerPathConcepts),
+}));
+
+export const careerPathConceptsRelations = relations(careerPathConcepts, ({ one }) => ({
+  template: one(careerPathTemplates, {
+    fields: [careerPathConcepts.careerPathTemplateId],
+    references: [careerPathTemplates.id],
+  }),
+  concept: one(concepts, {
+    fields: [careerPathConcepts.conceptId],
+    references: [concepts.id],
+  }),
+}));

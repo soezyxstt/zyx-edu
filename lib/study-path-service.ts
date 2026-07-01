@@ -494,3 +494,57 @@ export async function getOrComputeStudyPath(studentId: string, courseId: string)
 
   return recomputeStudyPath(studentId, courseId);
 }
+
+// ─── AI Study Planner: deadline-driven day buckets ──────────────────────────
+// Closes the audit's "Adaptive/AI Study Planner" gap (docs/audit/student-
+// personalization-tutor-audit.md, item 4): the ordering + per-step time
+// estimates above already existed, but nothing converted "I have a midterm
+// in N days" into a day-by-day plan. This is schedule-packing on top of the
+// existing ordered, time-estimated steps, not new sequencing logic.
+
+export interface StudyDayPlan {
+  day: number; // 1-indexed
+  steps: StudyPathStep[];
+  totalMinutes: number;
+}
+
+/**
+ * Packs already-ordered study path steps into `days` day-buckets by
+ * cumulative estimatedMinutes, preserving the existing prerequisite +
+ * weakest-first order (steps are never reordered, only split across days).
+ * "mastered" steps are skipped since they need no further study time.
+ */
+export function bucketStudyPathByDays(
+  steps: StudyPathStep[],
+  days: number,
+  minutesPerDayCap = 90,
+): StudyDayPlan[] {
+  const actionable = steps.filter((s) => s.status !== "mastered");
+  if (actionable.length === 0 || days <= 0) return [];
+
+  const totalMinutes = actionable.reduce((sum, s) => sum + s.estimatedMinutes, 0);
+  const targetPerDay = Math.max(1, Math.min(minutesPerDayCap, Math.ceil(totalMinutes / days)));
+
+  const plan: StudyDayPlan[] = [];
+  let currentSteps: StudyPathStep[] = [];
+  let currentMinutes = 0;
+  let dayNum = 1;
+
+  for (const step of actionable) {
+    const wouldOverflow = currentMinutes > 0 && currentMinutes + step.estimatedMinutes > targetPerDay;
+    if (wouldOverflow && dayNum < days) {
+      plan.push({ day: dayNum, steps: currentSteps, totalMinutes: currentMinutes });
+      dayNum++;
+      currentSteps = [];
+      currentMinutes = 0;
+    }
+    currentSteps.push(step);
+    currentMinutes += step.estimatedMinutes;
+  }
+
+  if (currentSteps.length > 0) {
+    plan.push({ day: dayNum, steps: currentSteps, totalMinutes: currentMinutes });
+  }
+
+  return plan;
+}

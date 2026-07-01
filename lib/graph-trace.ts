@@ -6,7 +6,7 @@
  * deepest weak prerequisites. Pure DB + logic, no AI.
  */
 import { db } from "@/db";
-import { knowledgeObjects, knowledgeRelationships, conceptGraphEdges, studentConceptMastery } from "@/db/schema";
+import { knowledgeObjects, knowledgeRelationships, conceptGraphEdges, studentConceptMastery, courses } from "@/db/schema";
 import { and, eq, inArray, or } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 
@@ -107,4 +107,66 @@ export async function traceRootCause(
 
   const estimatedMinutes = chain.length * 4 + (chain.length > 0 ? 3 : 0);
   return { chain, estimatedMinutes };
+}
+
+// ─── Cross-Course Knowledge Graph ───────────────────────────────────────────
+// Closes docs/audit/admin-knowledge-infrastructure-audit.md item 1: the
+// concept registry (concepts/conceptLocalizations) is already global, but
+// conceptGraphEdges is rebuilt and queried per-course only, so the same
+// concept used in 4 courses shows up as 4 disconnected node clusters. This
+// adds a cross-course query mode without touching the per-course rebuild
+// above (buildConceptGraph) or the existing per-course mastery-page view.
+
+export interface CrossCourseConceptCourse {
+  courseId: string;
+  courseTitle: string;
+}
+
+export interface CrossCourseConceptEdge {
+  courseId: string;
+  sourceConcept: string;
+  targetConcept: string;
+  type: "prerequisite" | "related";
+}
+
+/**
+ * Given a concept name, returns every course that actually teaches it
+ * (has an active KO with that conceptName) and every concept-graph edge
+ * touching it across all of those courses, so a future "this concept
+ * everywhere" view doesn't need to merge per-course graphs by hand.
+ */
+export async function getCrossCourseConceptGraph(conceptName: string): Promise<{
+  courses: CrossCourseConceptCourse[];
+  edges: CrossCourseConceptEdge[];
+}> {
+  const trimmed = conceptName.trim();
+
+  const courseRows = await db
+    .selectDistinct({ courseId: knowledgeObjects.courseId, courseTitle: courses.title })
+    .from(knowledgeObjects)
+    .innerJoin(courses, eq(knowledgeObjects.courseId, courses.id))
+    .where(and(eq(knowledgeObjects.conceptName, trimmed), eq(knowledgeObjects.status, "active")));
+
+  if (courseRows.length === 0) {
+    return { courses: [], edges: [] };
+  }
+
+  const courseIds = courseRows.map((c) => c.courseId);
+
+  const edgeRows = await db
+    .select({
+      courseId: conceptGraphEdges.courseId,
+      sourceConcept: conceptGraphEdges.sourceConcept,
+      targetConcept: conceptGraphEdges.targetConcept,
+      type: conceptGraphEdges.type,
+    })
+    .from(conceptGraphEdges)
+    .where(
+      and(
+        inArray(conceptGraphEdges.courseId, courseIds),
+        or(eq(conceptGraphEdges.sourceConcept, trimmed), eq(conceptGraphEdges.targetConcept, trimmed)),
+      ),
+    );
+
+  return { courses: courseRows, edges: edgeRows };
 }

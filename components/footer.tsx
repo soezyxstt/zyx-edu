@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FaTiktok, FaInstagram } from "react-icons/fa6";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
+import { env } from "@/lib/env";
 
 const socialClass = cn(
   "interactive inline-flex size-10 items-center justify-center rounded-full border border-border",
@@ -62,24 +63,28 @@ export function Footer() {
               </li>
             </ul>
             <div className="mt-6 flex flex-wrap items-center gap-2">
-              <Link
-                href="https://instagram.com/zyx_academy"
-                className={socialClass}
-                aria-label="Zyx Academy di Instagram"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FaInstagram className="size-4.5" aria-hidden />
-              </Link>
-              <Link
-                href="https://tiktok.com/@zyx_academy"
-                className={socialClass}
-                aria-label="Zyx Academy di TikTok"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <FaTiktok className="size-4.5" aria-hidden />
-              </Link>
+              {env.NEXT_PUBLIC_BRAND_INSTAGRAM && (
+                <Link
+                  href={env.NEXT_PUBLIC_BRAND_INSTAGRAM}
+                  className={socialClass}
+                  aria-label="Zyx Academy di Instagram"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaInstagram className="size-4.5" aria-hidden />
+                </Link>
+              )}
+              {env.NEXT_PUBLIC_BRAND_TIKTOK && (
+                <Link
+                  href={env.NEXT_PUBLIC_BRAND_TIKTOK}
+                  className={socialClass}
+                  aria-label="Zyx Academy di TikTok"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <FaTiktok className="size-4.5" aria-hidden />
+                </Link>
+              )}
             </div>
           </nav>
         </div>

@@ -1,0 +1,167 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Lightbulb, Lock } from "lucide-react";
+import { checkEnrollment } from "@/app/(student)/dashboard/actions";
+import { CoursePageShell } from "@/components/course/course-page-shell";
+import { studentCardClass } from "@/components/course/course-surfaces";
+import { EnrollmentForm } from "@/components/enrollment-form";
+import { Reveal } from "@/components/ui/reveal";
+import { Badge } from "@/components/ui/badge";
+import { MarkdownRenderer } from "@/components/course/markdown-renderer";
+import { pageTitle } from "@/lib/site";
+import { db } from "@/db";
+import { courses } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { getConceptExplorerData, type ConceptRef } from "@/lib/concept-explorer-service";
+
+type Props = { params: Promise<{ id: string; slug: string }> };
+
+const TYPE_LABELS: Record<string, string> = {
+  definition: "Definisi",
+  formula: "Rumus",
+  example: "Contoh",
+  misconception: "Miskonsepsi",
+  exercise: "Latihan",
+  summary: "Ringkasan",
+  objective: "Tujuan Belajar",
+  concept_overview: "Ikhtisar",
+};
+
+const TYPE_ORDER = ["concept_overview", "definition", "formula", "example", "misconception", "exercise", "objective", "summary"];
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id, slug } = await params;
+  const [course] = await db.select().from(courses).where(eq(courses.id, id)).limit(1);
+  const data = await getConceptExplorerData(id, slug);
+
+  return {
+    title: pageTitle(data ? `${data.conceptName} - ${course?.title ?? ""}` : "Konsep"),
+    description: data ? `Penjelasan lengkap konsep ${data.conceptName}.` : "Penjelasan konsep.",
+  };
+}
+
+function ConceptLinkRow({ courseId, refs }: { courseId: string; refs: ConceptRef[] }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {refs.map((r) => (
+        <Link key={r.slug} href={`/courses/${courseId}/concept/${r.slug}`}>
+          <Badge variant="secondary" className="rounded-md hover:bg-muted cursor-pointer">
+            {r.conceptName}
+          </Badge>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+export default async function ConceptExplorerPage({ params }: Props) {
+  const { id, slug } = await params;
+
+  const [course] = await db.select().from(courses).where(eq(courses.id, id)).limit(1);
+  if (!course) notFound();
+
+  const isEnrolled = await checkEnrollment(id);
+
+  if (!isEnrolled) {
+    return (
+      <CoursePageShell title={`Konsep: ${course.title}`} description="Jelajahi konsep secara mendalam." icon={Lightbulb}>
+        <Reveal>
+          <div className={studentCardClass()}>
+            <div className="flex items-start gap-3">
+              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground ring-1 ring-border">
+                <Lock className="size-5" />
+              </div>
+              <div>
+                <h3 className="font-heading text-body-base font-bold text-foreground">Butuh token kelas</h3>
+                <p className="mt-1 text-body-sm text-muted-foreground">Aktifkan kelas untuk menjelajahi konsep.</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <EnrollmentForm />
+            </div>
+          </div>
+        </Reveal>
+      </CoursePageShell>
+    );
+  }
+
+  const session = await auth.api.getSession({ headers: await headers() });
+  const studentId = session?.user?.id;
+
+  const data = await getConceptExplorerData(id, slug, studentId);
+  if (!data) notFound();
+
+  const typesPresent = TYPE_ORDER.filter((t) => data.kosByType[t as keyof typeof data.kosByType]?.length);
+
+  return (
+    <CoursePageShell title={data.conceptName} description={`Konsep dalam ${course.title}`} icon={Lightbulb}>
+      <div className="space-y-8">
+        {/* Mastery + prerequisite/related summary */}
+        <Reveal>
+          <div className={studentCardClass("space-y-4")}>
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <h2 className="text-h6 font-heading font-semibold text-foreground">{data.conceptName}</h2>
+              {typeof data.masteryScore === "number" && (
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-32 rounded-md bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-md bg-primary transition-[width] duration-500 ease-out"
+                      style={{ width: `${data.masteryScore}%` }}
+                    />
+                  </div>
+                  <span className="text-body-sm text-muted-foreground tabular-nums">{data.masteryScore}%</span>
+                </div>
+              )}
+            </div>
+
+            {data.prerequisites.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-body-xs font-semibold text-muted-foreground uppercase tracking-wider">Prasyarat</p>
+                <ConceptLinkRow courseId={id} refs={data.prerequisites} />
+              </div>
+            )}
+
+            {data.unlocks.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-body-xs font-semibold text-muted-foreground uppercase tracking-wider">Membuka konsep</p>
+                <ConceptLinkRow courseId={id} refs={data.unlocks} />
+              </div>
+            )}
+
+            {data.related.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-body-xs font-semibold text-muted-foreground uppercase tracking-wider">Konsep terkait</p>
+                <ConceptLinkRow courseId={id} refs={data.related} />
+              </div>
+            )}
+          </div>
+        </Reveal>
+
+        {/* Content grouped by type */}
+        {typesPresent.map((type) => {
+          const items = data.kosByType[type as keyof typeof data.kosByType] ?? [];
+          return (
+            <Reveal key={type}>
+              <section aria-labelledby={`${type}-heading`}>
+                <h2 id={`${type}-heading`} className="text-body-base font-semibold mb-3">
+                  {TYPE_LABELS[type] ?? type}
+                </h2>
+                <div className="space-y-4">
+                  {items.map((ko) => (
+                    <div key={ko.id} className={studentCardClass()}>
+                      <h3 className="text-body-base font-semibold text-foreground mb-2">{ko.title}</h3>
+                      <MarkdownRenderer content={ko.content} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </Reveal>
+          );
+        })}
+      </div>
+    </CoursePageShell>
+  );
+}

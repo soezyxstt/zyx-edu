@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
 import { EnrollmentForm } from "@/components/enrollment-form";
-import { CoursesAmbient } from "@/components/course/courses-ambient";
 import { Reveal } from "@/components/ui/reveal";
 import { auth } from "@/lib/auth";
 import {
@@ -36,7 +35,6 @@ import { WeeklyReflection } from "@/components/dashboard/weekly-reflection";
 import { getOrUpdateStreak } from "@/lib/streak-service";
 import { ActivateClassModal } from "@/components/dashboard/activate-class-modal";
 import { PageHeader } from "@/components/page-header";
-import { studentCardClass } from "@/components/course/course-surfaces";
 import { cn } from "@/lib/utils";
 
 
@@ -45,6 +43,9 @@ export const metadata: Metadata = {
   description:
     "Pantau progres belajar, materi, kuis, tryout ITB TPB; semua dalam satu ruang belajar personal.",
 };
+
+const dashboardSectionClass = "border-b border-border/70 pb-6";
+const dashboardInsetClass = "border-y border-border bg-background/35 px-4 py-5 md:px-5";
 
 export default async function DashboardPage() {
   const h = await headers();
@@ -234,13 +235,13 @@ export default async function DashboardPage() {
             <PageHeader
               title={
                 <>
-                  Halo, <span className="bg-linear-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>!
+                  Halo, <span className="bg-linear-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{userName}</span>
                 </>
               }
               description="Mari lanjutkan aktivitas belajarmu hari ini."
               actions={
                 <div className="flex flex-wrap items-center gap-3">
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 shadow-xs">
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/55 px-3.5 py-1.5">
                     <GraduationCap className="size-4 text-brand-primary" />
                     <div className="text-left">
                       <p className="text-[10px] uppercase font-bold text-muted-foreground leading-none">Kelas</p>
@@ -248,7 +249,7 @@ export default async function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 shadow-xs">
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/55 px-3.5 py-1.5">
                     <Bookmark className="size-4 text-brand-primary" />
                     <div className="text-left">
                       <p className="text-[10px] uppercase font-bold text-muted-foreground leading-none">Materi</p>
@@ -257,7 +258,7 @@ export default async function DashboardPage() {
                   </div>
 
                   {streakInfo && (
-                    <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-3.5 py-1.5 shadow-xs">
+                    <div className="flex items-center gap-2 rounded-lg bg-muted/55 px-3.5 py-1.5">
                       <Flame className={cn("size-4", streakInfo.current > 0 ? "text-brand-secondary fill-brand-secondary/10" : "text-muted-foreground")} />
                       <div className="text-left">
                         <p className="text-[10px] uppercase font-bold text-muted-foreground leading-none">Streak</p>
@@ -276,7 +277,7 @@ export default async function DashboardPage() {
         <Reveal duration="duration-700">
         {!isEnrolledInAny ? (
           /* Empty State: Step-by-step clean portal */
-          <div className="mx-auto max-w-2xl rounded-3xl border border-border/60 bg-card/65 p-8 text-center shadow-md backdrop-blur-md md:p-12">
+          <div className="mx-auto max-w-3xl border-y border-border bg-background/45 px-6 py-10 text-center backdrop-blur-md md:px-10 md:py-12">
             <div className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-brand-primary/10 text-brand-primary ring-4 ring-brand-primary/5">
               <GraduationCap className="size-8" />
             </div>
@@ -288,25 +289,25 @@ export default async function DashboardPage() {
             </p>
 
             {/* Steps indicator */}
-            <div className="mt-8 grid gap-4 grid-cols-3 text-left">
-              <div className="rounded-xl bg-muted/40 p-4 border border-border/40">
+            <div className="mt-8 grid gap-4 text-left sm:grid-cols-3">
+              <div className="border-l border-border bg-muted/25 p-4">
                 <span className="flex size-6 items-center justify-center rounded-full bg-brand-primary text-white font-heading text-body-xs font-bold">1</span>
                 <h4 className="mt-2 text-body-xs font-bold text-foreground">Buat Akun</h4>
                 <p className="text-body-2xs text-muted-foreground mt-0.5">Sudah aktif via Google</p>
               </div>
-              <div className="rounded-xl bg-muted/40 p-4 border border-border/40">
+              <div className="border-l border-border bg-muted/25 p-4">
                 <span className="flex size-6 items-center justify-center rounded-full bg-brand-primary text-white font-heading text-body-xs font-bold">2</span>
                 <h4 className="mt-2 text-body-xs font-bold text-foreground">Token Unik</h4>
                 <p className="text-body-2xs text-muted-foreground mt-0.5">Minta pada dosen/admin</p>
               </div>
-              <div className="rounded-xl bg-muted/40 p-4 border border-border/40">
+              <div className="border-l border-border bg-muted/25 p-4">
                 <span className="flex size-6 items-center justify-center rounded-full bg-brand-primary text-white font-heading text-body-xs font-bold">3</span>
                 <h4 className="mt-2 text-body-xs font-bold text-foreground">Aktivasi</h4>
                 <p className="text-body-2xs text-muted-foreground mt-0.5">Masukkan di form bawah</p>
               </div>
             </div>
 
-            <div className={studentCardClass("mt-8 bg-linear-to-br from-brand-primary/5 via-transparent to-tertiary-3/5 text-left shadow-xs")}>
+            <div className="mt-8 border-t border-border pt-6 text-left">
               <h3 className="font-heading text-body-sm font-bold text-foreground mb-1">
                 Masukkan Kode Aktivasi
               </h3>
@@ -322,7 +323,7 @@ export default async function DashboardPage() {
             {/* Left Column (Main study track) - 7 cols */}
             <div className="space-y-6 lg:col-span-7">
               {/* Classes list Section */}
-              <div className={studentCardClass()}>
+              <section className={dashboardSectionClass}>
                 <div className="mb-5 flex flex-wrap items-center justify-between gap-y-2">
                   <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2">
                     <GraduationCap className="size-5 text-brand-primary" />
@@ -395,10 +396,10 @@ export default async function DashboardPage() {
                     );
                   })}
                 </div>
-              </div>
+              </section>
 
               {/* Documents In Progress ("sedang dibaca tetapi belum selesai") */}
-              <div className={studentCardClass()}>
+              <section className={dashboardSectionClass}>
                 <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
                   <Bookmark className="size-5 text-brand-primary" />
                   Materi Terbuka (Belum Selesai)
@@ -435,7 +436,7 @@ export default async function DashboardPage() {
                                 </div>
                                 <span className="text-body-xs font-semibold text-foreground">{doc.completionPercent}%</span>
                                 {doc.lastSectionId && (
-                                  <span className="text-body-xs text-muted-foreground truncate max-w-[120px]">· {doc.lastSectionId}</span>
+                                  <span className="max-w-[120px] truncate text-body-xs text-muted-foreground">, {doc.lastSectionId}</span>
                                 )}
                               </div>
                             </div>
@@ -449,12 +450,12 @@ export default async function DashboardPage() {
                     })}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border/60">
+                  <div className="flex flex-col items-center justify-center border-y border-dashed border-border/60 py-10 text-center">
                     <CheckCircle2 className="size-8 text-muted-foreground/30 mb-2" />
-                    <p className="text-body-sm text-muted-foreground">Semua dokumen telah selesai dibaca!</p>
+                    <p className="text-body-sm text-muted-foreground">Semua dokumen telah selesai dibaca.</p>
                   </div>
                 )}
-              </div>
+              </section>
             </div>
 
             {/* Right Column (Activities & Task list) - 5 cols */}
@@ -462,13 +463,13 @@ export default async function DashboardPage() {
               <DashboardWeakConcepts concepts={masteryConcepts} />
 
               {/* Status Spaced Repetition & Streak */}
-              <div className={studentCardClass()}>
+              <section className={dashboardSectionClass}>
                 <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
                   <Flame className="size-5 text-brand-secondary fill-brand-secondary/10" />
                   Status Spaced Repetition
                 </h2>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-xl bg-muted/40 p-4 border border-border/40">
+                  <div className={dashboardInsetClass}>
                     <div>
                       <p className="text-body-sm font-semibold text-foreground">
                         {totalDueFlashcards} kartu perlu diulas
@@ -480,7 +481,7 @@ export default async function DashboardPage() {
                   </div>
 
                   {streakInfo && (
-                    <div className="flex items-center gap-3 rounded-xl bg-muted/40 p-4 border border-border/40">
+                    <div className={cn(dashboardInsetClass, "flex items-center gap-3 border-t-0")}>
                       <Flame className="size-8 text-brand-secondary fill-brand-secondary/10 shrink-0" />
                       <div>
                         <p className="text-body-sm font-semibold text-foreground">
@@ -493,10 +494,10 @@ export default async function DashboardPage() {
                     </div>
                   )}
                 </div>
-              </div>
+              </section>
 
               {/* Recent Activity */}
-              <div className={studentCardClass()}>
+              <section className={dashboardSectionClass}>
                 <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
                   <Trophy className="size-5 text-yellow-500" />
                   Aktivitas Ulasan Terbaru
@@ -529,7 +530,7 @@ export default async function DashboardPage() {
                               {review.front}
                             </p>
                             <p className="text-body-2xs text-muted-foreground mt-0.5">
-                              {review.courseTitle} · {new Date(review.reviewedAt).toLocaleDateString("id-ID")}
+                              {review.courseTitle}, {new Date(review.reviewedAt).toLocaleDateString("id-ID")}
                             </p>
                           </div>
                         </li>
@@ -537,14 +538,14 @@ export default async function DashboardPage() {
                     })}
                   </ul>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-8 text-center rounded-xl border border-dashed border-border/60">
+                  <div className="flex flex-col items-center justify-center border-y border-dashed border-border/60 py-8 text-center">
                     <p className="text-body-xs text-muted-foreground">Belum ada ulasan baru-baru ini.</p>
                   </div>
                 )}
-              </div>
+              </section>
               
               {/* Quizzes and Tryouts */}
-              <div className={studentCardClass()}>
+              <section className={dashboardSectionClass}>
                 <h2 className="font-heading text-body-base font-bold text-foreground flex items-center gap-2 mb-5">
                   <ClipboardList className="size-5 text-brand-primary" />
                   Kuis & Tryout Tersedia
@@ -563,7 +564,7 @@ export default async function DashboardPage() {
                             </h4>
                             <p className="text-body-xs text-muted-foreground mt-1 flex items-center gap-1.5">
                               <span className="font-semibold text-brand-primary">{exam.courseTitle}</span>
-                              <span className="text-border-strong">·</span>
+                              <span className="text-border-strong">,</span>
                               <span className="capitalize">{exam.type}</span>
                             </p>
                           </div>
@@ -575,12 +576,12 @@ export default async function DashboardPage() {
                     ))}
                   </ul>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-center rounded-xl border border-dashed border-border/60">
+                  <div className="flex flex-col items-center justify-center border-y border-dashed border-border/60 py-10 text-center">
                     <Trophy className="size-8 text-brand-secondary/60 mb-2" />
                     <p className="text-body-sm text-muted-foreground">Semua ujian telah selesai.</p>
                   </div>
                 )}
-              </div>
+              </section>
             </div>
           </div>
         )}

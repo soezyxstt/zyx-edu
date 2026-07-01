@@ -3,27 +3,20 @@
 import { db } from "@/db";
 import {
   user as userTable,
-  courses,
-  concepts,
-  conceptLocalizations,
-  masterTeachingDocuments,
-  chapters,
   knowledgeObjects,
   websiteMaterials,
-  flashcardSets,
-  flashcards,
-  assessmentSources,
-  assessmentSourceChapters,
-  assessmentObjects,
-  knowledgeRelationships,
   vectorSyncQueue,
-  assessmentObjectConcepts,
-  assessmentObjectKos,
 } from "@/db/schema";
-import { slugify } from "@/lib/ko-utils";
 import { assertAdmin } from "@/lib/uploadthing-admin";
-import { randomUUID, createHash } from "crypto";
-import { eq, and, inArray } from "drizzle-orm";
+import { importChapterBundle, type ImportMode, type BundleChapterDiff } from "@/lib/bundle-importer";
+import {
+  importAssessmentBundle,
+  resolveCourseAndChaptersByTitle,
+  type AssessmentImportMode,
+  type AssessmentSourceDiff,
+} from "@/lib/assessment-bundle-importer";
+import { randomUUID } from "crypto";
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 // Import post-processing functions
@@ -31,43 +24,6 @@ import { compileMarkdown } from "@/lib/markdown-compiler";
 import { verifyKOCoverage } from "@/lib/ko-coverage-auditor";
 import { buildTermIndex } from "@/lib/term-index";
 import { buildConceptGraph } from "@/lib/graph-trace";
-import { updateAssessmentProfile } from "@/lib/assessment-extractor";
-
-function sha256(input: string): string {
-  return createHash("sha256").update(input).digest("hex");
-}
-
-function computeMaterialHash(kos: any[]): string {
-  const hash = createHash("sha256");
-  kos.forEach((ko) => {
-    hash.update(`${ko.title}:${ko.content}`);
-  });
-  return hash.digest("hex");
-}
-
-function computeFlashcardSetHash(fcs: any[]): string {
-  const hash = createHash("sha256");
-  fcs.forEach((fc) => {
-    hash.update(`${fc.front}:${fc.back}`);
-  });
-  return hash.digest("hex");
-}
-
-function canonicalizeMarkdown(md: string, idMap: Map<string, string>): string {
-  return md.replace(/ref="([^"]+)"/g, (match, ref) => {
-    const uuid = idMap.get(ref);
-    if (!uuid) throw new Error(`Unresolvable markdown ref: "${ref}"`);
-    return `koId="${uuid}"`;
-  });
-}
-
-function chunks<T>(arr: T[], size: number): T[][] {
-  const result: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    result.push(arr.slice(i, i + size));
-  }
-  return result;
-}
 
 export interface ImportResult {
   success: boolean;
@@ -93,6 +49,7 @@ export interface ImportResult {
     asCount: number;
     aoCount: number;
     krCount: number;
+    chapterDiffs: BundleChapterDiff[];
   };
 }
 
@@ -393,10 +350,62 @@ function getFriendlyJsonError(errorMsg: string, jsonText: string): {
   };
 }
 
+/** Resolves (creating if needed) the system/author user attributed to assessment sources imported by a bundle. */
+async function resolveAuthorUuid(authorEmailInput: string | undefined, dryRun: boolean, log: (msg: string) => void): Promise<string> {
+  const importerEmail = "bundle-importer@zyx.internal";
+  let authorUuid = "bundle-importer";
+
+  const authorEmail = authorEmailInput || importerEmail;
+  const [dbUser] = await db.select().from(userTable).where(eq(userTable.email, authorEmail)).limit(1);
+
+  let isNewUser = false;
+  let userRow: any = null;
+
+  if (dbUser) {
+    authorUuid = dbUser.id;
+    log(`Resolved author to user ID: ${authorUuid}`);
+  } else {
+    if (authorEmail === importerEmail) {
+      isNewUser = true;
+      userRow = {
+        id: "bundle-importer",
+        name: "Bundle Importer",
+        email: importerEmail,
+        emailVerified: true,
+        role: "teacher" as const,
+      };
+      authorUuid = "bundle-importer";
+      log("System user not found. Will create 'bundle-importer'.");
+    } else {
+      const [systemUser] = await db.select().from(userTable).where(eq(userTable.email, importerEmail)).limit(1);
+      if (systemUser) {
+        authorUuid = systemUser.id;
+      } else {
+        isNewUser = true;
+        userRow = {
+          id: "bundle-importer",
+          name: "Bundle Importer",
+          email: importerEmail,
+          emailVerified: true,
+          role: "teacher" as const,
+        };
+        authorUuid = "bundle-importer";
+      }
+      log(`Author "${authorEmail}" not found. Falling back to system importer user.`);
+    }
+  }
+
+  if (isNewUser && userRow && !dryRun) {
+    await db.insert(userTable).values(userRow).onConflictDoNothing();
+  }
+
+  return authorUuid;
+}
+
 export async function importCourseBundleAction(
   bundleJsonText: string,
   options: {
-    mode: "create" | "upsert" | "append";
+    mode: ImportMode;
     postProcess: boolean;
     dryRun: boolean;
   }
@@ -468,336 +477,47 @@ export async function importCourseBundleAction(
       };
     }
 
-    // 4. Setup Author User
-    const importerEmail = "bundle-importer@zyx.internal";
-    let authorUuid = "bundle-importer";
-
-    const authorEmail = bundle.author?.email || importerEmail;
-    const [dbUser] = await db
-      .select()
-      .from(userTable)
-      .where(eq(userTable.email, authorEmail))
-      .limit(1);
-
-    let isNewUser = false;
-    let userRow: any = null;
-
-    if (dbUser) {
-      authorUuid = dbUser.id;
-      log(`Resolved author to user ID: ${authorUuid}`);
-    } else {
-      if (authorEmail === importerEmail) {
-        isNewUser = true;
-        userRow = {
-          id: "bundle-importer",
-          name: "Bundle Importer",
-          email: importerEmail,
-          emailVerified: true,
-          role: "teacher" as const,
-        };
-        authorUuid = "bundle-importer";
-        log("System user not found. Will create 'bundle-importer'.");
-      } else {
-        const [systemUser] = await db
-          .select()
-          .from(userTable)
-          .where(eq(userTable.email, importerEmail))
-          .limit(1);
-        if (systemUser) {
-          authorUuid = systemUser.id;
-        } else {
-          isNewUser = true;
-          userRow = {
-            id: "bundle-importer",
-            name: "Bundle Importer",
-            email: importerEmail,
-            emailVerified: true,
-            role: "teacher" as const,
-          };
-          authorUuid = "bundle-importer";
-        }
-        log(`Author "${authorEmail}" not found. Falling back to system importer user.`);
-      }
+    if (bundle.course.chapters.length > 1) {
+      log(
+        `Warning: bundle contains ${bundle.course.chapters.length} chapters. A bundle upload is meant to carry exactly one chapter; importing all of them, but consider splitting future exports into one bundle per chapter.`
+      );
     }
 
-    // 5. Construct Reference Maps & Generate UUIDs (Pass 1)
-    const idMap = new Map<string, string>();
-    const chapterMtdMap = new Map<string, string>();
-    const conceptDisplayNameMap = new Map<string, string>();
+    // 4. Setup Author User (used for assessment source attribution only)
+    const authorUuid = await resolveAuthorUuid(bundle.author?.email, options.dryRun, log);
 
-    // Resolve course UUID
-    let courseUuid: string = randomUUID();
-    if (options.mode === "upsert") {
-      const [existingCourse] = await db
-        .select()
-        .from(courses)
-        .where(eq(courses.title, bundle.course.title))
-        .limit(1);
-      if (existingCourse) {
-        courseUuid = existingCourse.id;
-        log(`Found existing course: "${bundle.course.title}" (${courseUuid}). Reusing ID.`);
-      }
-    }
-    idMap.set("$course", courseUuid);
-
-    const mtdRows: any[] = [];
-    const chapterRows: any[] = [];
-    const conceptRows: any[] = [];
-    const localizationRows: any[] = [];
-    const koRows: any[] = [];
-    const wmRows: any[] = [];
-    const fsetRows: any[] = [];
-    const fcRows: any[] = [];
+    // 5. Import each chapter's learning content (concepts, KOs, website material,
+    // flashcards, relationships) through the shared incremental importer.
+    let courseUuid = "";
+    const chapterDiffs: BundleChapterDiff[] = [];
+    const chapterRefToId = new Map<string, string>();
+    let totalWm = 0;
+    let totalFset = 0;
+    let totalFc = 0;
+    let totalKr = 0;
 
     for (const [chIdx, chapter] of bundle.course.chapters.entries()) {
-      let chapterUuid: string = randomUUID();
-      const chapterRefKey = chapter.$id || chapter.id || `$chapter-${chIdx}`;
-
-      if (options.mode === "upsert") {
-        const [existingChapter] = await db
-          .select()
-          .from(chapters)
-          .where(and(eq(chapters.courseId, courseUuid), eq(chapters.title, chapter.title)))
-          .limit(1);
-        if (existingChapter) {
-          chapterUuid = existingChapter.id;
-        }
-      }
-      idMap.set(chapterRefKey, chapterUuid);
-
-      // Resolve MTD ID
-      let mtdUuid: string = `mtd-${randomUUID()}`;
-      if (options.mode === "upsert") {
-        const [existingWm] = await db
-          .select()
-          .from(websiteMaterials)
-          .where(and(eq(websiteMaterials.courseId, courseUuid), eq(websiteMaterials.chapterId, chapterUuid)))
-          .limit(1);
-        if (existingWm) {
-          mtdUuid = existingWm.sourceMtdId;
-        } else {
-          const [existingKo] = await db
-            .select()
-            .from(knowledgeObjects)
-            .where(and(eq(knowledgeObjects.courseId, courseUuid), eq(knowledgeObjects.chapterId, chapterUuid)))
-            .limit(1);
-          if (existingKo) {
-            mtdUuid = existingKo.mtdId;
-          }
-        }
-      }
-      chapterMtdMap.set(chapterUuid, mtdUuid);
-
-      chapterRows.push({
-        id: chapterUuid,
-        courseId: courseUuid,
-        title: chapter.title,
-        description: chapter.description || null,
-        orderIndex: chIdx + 1,
-        status: "draft",
-        assetGenStatus: "idle",
-      });
-
-      for (const [conIdx, concept] of (chapter.concepts || []).entries()) {
-        let conceptUuid: string = randomUUID();
-        const conceptRefKey = concept.$id || concept.id || `$concept-${chIdx}-${conIdx}`;
-
-        if (options.mode === "upsert" || options.mode === "append") {
-          const [existingConcept] = await db
-            .select()
-            .from(concepts)
-            .where(eq(concepts.canonicalSlug, concept.canonicalSlug))
-            .limit(1);
-          if (existingConcept) {
-            conceptUuid = existingConcept.id;
-          }
-        }
-        idMap.set(conceptRefKey, conceptUuid);
-
-        const firstDisplayName = concept.localizations?.[0]?.displayName || "Concept";
-        const conceptRefId = concept.$id || concept.id;
-        if (conceptRefId) {
-          conceptDisplayNameMap.set(conceptRefId, firstDisplayName);
-        }
-
-        conceptRows.push({
-          id: conceptUuid,
-          canonicalSlug: concept.canonicalSlug,
-          isVerified: false,
-        });
-
-        for (const loc of (concept.localizations || [])) {
-          localizationRows.push({
-            id: randomUUID(),
-            conceptId: conceptUuid,
-            lang: loc.lang,
-            displayName: loc.displayName,
-            aliases: loc.aliases || [],
-            technicalStandardTerm: "id",
-          });
-        }
-      }
-
-      for (const [koIdx, ko] of (chapter.knowledgeObjects || []).entries()) {
-        let koUuid: string = `ko-${randomUUID()}`;
-        const koRefKey = ko.$id || ko.id || `$ko-${chIdx}-${koIdx}`;
-        if (options.mode === "upsert") {
-          const [existingKo] = await db
-            .select()
-            .from(knowledgeObjects)
-            .where(and(eq(knowledgeObjects.chapterId, chapterUuid), eq(knowledgeObjects.title, ko.title)))
-            .limit(1);
-          if (existingKo) {
-            koUuid = existingKo.id;
-          }
-        }
-        idMap.set(koRefKey, koUuid);
-      }
-
-      const firstWm = chapter.websiteMaterials?.[0];
-      const canonicalMarkdown = firstWm ? canonicalizeMarkdown(firstWm.canonicalMarkdown, idMap) : `# ${chapter.title}`;
-
-      mtdRows.push({
-        id: mtdUuid,
-        courseId: courseUuid,
-        title: `MTD - ${chapter.title}`,
-        markdownContent: canonicalMarkdown,
-        version: 1,
-        status: "draft",
-        type: "learning",
-        createdById: authorUuid,
-      });
-
-      if (firstWm) {
-        let wmUuid: string = `wm-${randomUUID()}`;
-        if (options.mode === "upsert") {
-          const [existingWm] = await db
-            .select()
-            .from(websiteMaterials)
-            .where(and(eq(websiteMaterials.chapterId, chapterUuid), eq(websiteMaterials.slug, firstWm.slug || slugify(firstWm.title))))
-            .limit(1);
-          if (existingWm) {
-            wmUuid = existingWm.id;
-          }
-        }
-        wmRows.push({
-          id: wmUuid,
-          courseId: courseUuid,
-          chapterId: chapterUuid,
-          sourceMtdId: mtdUuid,
-          sourceMtdVersion: 1,
-          generationHash: computeMaterialHash(chapter.knowledgeObjects || []),
-          title: firstWm.title,
-          slug: firstWm.slug || slugify(firstWm.title),
-          canonicalMarkdown,
-          structuredContent: firstWm.structuredContent || {},
-          status: "draft",
-        });
-      }
-
-      for (const fset of (chapter.flashcardSets || [])) {
-        let fsetUuid: string = `fset-${randomUUID()}`;
-        if (options.mode === "upsert") {
-          const [existingFset] = await db
-            .select()
-            .from(flashcardSets)
-            .where(and(eq(flashcardSets.chapterId, chapterUuid), eq(flashcardSets.title, fset.title)))
-            .limit(1);
-          if (existingFset) {
-            fsetUuid = existingFset.id;
-          }
-        }
-        fsetRows.push({
-          id: fsetUuid,
-          courseId: courseUuid,
-          chapterId: chapterUuid,
-          sourceMtdId: mtdUuid,
-          sourceMtdVersion: 1,
-          generationHash: computeFlashcardSetHash(fset.flashcards || []),
-          title: fset.title,
-          status: "draft",
-        });
-
-        for (const fcard of (fset.flashcards || [])) {
-          let fcUuid: string = `fc-${randomUUID()}`;
-          if (options.mode === "upsert") {
-            const [existingFc] = await db
-              .select()
-              .from(flashcards)
-              .where(and(eq(flashcards.setId, fsetUuid), eq(flashcards.front, fcard.front)))
-              .limit(1);
-            if (existingFc) {
-              fcUuid = existingFc.id;
-            }
-          }
-          fcRows.push({
-            id: fcUuid,
-            setId: fsetUuid,
-            koId: fcard.ko$ref ? idMap.get(fcard.ko$ref) || null : null,
-            front: fcard.front,
-            back: fcard.back,
-            explanation: fcard.explanation || null,
-            metadata: fcard.source ? { _source: fcard.source } : {},
-          });
-        }
+      try {
+        const result = await importChapterBundle(bundle, chapter, options.mode, log, options.dryRun);
+        courseUuid = result.courseId;
+        chapterDiffs.push(result.diff);
+        chapterRefToId.set(chapter.$id || chapter.id || `$chapter-${chIdx}`, result.diff.chapterId);
+        chapterRefToId.set(chapter.title, result.diff.chapterId);
+        totalWm += result.wmCount;
+        totalFset += result.fsetCount;
+        totalFc += result.fcCount;
+        totalKr += result.krCount;
+        log(
+          `Chapter "${chapter.title}" -> +${result.diff.koAdded} / ~${result.diff.koUpdated} / =${result.diff.koUnchanged} / -${result.diff.koRetired} KOs.` +
+            (result.diff.cascadedStaleness ? " Downstream assets marked stale (content changed)." : "")
+        );
+      } catch (err: any) {
+        return { success: false, error: err.message || String(err), logs };
       }
     }
 
-    // Generate KOs Rows (Pass 2)
-    for (const [chIdx, chapter] of bundle.course.chapters.entries()) {
-      const chapterUuid = idMap.get(chapter.$id || chapter.id || `$chapter-${chIdx}`)!;
-      const mtdUuid = chapterMtdMap.get(chapterUuid)!;
-
-      for (const [koIdx, ko] of (chapter.knowledgeObjects || []).entries()) {
-        const koUuid = idMap.get(ko.$id || ko.id || `$ko-${chIdx}-${koIdx}`)!;
-        let resolvedConceptUuid = "";
-        let resolvedConceptName = "";
-
-        if (ko.concept$ref) {
-          const matchingUuid = idMap.get(ko.concept$ref);
-          if (matchingUuid) resolvedConceptUuid = matchingUuid;
-          resolvedConceptName = conceptDisplayNameMap.get(ko.concept$ref) || "Concept";
-        } else if (ko.conceptName) {
-          const chapterConcepts = chapter.concepts || [];
-          const matched = chapterConcepts.find((c: any) =>
-            (c.localizations || []).some((loc: any) => loc.displayName === ko.conceptName)
-          );
-          if (matched) {
-            resolvedConceptUuid = idMap.get(matched.$id || matched.id || `$concept-${chIdx}-${chapterConcepts.indexOf(matched)}`)!;
-          }
-          resolvedConceptName = ko.conceptName;
-        }
-
-        if (!resolvedConceptUuid) {
-          return { success: false, error: `Failed to resolve concept for KO "${ko.title}" in Chapter "${chapter.title}".`, logs };
-        }
-
-        koRows.push({
-          id: koUuid,
-          courseId: courseUuid,
-          mtdId: mtdUuid,
-          chapterId: chapterUuid,
-          conceptId: resolvedConceptUuid,
-          learningOrder: koIdx + 1,
-          title: ko.title,
-          conceptName: resolvedConceptName,
-          content: ko.content,
-          type: ko.type,
-          bloomLevel: ko.bloomLevel,
-          difficulty: ko.difficulty || "medium",
-          tags: ko.tags || [],
-          importance: ko.importance || "medium",
-          metadata: ko.source ? { _source: ko.source } : {},
-        });
-      }
-    }
-
-    // 6. Process Assessment Sources (Pass 2)
-    const asRows: any[] = [];
-    const ascRows: any[] = [];
-    const aoRows: any[] = [];
-    const krRows: any[] = [];
-
+    // 6. Process Assessment Sources (embedded in this combined bundle), against the
+    // now-resolved course/chapter IDs, through the shared incremental assessment importer.
     const rootSources = bundle.course["course.assessmentSources"] || bundle.course.assessmentSources || [];
     const chapterSources: any[] = [];
     if (Array.isArray(bundle.course.chapters)) {
@@ -823,366 +543,69 @@ export async function importCourseBundleAction(
       }
     }
     const bundleAssessmentSources = Array.from(combinedSourcesMap.values());
-    for (const as of bundleAssessmentSources) {
-      let asrcUuid: string = `asrc-${randomUUID()}`;
-      if (options.mode === "upsert") {
-        const [existingAsrc] = await db
-          .select()
-          .from(assessmentSources)
-          .where(and(eq(assessmentSources.courseId, courseUuid), eq(assessmentSources.title, as.title)))
-          .limit(1);
-        if (existingAsrc) {
-          asrcUuid = existingAsrc.id;
-        }
-      }
 
-      asRows.push({
-        id: asrcUuid,
-        courseId: courseUuid,
-        title: as.title,
-        origin: "generated",
-        category: as.category,
-        year: as.year,
-        semester: as.semester || null,
-        sourceMarkdown: as.sourceMarkdown,
-        sourceHash: sha256(as.sourceMarkdown),
-        originalFilename: as.source?.file || null,
-        uploadedByUserId: authorUuid,
-        ingestionStatus: "completed" as const,
-        ingestionCompletedAt: new Date(),
-      });
-
-      for (const ref of (as.chapters || [])) {
-        let resolvedChapterUuid = "";
-        const matchedChapterUuid = idMap.get(ref);
-        if (matchedChapterUuid) {
-          resolvedChapterUuid = matchedChapterUuid;
-        } else {
-          const matched = bundle.course.chapters.find((c: any) => c.title === ref);
-          if (matched) {
-            const index = bundle.course.chapters.indexOf(matched);
-            resolvedChapterUuid = idMap.get(`$chapter-${index}`)!;
-          }
-        }
-
-        if (!resolvedChapterUuid) {
-          return { success: false, error: `Failed to resolve chapter ref "${ref}" for Assessment Source "${as.title}".`, logs };
-        }
-
-        let ascUuid: string = `asc-${randomUUID()}`;
-        if (options.mode === "upsert") {
-          const [existingAsc] = await db
-            .select()
-            .from(assessmentSourceChapters)
-            .where(and(eq(assessmentSourceChapters.assessmentSourceId, asrcUuid), eq(assessmentSourceChapters.chapterId, resolvedChapterUuid)))
-            .limit(1);
-          if (existingAsc) {
-            ascUuid = existingAsc.id;
-          }
-        }
-
-        ascRows.push({
-          id: ascUuid,
-          assessmentSourceId: asrcUuid,
-          chapterId: resolvedChapterUuid,
-        });
-      }
-
-      for (const [aoIdx, ao] of (as.assessmentObjects || []).entries()) {
-        let aoUuid: string = `ao-${randomUUID()}`;
-        if (options.mode === "upsert") {
-          const [existingAo] = await db
-            .select()
-            .from(assessmentObjects)
-            .where(and(eq(assessmentObjects.sourceId, asrcUuid), eq(assessmentObjects.questionOrder, aoIdx + 1)))
-            .limit(1);
-          if (existingAo) {
-            aoUuid = existingAo.id;
-          }
-        }
-
-        aoRows.push({
-          id: aoUuid,
-          sourceId: asrcUuid,
-          questionOrder: aoIdx + 1,
-          questionType: ao.questionType,
-          difficulty: ao.difficulty,
-          pattern: ao.pattern || "general",
-          reasoningType: ao.reasoningType || "analytical",
-          estimatedSteps: ao.estimatedSteps || 1,
-          applicationLevel: ao.applicationLevel || 1,
-          questionMarkdown: ao.questionMarkdown || "",
-          answerMarkdown: ao.answerMarkdown || null,
-          options: ao.options || null,
-          canonicalQuestionHash: ao.canonicalQuestionHash || sha256(ao.questionMarkdown || ""),
-        });
-      }
-    }
-
-    // Process Relationships
+    // Cross-chapter relationships declared at the course level (within-bundle KO refs
+    // aren't resolvable here since each chapter import resolves its own KO ids
+    // independently; course-level relationships referencing KOs from different
+    // chapters in the same bundle are not yet supported by the incremental importer).
     for (const kr of (bundle.course.knowledgeRelationships || [])) {
-      const srcUuid = idMap.get(kr.sourceKo$ref);
-      const tgtUuid = idMap.get(kr.targetKo$ref);
-      if (!srcUuid || !tgtUuid) {
-        return { success: false, error: `Failed to resolve KO refs for relationship: ${kr.sourceKo$ref} -> ${kr.targetKo$ref}`, logs };
-      }
-
-      let krUuid: string = `kr-${randomUUID()}`;
-      if (options.mode === "upsert") {
-        const [existingKr] = await db
-          .select()
-          .from(knowledgeRelationships)
-          .where(and(eq(knowledgeRelationships.sourceKoId, srcUuid), eq(knowledgeRelationships.targetKoId, tgtUuid), eq(knowledgeRelationships.type, kr.type)))
-          .limit(1);
-        if (existingKr) {
-          krUuid = existingKr.id;
-        }
-      }
-
-      krRows.push({
-        id: krUuid,
-        sourceKoId: srcUuid,
-        targetKoId: tgtUuid,
-        type: kr.type,
-      });
+      log(`Skipped course-level knowledgeRelationship ${kr.sourceKo$ref} -> ${kr.targetKo$ref}: cross-chapter relationships must be declared inside a chapter's own knowledgeRelationships array.`);
     }
 
-    // 7. DB Write Execution
+    let asResult;
+    try {
+      asResult = await importAssessmentBundle(
+        bundleAssessmentSources,
+        courseUuid,
+        (ref) => chapterRefToId.get(ref),
+        authorUuid,
+        options.mode,
+        options.postProcess,
+        log,
+        options.dryRun,
+      );
+    } catch (err: any) {
+      return { success: false, error: err.message || String(err), logs };
+    }
+
     if (options.dryRun) {
-      log("Validation complete. Dry Run enabled, skipping database writes.");
+      log("Dry run: chapter and assessment content was diffed and rolled back, no database writes were committed.");
       return {
         success: true,
         error: null,
         logs,
         stats: {
           courseId: courseUuid,
-          chapterCount: chapterRows.length,
-          koCount: koRows.length,
-          wmCount: wmRows.length,
-          fsetCount: fsetRows.length,
-          fcCount: fcRows.length,
-          asCount: asRows.length,
-          aoCount: aoRows.length,
-          krCount: krRows.length,
+          chapterCount: chapterDiffs.length,
+          koCount: chapterDiffs.reduce((sum, d) => sum + d.koAdded + d.koUpdated + d.koUnchanged, 0),
+          wmCount: totalWm,
+          fsetCount: totalFset,
+          fcCount: totalFc,
+          asCount: asResult.asCount,
+          aoCount: asResult.aoCount,
+          krCount: totalKr,
+          chapterDiffs,
         },
       };
     }
 
-    log("Writing data to database inside transaction...");
-    const stats = await db.transaction(async (tx) => {
-      if (isNewUser && userRow) {
-        await tx.insert(userTable).values(userRow).onConflictDoNothing();
-      }
+    const stats = {
+      courseId: courseUuid,
+      chapterCount: chapterDiffs.length,
+      koCount: chapterDiffs.reduce((sum, d) => sum + d.koAdded + d.koUpdated + d.koUnchanged, 0),
+      wmCount: totalWm,
+      fsetCount: totalFset,
+      fcCount: totalFc,
+      asCount: asResult.asCount,
+      aoCount: asResult.aoCount,
+      krCount: totalKr,
+      chapterDiffs,
+    };
 
-      if (options.mode === "upsert") {
-        await tx.insert(courses).values({
-          id: courseUuid,
-          title: bundle.course.title,
-          category: bundle.course.category,
-          description: bundle.course.description || null,
-        }).onConflictDoUpdate({
-          target: courses.id,
-          set: {
-            title: bundle.course.title,
-            category: bundle.course.category,
-            description: bundle.course.description || null,
-          }
-        });
-      } else if (options.mode === "append") {
-        await tx.insert(courses).values({
-          id: courseUuid,
-          title: bundle.course.title,
-          category: bundle.course.category,
-          description: bundle.course.description || null,
-        }).onConflictDoNothing();
-      } else {
-        await tx.insert(courses).values({
-          id: courseUuid,
-          title: bundle.course.title,
-          category: bundle.course.category,
-          description: bundle.course.description || null,
-        });
-      }
+    log(`Assessment import completed. Course ID: ${stats.courseId}`);
 
-      for (const c of conceptRows) {
-        await tx.insert(concepts).values(c).onConflictDoNothing();
-      }
-
-      for (const loc of localizationRows) {
-        await tx.insert(conceptLocalizations).values(loc).onConflictDoNothing();
-      }
-
-      for (const mtd of mtdRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(masterTeachingDocuments).values(mtd).onConflictDoUpdate({
-            target: masterTeachingDocuments.id,
-            set: {
-              title: mtd.title,
-              markdownContent: mtd.markdownContent,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(masterTeachingDocuments).values(mtd).onConflictDoNothing();
-        }
-      }
-
-      for (const chap of chapterRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(chapters).values(chap).onConflictDoUpdate({
-            target: chapters.id,
-            set: {
-              title: chap.title,
-              description: chap.description,
-              orderIndex: chap.orderIndex,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(chapters).values(chap).onConflictDoNothing();
-        }
-      }
-
-      for (const row of koRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(knowledgeObjects).values(row).onConflictDoUpdate({
-            target: knowledgeObjects.id,
-            set: {
-              conceptId: row.conceptId,
-              learningOrder: row.learningOrder,
-              title: row.title,
-              conceptName: row.conceptName,
-              content: row.content,
-              type: row.type,
-              bloomLevel: row.bloomLevel,
-              difficulty: row.difficulty,
-              tags: row.tags,
-              importance: row.importance,
-              metadata: row.metadata,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(knowledgeObjects).values(row).onConflictDoNothing();
-        }
-      }
-
-      for (const row of wmRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(websiteMaterials).values(row).onConflictDoUpdate({
-            target: websiteMaterials.id,
-            set: {
-              title: row.title,
-              slug: row.slug,
-              canonicalMarkdown: row.canonicalMarkdown,
-              structuredContent: row.structuredContent,
-              generationHash: row.generationHash,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(websiteMaterials).values(row).onConflictDoNothing();
-        }
-      }
-
-      for (const row of fsetRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(flashcardSets).values(row).onConflictDoUpdate({
-            target: flashcardSets.id,
-            set: {
-              title: row.title,
-              generationHash: row.generationHash,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(flashcardSets).values(row).onConflictDoNothing();
-        }
-      }
-
-      for (const row of fcRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(flashcards).values(row).onConflictDoUpdate({
-            target: flashcards.id,
-            set: {
-              koId: row.koId,
-              front: row.front,
-              back: row.back,
-              explanation: row.explanation,
-              metadata: row.metadata,
-            }
-          });
-        } else {
-          await tx.insert(flashcards).values(row).onConflictDoNothing();
-        }
-      }
-
-      for (const row of asRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(assessmentSources).values(row).onConflictDoUpdate({
-            target: assessmentSources.id,
-            set: {
-              title: row.title,
-              sourceMarkdown: row.sourceMarkdown,
-              sourceHash: row.sourceHash,
-              originalFilename: row.originalFilename,
-              ingestionStatus: row.ingestionStatus,
-              ingestionCompletedAt: row.ingestionCompletedAt,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(assessmentSources).values(row).onConflictDoNothing();
-        }
-      }
-
-      for (const row of ascRows) {
-        await tx.insert(assessmentSourceChapters).values(row).onConflictDoNothing();
-      }
-
-      for (const row of aoRows) {
-        if (options.mode === "upsert") {
-          await tx.insert(assessmentObjects).values(row).onConflictDoUpdate({
-            target: assessmentObjects.id,
-            set: {
-              questionType: row.questionType,
-              difficulty: row.difficulty,
-              pattern: row.pattern,
-              reasoningType: row.reasoningType,
-              estimatedSteps: row.estimatedSteps,
-              applicationLevel: row.applicationLevel,
-              questionMarkdown: row.questionMarkdown,
-              answerMarkdown: row.answerMarkdown,
-              options: row.options,
-              canonicalQuestionHash: row.canonicalQuestionHash,
-              updatedAt: new Date(),
-            }
-          });
-        } else {
-          await tx.insert(assessmentObjects).values(row).onConflictDoNothing();
-        }
-      }
-
-      for (const row of krRows) {
-        await tx.insert(knowledgeRelationships).values(row).onConflictDoNothing();
-      }
-
-      return {
-        courseId: courseUuid,
-        chapterCount: chapterRows.length,
-        koCount: koRows.length,
-        wmCount: wmRows.length,
-        fsetCount: fsetRows.length,
-        fcCount: fcRows.length,
-        asCount: asRows.length,
-        aoCount: aoRows.length,
-        krCount: krRows.length,
-      };
-    });
-
-    log(`Database insert transaction completed. Course ID: ${stats.courseId}`);
-
-    // 8. Post-Processing Phase
+    // 8. Post-Processing Phase (learning content only; assessment post-processing
+    // already ran inside importAssessmentBundle above).
     if (options.postProcess) {
       log("Starting post-processing routines...");
 
@@ -1268,144 +691,7 @@ export async function importCourseBundleAction(
         koQueueCount++;
       }
       log(`[SUCCESS] Enqueued ${koQueueCount} KOs to Vector Sync Queue.`);
-
-      log("Processing past exam questions (assessmentObjects) for RAG and concept mapping...");
-      try {
-        const aos = await db
-          .select({
-            id: assessmentObjects.id,
-            sourceId: assessmentObjects.sourceId,
-            questionMarkdown: assessmentObjects.questionMarkdown,
-            answerMarkdown: assessmentObjects.answerMarkdown,
-            difficulty: assessmentObjects.difficulty,
-            applicationLevel: assessmentObjects.applicationLevel,
-          })
-          .from(assessmentObjects)
-          .innerJoin(assessmentSources, eq(assessmentObjects.sourceId, assessmentSources.id))
-          .where(eq(assessmentSources.courseId, courseUuid));
-
-        log(`Found ${aos.length} assessment objects to map and enqueue.`);
-
-        const localizations = await db
-          .select({
-            conceptId: conceptLocalizations.conceptId,
-            displayName: conceptLocalizations.displayName,
-            aliases: conceptLocalizations.aliases,
-          })
-          .from(conceptLocalizations)
-          .innerJoin(concepts, eq(conceptLocalizations.conceptId, concepts.id));
-
-        let aoQueueCount = 0;
-        for (const ao of aos) {
-          const sourceChaps = await db
-            .select({ chapterId: assessmentSourceChapters.chapterId })
-            .from(assessmentSourceChapters)
-            .where(eq(assessmentSourceChapters.assessmentSourceId, ao.sourceId));
-
-          const chapterIds = sourceChaps.map(sc => sc.chapterId);
-          const resolvedChapterId = chapterIds[0] || "";
-
-          const matchedConceptIds = new Set<string>();
-          const matchedConceptNames: string[] = [];
-
-          const questionTextLower = (ao.questionMarkdown + " " + (ao.answerMarkdown || "")).toLowerCase();
-
-          for (const loc of localizations) {
-            const nameLower = loc.displayName.toLowerCase();
-            const aliases = Array.isArray(loc.aliases) ? loc.aliases : [];
-
-            const isMatched = questionTextLower.includes(nameLower) || 
-                              aliases.some(alias => questionTextLower.includes(alias.toString().toLowerCase()));
-
-            if (isMatched) {
-              matchedConceptIds.add(loc.conceptId);
-              matchedConceptNames.push(loc.displayName);
-            }
-          }
-
-          if (matchedConceptIds.size === 0 && chapterIds.length > 0) {
-            const chapterKOs = await db
-              .select({ conceptId: knowledgeObjects.conceptId, conceptName: knowledgeObjects.conceptName })
-              .from(knowledgeObjects)
-              .where(and(inArray(knowledgeObjects.chapterId, chapterIds), eq(knowledgeObjects.status, "active")));
-
-            for (const ko of chapterKOs) {
-              matchedConceptIds.add(ko.conceptId);
-              if (!matchedConceptNames.includes(ko.conceptName)) {
-                matchedConceptNames.push(ko.conceptName);
-              }
-            }
-          }
-
-          for (const cId of matchedConceptIds) {
-            await db.insert(assessmentObjectConcepts).values({
-              id: `aoc-import-${randomUUID()}`,
-              assessmentObjectId: ao.id,
-              conceptId: cId,
-            }).onConflictDoNothing();
-
-            let whereClause = and(
-              eq(knowledgeObjects.conceptId, cId),
-              eq(knowledgeObjects.status, "active")
-            );
-            if (chapterIds.length > 0) {
-              whereClause = and(whereClause, inArray(knowledgeObjects.chapterId, chapterIds));
-            }
-            const activeKOs = await db
-              .select({ id: knowledgeObjects.id })
-              .from(knowledgeObjects)
-              .where(whereClause);
-
-            for (const ko of activeKOs) {
-              await db.insert(assessmentObjectKos).values({
-                id: `aok-import-${randomUUID()}`,
-                assessmentObjectId: ao.id,
-                koId: ko.id,
-              }).onConflictDoNothing();
-            }
-          }
-
-          const textToEmbed = `Question: ${ao.questionMarkdown}\nSolution: ${ao.answerMarkdown || ""}`;
-          const syncId = `sync-import-ae-${randomUUID()}`;
-
-          const bloomLevel = ao.applicationLevel === 1 ? "remember" : ao.applicationLevel === 2 ? "understand" : "apply";
-          const difficultyText = ao.difficulty <= 3 ? "easy" : ao.difficulty >= 7 ? "hard" : "medium";
-
-          await db.insert(vectorSyncQueue).values({
-            id: syncId,
-            courseId: courseUuid,
-            koId: null,
-            action: "upsert" as const,
-            namespace: "past_exams" as const,
-            payload: {
-              id: ao.id,
-              text: textToEmbed,
-              metadata: {
-                chapterId: resolvedChapterId,
-                type: "past_exam",
-                bloomLevel,
-                difficulty: difficultyText,
-                tags: matchedConceptNames,
-              }
-            },
-            status: "pending" as const,
-            attempts: 0,
-          }).onConflictDoNothing();
-
-          aoQueueCount++;
-        }
-        log(`[SUCCESS] Mapped and enqueued ${aoQueueCount} assessment objects to Vector Sync Queue.`);
-      } catch (err: any) {
-        log(`[FAIL] Error processing assessment objects: ${err.message || err}`);
-      }
-
-      log("Recalculating course assessment profile...");
-      try {
-        await updateAssessmentProfile(courseUuid);
-        log("[SUCCESS] Recalculated course assessment profile.");
-      } catch (err: any) {
-        log(`[FAIL] Error recalculating course assessment profile: ${err.message || err}`);
-      }
+      log("(Assessment object concept mapping, vector sync, and profile recalculation already ran inside the assessment import step above.)");
     }
 
     log("=== BUNDLE IMPORTER COMPLETED SUCCESSFULLY ===");
@@ -1471,6 +757,175 @@ export async function importCourseBundleAction(
       error: errMsg,
       friendlyExplanation: friendly,
       errorContext,
+      logs,
+    };
+  }
+}
+
+export interface AssessmentImportResult {
+  success: boolean;
+  error: string | null;
+  friendlyExplanation?: string | null;
+  jsonSnippet?: string | null;
+  errorContext?: {
+    courseTitle?: string;
+    entityType?: "Mata Kuliah" | "Bab" | "Sumber Ujian" | "Butir Soal";
+    entityName?: string;
+    propertyName?: string;
+  } | null;
+  logs: string[];
+  stats?: {
+    courseId: string;
+    asCount: number;
+    aoCount: number;
+    sourceDiffs: AssessmentSourceDiff[];
+  };
+}
+
+/**
+ * Imports an Assessment Bundle: assessmentSources[] (each with chapter refs
+ * and assessmentObjects[]) targeting an ALREADY-IMPORTED course. Chapters are
+ * referenced by title, since this bundle has no access to the bundle-local
+ * chapter $id namespace of the Learning Bundle that created them (see
+ * lib/assessment-bundle-importer.ts).
+ */
+export async function importAssessmentBundleAction(
+  bundleJsonText: string,
+  options: {
+    mode: AssessmentImportMode;
+    postProcess: boolean;
+    dryRun: boolean;
+  }
+): Promise<AssessmentImportResult> {
+  const logs: string[] = [];
+  const log = (msg: string) => {
+    console.log(msg);
+    logs.push(`[${new Date().toISOString().split("T")[1].slice(0, 8)}] ${msg}`);
+  };
+
+  try {
+    await assertAdmin();
+    log("=== ASSESSMENT BUNDLE IMPORTER STARTED ===");
+    log(`Options: Mode=${options.mode}, PostProcess=${options.postProcess}, DryRun=${options.dryRun}`);
+
+    let bundle: any;
+    try {
+      bundle = JSON.parse(bundleJsonText);
+      log("Successfully parsed JSON payload.");
+    } catch (err: any) {
+      const friendly = getFriendlyJsonError(err.message || String(err), bundleJsonText);
+      return {
+        success: false,
+        error: `Invalid JSON format: ${err.message}`,
+        friendlyExplanation: friendly.message,
+        jsonSnippet: friendly.snippet,
+        logs,
+      };
+    }
+
+    if (!bundle.metadata || !bundle.metadata.schemaVersion) {
+      return {
+        success: false,
+        error: "Missing bundle metadata or schemaVersion.",
+        friendlyExplanation: "Format file bundel tidak dikenali. File yang diunggah tidak memiliki informasi metadata atau versi skema (schemaVersion). Pastikan file tersebut adalah file bundel asesmen Zyx yang valid.",
+        logs,
+      };
+    }
+    const ver = bundle.metadata.schemaVersion;
+    log(`Detected assessment bundle schema version: ${ver}`);
+    if (ver !== "1.0") {
+      return {
+        success: false,
+        error: `Unsupported assessment bundle schema version "${ver}". Supported: 1.0.`,
+        friendlyExplanation: `Versi skema bundel asesmen "${ver}" tidak didukung. Versi yang didukung saat ini hanya "1.0". Lihat docs/bundle/assessment-bundle-spec.md.`,
+        logs,
+      };
+    }
+
+    const courseTitle = bundle.course?.title;
+    if (!courseTitle) {
+      return {
+        success: false,
+        error: "Bundle must specify course.title.",
+        friendlyExplanation: "Bundel asesmen harus mencantumkan \"course.title\" yang menunjuk ke mata kuliah yang sudah ada (sudah diimpor melalui Learning Bundle sebelumnya).",
+        logs,
+      };
+    }
+
+    const assessmentSourcesInput = bundle.assessmentSources || bundle.course.assessmentSources || [];
+    if (!Array.isArray(assessmentSourcesInput) || assessmentSourcesInput.length === 0) {
+      return {
+        success: false,
+        error: "Bundle must contain a non-empty assessmentSources array.",
+        friendlyExplanation: "Bundel asesmen ini kosong. Properti \"assessmentSources\" harus berupa daftar (array) sumber ujian dan tidak boleh kosong.",
+        logs,
+      };
+    }
+
+    let courseId: string;
+    let chapterByTitle: Map<string, string>;
+    try {
+      const resolved = await resolveCourseAndChaptersByTitle(courseTitle);
+      courseId = resolved.courseId;
+      chapterByTitle = resolved.chapterByTitle;
+      log(`Resolved course "${courseTitle}" -> ${courseId}.`);
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err.message || String(err),
+        friendlyExplanation: `Mata kuliah "${courseTitle}" tidak ditemukan. Impor Learning Bundle untuk mata kuliah ini terlebih dahulu sebelum mengunggah bundel asesmen.`,
+        errorContext: { courseTitle, entityType: "Mata Kuliah" },
+        logs,
+      };
+    }
+
+    const authorUuid = await resolveAuthorUuid(bundle.author?.email, options.dryRun, log);
+
+    let result;
+    try {
+      result = await importAssessmentBundle(
+        assessmentSourcesInput,
+        courseId,
+        (ref) => chapterByTitle.get(ref),
+        authorUuid,
+        options.mode,
+        options.postProcess,
+        log,
+        options.dryRun,
+      );
+    } catch (err: any) {
+      return { success: false, error: err.message || String(err), logs };
+    }
+
+    log(
+      options.dryRun
+        ? "Dry run: assessment content was diffed and rolled back, no database writes were committed."
+        : "=== ASSESSMENT BUNDLE IMPORTER COMPLETED SUCCESSFULLY ===",
+    );
+
+    if (!options.dryRun) {
+      revalidatePath("/admin/courses");
+      revalidatePath(`/courses/${courseId}`);
+    }
+
+    return {
+      success: true,
+      error: null,
+      logs,
+      stats: {
+        courseId: result.courseId,
+        asCount: result.asCount,
+        aoCount: result.aoCount,
+        sourceDiffs: result.sourceDiffs,
+      },
+    };
+  } catch (err: any) {
+    console.error("Assessment bundle importer crash:", err);
+    log(`[CRITICAL CRASH] Importer failed: ${err.message || err}`);
+    return {
+      success: false,
+      error: err.message || String(err),
+      friendlyExplanation: err.message || String(err),
       logs,
     };
   }

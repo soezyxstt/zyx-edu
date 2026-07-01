@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { StreakTag } from "@/components/dashboard/streak-tag";
 import { PageHeader } from "@/components/page-header";
-import { studentCardClass } from "@/components/course/course-surfaces";
 import { cn } from "@/lib/utils";
 
 interface PlanItem {
@@ -66,7 +65,7 @@ export function TodayPlan({ firstName }: { firstName: string }) {
       <PageHeader
         title={
           <>
-            Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{firstName}</span>!
+            Halo, <span className="bg-gradient-to-r from-brand-primary to-brand-secondary bg-clip-text text-transparent">{firstName}</span>
           </>
         }
         description="Siap untuk melanjutkan petualangan belajarmu hari ini?"
@@ -81,7 +80,7 @@ export function TodayPlan({ firstName }: { firstName: string }) {
 
       {/* Region 2: Today's plan */}
       {total > 0 && (
-        <div className={studentCardClass("mt-8 bg-card/50")}>
+        <section className="mt-8 border-y border-border bg-background/35 px-4 py-5 md:px-5">
           <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-4">
             <h2 className="font-heading text-body-base font-bold text-foreground">
               Rencana Belajar Hari Ini
@@ -104,7 +103,7 @@ export function TodayPlan({ firstName }: { firstName: string }) {
             </div>
           ) : allDone ? (
             <div className="py-4 text-center rounded-xl bg-status-success/5 border border-status-success/15 text-status-success p-4">
-              <p className="text-body-sm font-semibold">🎉 Luar biasa! Semua target hari ini telah tercapai.</p>
+              <p className="text-body-sm font-semibold">Semua target hari ini telah tercapai.</p>
             </div>
           ) : (
             <ul className="divide-y divide-border/30">
@@ -169,7 +168,7 @@ export function TodayPlan({ firstName }: { firstName: string }) {
               })}
             </ul>
           )}
-        </div>
+        </section>
       )}
     </div>
   );

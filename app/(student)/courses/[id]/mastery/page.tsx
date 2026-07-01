@@ -7,10 +7,10 @@ import { EnrollmentForm } from "@/components/enrollment-form";
 import { Reveal } from "@/components/ui/reveal";
 import { pageTitle } from "@/lib/site";
 import { db } from "@/db";
-import { chapters, knowledgeObjects, knowledgeRelationships, studentConceptMastery, courses } from "@/db/schema";
+import { chapters, knowledgeObjects, knowledgeRelationships, studentConceptMastery, courses, concepts as conceptsTable } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { and, eq, gt, asc } from "drizzle-orm";
+import { and, eq, gt, asc, inArray } from "drizzle-orm";
 import { ConceptMap } from "@/components/course/concept-map";
 import { ConceptGraphView } from "@/components/course/concept-graph-view";
 import { env } from "@/lib/env";
@@ -157,6 +157,21 @@ export default async function CourseMasteryPage({ params }: Props) {
     }
   }
 
+  // Resolve concept name -> canonical slug for linking into the Concept Explorer page.
+  const conceptIds = [...new Set(activeKOs.map((ko) => ko.conceptId))];
+  const conceptSlugRows = conceptIds.length
+    ? await db.select({ id: conceptsTable.id, canonicalSlug: conceptsTable.canonicalSlug }).from(conceptsTable).where(inArray(conceptsTable.id, conceptIds))
+    : [];
+  const conceptIdToSlug = new Map(conceptSlugRows.map((r) => [r.id, r.canonicalSlug]));
+  const conceptNameToSlug = new Map<string, string>();
+  for (const ko of activeKOs) {
+    const name = ko.conceptName.trim();
+    if (!conceptNameToSlug.has(name)) {
+      const slug = conceptIdToSlug.get(ko.conceptId);
+      if (slug) conceptNameToSlug.set(name, slug);
+    }
+  }
+
   // Helper to determine order of first appearance of a concept
   const conceptToLearningOrder = new Map<string, number>();
   for (const ko of activeKOs) {
@@ -200,6 +215,7 @@ export default async function CourseMasteryPage({ params }: Props) {
 
         return {
           conceptName,
+          conceptSlug: conceptNameToSlug.get(conceptName) ?? null,
           masteryScore: mastery ? mastery.masteryScore : null,
           confidence: mastery ? mastery.confidence : null,
           trend: mastery ? (mastery.trend ?? null) : null,
@@ -248,7 +264,7 @@ export default async function CourseMasteryPage({ params }: Props) {
           </div>
         </Reveal>
       )}
-      <ConceptMap groups={groups} />
+      <ConceptMap courseId={id} groups={groups} />
     </CoursePageShell>
   );
 }

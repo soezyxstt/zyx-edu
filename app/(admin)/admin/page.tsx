@@ -18,7 +18,6 @@ import {
   vectorSyncQueue,
 } from "@/db/schema";
 import { sql, eq, gte, ne } from "drizzle-orm";
-import { Button } from "@/components/ui/button";
 import { pageTitle } from "@/lib/site";
 import {
   FolderOpen,
@@ -312,46 +311,54 @@ export default async function AdminHomePage() {
         </div>
       )}
 
-      <div className="mt-8 space-y-12">
+      <div className="mt-8 space-y-10">
         {categories.map((category) => (
-          <div key={category.name} className="space-y-4">
-            <h2 className="font-heading text-h5 font-bold text-foreground border-b border-border/60 pb-2">
-              {category.name}
-            </h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <section key={category.name} className="space-y-3">
+            <div className="flex items-end justify-between gap-4 border-b border-border pb-3">
+              <h2 className="font-heading text-h5 font-bold text-foreground">
+                {category.name}
+              </h2>
+              <span className="text-body-xs font-semibold text-muted-foreground">
+                {category.items.length} area
+              </span>
+            </div>
+            <div className="divide-y divide-border">
               {category.items.map((item) => (
-                <div
+                <Link
                   key={item.href}
-                  className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow duration-200"
+                  href={item.href}
+                  className="group grid gap-4 py-4 transition-colors duration-150 hover:bg-muted/35 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-3"
                 >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-heading text-h6 font-semibold text-foreground flex items-center gap-2">
-                        <item.icon
-                          className={`size-5 ${item.iconColor}`}
-                          aria-hidden
-                        />
-                        {item.title}
-                      </h3>
-                      <span className="text-body-xs font-semibold px-2 py-0.5 rounded-md bg-muted text-muted-foreground">
-                        {item.stat}
-                      </span>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-background">
+                      <item.icon
+                        className={`size-5 ${item.iconColor}`}
+                        aria-hidden
+                      />
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="font-heading text-h6 font-semibold text-foreground transition-colors group-hover:text-brand-primary">
+                          {item.title}
+                        </h3>
+                        {item.stat && (
+                          <span className="rounded-md bg-muted px-2 py-0.5 text-body-xs font-semibold text-muted-foreground">
+                            {item.stat}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-1 max-w-3xl text-body-sm leading-relaxed text-muted-foreground">
+                        {item.description}
+                      </p>
                     </div>
-                    <p className="text-body-sm text-muted-foreground mt-3 leading-relaxed line-clamp-2 min-h-[2.5rem]">
-                      {item.description}
-                    </p>
                   </div>
-                  <Button
-                    className="mt-6 gap-2 w-fit rounded-lg"
-                    variant="outline"
-                    asChild
-                  >
-                    <Link href={item.href}>{item.label}</Link>
-                  </Button>
-                </div>
+                  <span className="inline-flex w-fit items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-body-sm font-semibold text-foreground transition-colors group-hover:border-brand-primary/35 group-hover:text-brand-primary">
+                    {item.label}
+                  </span>
+                </Link>
               ))}
             </div>
-          </div>
+          </section>
         ))}
       </div>
     </Reveal>
