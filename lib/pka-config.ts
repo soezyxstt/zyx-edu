@@ -15,6 +15,9 @@ export const PKA_SUBJECT_LABELS: Record<PkaSubject, string> = {
 export const PKA_STAGES = [1, 2, 3] as const;
 export type PkaStage = (typeof PKA_STAGES)[number];
 
+/** Number of live tutorial sessions held before the actual PKA pretest. */
+export const PKA_TOTAL_SESSIONS = 6;
+
 /**
  * Estimated PKA test date shown on the countdown. ITB does not publish this
  * date to Zyx; keep the UI copy explicit that it is an estimate, not official.

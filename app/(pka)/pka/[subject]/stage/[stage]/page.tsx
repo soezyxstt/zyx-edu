@@ -59,7 +59,7 @@ export default async function PkaStagePage({ params, searchParams }: Props) {
   if (thisStageState.status === "locked") {
     return (
       <div className="space-y-6">
-        <BackLink subject={subject} />
+        <BackLink />
         <Reveal>
           <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-5 shadow-sm">
             <AlertTriangle className="size-5 shrink-0 text-status-warning" />
@@ -96,7 +96,7 @@ export default async function PkaStagePage({ params, searchParams }: Props) {
 
       return (
         <div className="space-y-6">
-          <BackLink subject={subject} />
+          <BackLink />
           <Reveal>
             <div
               className={cn(
@@ -180,7 +180,7 @@ export default async function PkaStagePage({ params, searchParams }: Props) {
 
       return (
         <div className="space-y-6">
-          <BackLink subject={subject} />
+          <BackLink />
           <Reveal>
             <QuizPlayer
               courseId={template.courseId}
@@ -204,7 +204,7 @@ export default async function PkaStagePage({ params, searchParams }: Props) {
 
   return (
     <div className="space-y-6">
-      <BackLink subject={subject} />
+      <BackLink />
       <Reveal>
         <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
           <h1 className="font-heading text-h5 font-bold text-foreground">
@@ -237,14 +237,14 @@ export default async function PkaStagePage({ params, searchParams }: Props) {
   );
 }
 
-function BackLink({ subject }: { subject: PkaSubject }) {
+function BackLink() {
   return (
     <Link
-      href={`/pka/${subject}`}
+      href="/pka"
       className="inline-flex items-center gap-1.5 text-body-sm font-medium text-muted-foreground transition-colors duration-150 hover:text-foreground"
     >
       <ArrowLeft className="size-4" />
-      Kembali ke {PKA_SUBJECT_LABELS[subject]}
+      Kembali ke Tutorial PKA
     </Link>
   );
 }
